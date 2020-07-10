@@ -1,0 +1,99 @@
+#ifndef __LAMBDACHIP_VM_H__
+#define __LAMBDACHIP_VM_H__
+/*  Copyright (C) 2020
+ *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+ *  Lambdachip is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or  (at your option) any later version.
+
+ *  Lambdachip is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "os.h"
+#include "debug.h"
+#include "memory.h"
+#include "object.h"
+#include "values.h"
+#include "bytecode.h"
+#include "primitives.h"
+#include "types.h"
+
+typedef enum vm_state
+  {
+   VM_RUN, VM_STOP, VM_PAUSE, VM_GC
+  } vm_state_t;
+
+/* FIXME: I don't know the proper size, just put it here.
+ *        Should be configurable later.
+ */
+#define VM_CODESEG_SIZE 8192
+#define VM_STKSEG_SIZE 1024
+
+typedef struct LambdaVM
+{
+  u32_t pc; // program counter
+  u32_t sp; // stack pointer, move when objects pushed
+  u32_t fp; // last frame pointer, move when env was created
+  vm_state_t state;
+  cont_t cc; // current continuation
+  bytecode8_t (*fetch_next_bytecode)(struct LambdaVM*);
+  u8_t code[VM_CODESEG_SIZE];
+  u8_t stack[VM_STKSEG_SIZE];
+} __packed *vm_t;
+
+#define FETCH_NEXT_BYTECODE()                   \
+  (vm->fetch_next_bytecode(vm))
+
+#define NEXT_DATA()                             \
+  ((vm->fetch_next_bytecode(vm)).all)
+
+#define VM_PANIC()                              \
+  do{                                           \
+    vm->state = VM_STOP;                        \
+    printk("VM: fatal error! Panic!\n");        \
+  }while(0)
+
+#define PUSH(data)                              \
+  (vm->stack[++vm->sp] = (data))
+
+#define TOP()                                   \
+  (vm->stack[vm->sp])
+
+#define POP()                                   \
+  (vm->stack[vm->sp--])
+
+#define PUSH_FROM_SS(bc)                        \
+  do{                                           \
+    u8_t i = ss_read_u8(bc.data);               \
+    vm->stack[++vm->sp] = i;                    \
+  }while(0)
+
+#define HANDLE_ARITY(data)                      \
+  for(int i = 0; i < data; i++)                 \
+    {                                           \
+      PUSH(NEXT_DATA());                        \
+    }
+
+/* Convention:
+ * 1. Save sp to fp to restore the last frame
+ * 2. Save pc to [fp] as the return address
+ */
+#define SAVE_ENV()                              \
+  do{                                           \
+    vm->fp = vm->sp;                            \
+    vm->stack[vm->fp] = vm->pc;                 \
+  }while(0)                                     \
+
+void vm_init(vm_t);
+void vm_restart(vm_t vm);
+void vm_run(vm_t);
+
+#endif // End of __LAMBDACHIP_VM_H__
