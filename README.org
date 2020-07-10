@@ -1,0 +1,2 @@
+* The LambdaChip VM core
+The code can not be built directly, you have to use building project for specific platform.
