@@ -34,14 +34,27 @@
 #include <device.h>
 #include <drivers/flash.h>
 
+#elif defined LAMBDACHIP_LINUX
+#include <stdio.h>
+#define __printk printf
+#define __getchar getchar
+#define __getline getline
+#define get_platform_info() "GNU/Linux"
+#include <stdlib.h>
+#define __malloc malloc
+#define __free   free
+#include <string.h>
+#define __memset memset
+#define __memcpy memcpy
+
+#else
+#error "Please specify a platform!"
+#endif
+
 #if BIG_ENDIAN
 #define LAMBDACHIP_BIG_ENDIAN
 #else
 #define LAMBDACHIP_LITTLE_ENDIAN
-#endif
-
-#else
-#error "Please specify a platform!"
 #endif
 
 #endif // End of __LAMBDACHIP_OS_H__
