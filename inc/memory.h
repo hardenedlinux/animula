@@ -20,9 +20,6 @@
 #include "os.h"
 #include "debug.h"
 
-#define os_memset __memset
-#define os_memcpy __memcpy
-
 #define SS_MAX_SIZE 100
 #define GARR_MAX_SIZE 50
 

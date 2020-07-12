@@ -23,29 +23,29 @@
 #define os_printk printk
 #define get_platform_info() CONFIG_BOARD
 #include <kernel.h>
-#define __malloc k_malloc
-#define __free   k_free
+#define os_malloc k_malloc
+#define os_free   k_free
 #include <string.h>
-#define __memset memset
-#define __memcpy memcpy
+#define os_memset memset
+#define os_memcpy memcpy
 #include <console/console.h>
-#define __getchar console_getchar
-#define __getline console_getline
+#define os_getchar console_getchar
+#define os_getline console_getline
 #include <device.h>
 #include <drivers/flash.h>
 
 #elif defined LAMBDACHIP_LINUX
 #include <stdio.h>
 #define os_printk printf
-#define __getchar getchar
-#define __getline getline
+#define os_getchar getchar
+#define os_getline getline
 #define get_platform_info() "GNU/Linux"
 #include <stdlib.h>
-#define __malloc malloc
-#define __free   free
+#define os_malloc malloc
+#define os_free   free
 #include <string.h>
-#define __memset memset
-#define __memcpy memcpy
+#define os_memset memset
+#define os_memcpy memcpy
 
 #else
 #error "Please specify a platform!"

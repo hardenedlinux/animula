@@ -20,9 +20,6 @@
 #include "os.h"
 #include "debug.h"
 
-#define getchar __getchar
-#define getline __getline
-
 #if defined LAMBDACHIP_ZEPHYR
 #define LINE_BUF_SIZE CONFIG_CONSOLE_GETCHAR_BUFSIZE
 #else

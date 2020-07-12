@@ -24,7 +24,7 @@ char* read_line(const char* prompt)
   os_printk(prompt);
   for(int i = 0; i < LINE_BUF_SIZE; i++)
     {
-      line_buf[i] = getchar();
+      line_buf[i] = os_getchar();
       if ('\n' == line_buf[i])
         {
           line_buf[i] = '\0';

@@ -100,7 +100,7 @@ static int serial_load(int argc, char **argv, vm_t vm)
 
   if(run)
     {
-      memcpy(vm->code, LEF_PROG(lef), lef->psize);
+      os_memcpy(vm->code, LEF_PROG(lef), lef->psize);
       vm_run(vm);
     }
 

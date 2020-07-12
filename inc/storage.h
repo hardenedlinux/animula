@@ -38,15 +38,15 @@ static inline u32_t uart_get_u32(void)
   u8_t ret[4] = {0};
 
 #if defined LAMBDACHIP_BIG_ENDIAN
-  ret[0] = getchar();
-  ret[1] = getchar();
-  ret[2] = getchar();
-  ret[3] = getchar();
+  ret[0] = os_getchar();
+  ret[1] = os_getchar();
+  ret[2] = os_getchar();
+  ret[3] = os_getchar();
 #else
-  ret[3] = getchar();
-  ret[2] = getchar();
-  ret[1] = getchar();
-  ret[0] = getchar();
+  ret[3] = os_getchar();
+  ret[2] = os_getchar();
+  ret[1] = os_getchar();
+  ret[0] = os_getchar();
 #endif
   return *((u32_t*)ret);
 }
@@ -56,23 +56,23 @@ static inline u16_t uart_get_u16(void)
   u8_t ret[2] = {0};
 
 #if defined LAMBDACHIP_BIG_ENDIAN
-  ret[0] = getchar();
-  ret[1] = getchar();
+  ret[0] = os_getchar();
+  ret[1] = os_getchar();
 #else
-  ret[1] = getchar();
-  ret[0] = getchar();
+  ret[1] = os_getchar();
+  ret[0] = os_getchar();
 #endif
   return *((u16_t*)&ret);
 }
 
 static inline u8_t uart_get_u8(void)
 {
-  return getchar();
+  return os_getchar();
 }
 
 static inline void uart_drop_rest_data(void)
 {
-  while(!getchar());
+  while(!os_getchar());
 }
 
 void os_flash_init(void);

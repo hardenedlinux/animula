@@ -35,7 +35,7 @@ lef_t load_lef_from_uart(vm_t vm)
   lef_t lef = (lef_t)os_malloc(sizeof(struct LEF));
 
   for(int i = 0; i < 3; i++)
-    lef->sig[i] = getchar();
+    lef->sig[i] = os_getchar();
 
   if(!LEF_VERIFY(lef))
     {
@@ -45,7 +45,7 @@ lef_t load_lef_from_uart(vm_t vm)
     }
 
   for(int i = 0; i < 3; i++)
-    lef->ver[i] = getchar();
+    lef->ver[i] = os_getchar();
 
   lef->msize = uart_get_u32();
   lef->psize = uart_get_u32();
@@ -56,7 +56,7 @@ lef_t load_lef_from_uart(vm_t vm)
 
   for(int i = 0; i < size; i++)
     {
-      u8_t ch = getchar();
+      u8_t ch = os_getchar();
 
       if(!ch)
         {
