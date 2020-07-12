@@ -19,8 +19,6 @@
 
 #include "os.h"
 
-#define os_printk __printk
-
 #if defined LAMBDACHIP_DEBUG
 
 #ifndef VM_DEBUG

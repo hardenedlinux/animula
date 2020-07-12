@@ -20,7 +20,7 @@
 #if defined LAMBDACHIP_ZEPHYR
 #include <zephyr.h>
 #include <sys/printk.h>
-#define __printk printk
+#define os_printk printk
 #define get_platform_info() CONFIG_BOARD
 #include <kernel.h>
 #define __malloc k_malloc
@@ -36,7 +36,7 @@
 
 #elif defined LAMBDACHIP_LINUX
 #include <stdio.h>
-#define __printk printf
+#define os_printk printf
 #define __getchar getchar
 #define __getline getline
 #define get_platform_info() "GNU/Linux"
