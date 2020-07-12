@@ -51,7 +51,7 @@
 #error "Please specify a platform!"
 #endif
 
-#if BIG_ENDIAN
+#if defined BIG_ENDIAN
 #define LAMBDACHIP_BIG_ENDIAN
 #else
 #define LAMBDACHIP_LITTLE_ENDIAN

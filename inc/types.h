@@ -24,6 +24,13 @@
 #include <zephyr/types.h>
 #include <stddef.h>
 #define bool _Bool
+
+#elif defined LAMBDACHIP_LINUX
+#define CONFIG_HEAP_MEM_POOL_SIZE 4096
+#include <types.h>
+#include <stddef.h>
+#include <stdbool.h>
+
 #else
 #include "__types.h"
 #endif

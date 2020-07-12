@@ -37,7 +37,7 @@ static inline u32_t uart_get_u32(void)
 {
   u8_t ret[4] = {0};
 
-#if LAMBDACHIP_BIG_ENDIAN
+#if defined LAMBDACHIP_BIG_ENDIAN
   ret[0] = getchar();
   ret[1] = getchar();
   ret[2] = getchar();
@@ -55,7 +55,7 @@ static inline u16_t uart_get_u16(void)
 {
   u8_t ret[2] = {0};
 
-#if LAMBDACHIP_BIG_ENDIAN
+#if defined LAMBDACHIP_BIG_ENDIAN
   ret[0] = getchar();
   ret[1] = getchar();
 #else
