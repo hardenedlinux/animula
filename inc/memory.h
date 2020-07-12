@@ -18,6 +18,7 @@
  */
 
 #include "os.h"
+#include "types.h"
 #include "debug.h"
 
 #define SS_MAX_SIZE 100
