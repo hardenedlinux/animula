@@ -22,7 +22,7 @@ prim_t __prim_table[PRIM_MAX] = {0};
 
 void primitives_init(void)
 {
-  def_prim(1, "add", 2, int_add);
+  def_prim(1, "add", 2, (void*)int_add);
 }
 
 #if defined LAMBDACHIP_DEBUG

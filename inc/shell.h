@@ -18,7 +18,7 @@
  */
 
 #include "types.h"
-#include "stdio.h"
+#include "__stdio.h"
 #include "lef.h"
 #include "storage.h"
 #include "vm.h"

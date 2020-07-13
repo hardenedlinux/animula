@@ -20,7 +20,7 @@
 #include "os.h"
 #include "types.h"
 #include "debug.h"
-#include "stdio.h"
+#include "__stdio.h"
 #include "vm.h"
 
 #if defined LAMBDACHIP_ZEPHYR

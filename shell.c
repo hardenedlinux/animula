@@ -173,7 +173,7 @@ static int run_cmd(char *buf, vm_t vm)
 static void ksc_error_handler(retval_t rv, const char *cmd)
 {
   os_printk("retval: %d\n,cmd: %s\n,len-cmd: %d\n",
-            rv, cmd, strnlen(cmd, LINE_BUF_SIZE));
+            rv, cmd, (u8_t)os_strnlen(cmd, LINE_BUF_SIZE));
 }
 
 void run_shell(vm_t vm)
@@ -183,7 +183,7 @@ void run_shell(vm_t vm)
 
   while(true)
     {
-      cmd = read_line("^BIT> ");
+      cmd = read_line("^CHIP> ");
 
       if(NULL != cmd && (rv = run_cmd(cmd, vm)) < 0)
         {

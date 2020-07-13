@@ -22,7 +22,7 @@
 #include "debug.h"
 #include "bytecode.h"
 
-#define PRIM_NAME_SIZE 64
+#define PRIM_NAME_SIZE 16
 
 typedef enum prim_num
   {
@@ -50,11 +50,12 @@ extern prim_t __prim_table[];
 
 #define PRIM_MAX 10
 
-static inline void def_prim(u16_t pn, char* name, u8_t arity, void* fn)
+static inline void def_prim(u16_t pn, const char* name, u8_t arity, void* fn)
 {
   prim_t prim = (prim_t)os_malloc(sizeof(struct Primitive));
 #if defined LAMBDACHIP_DEBUG
-  os_memcpy(prim->name, name, PRIM_NAME_SIZE);
+  size_t len = os_strnlen(name, PRIM_NAME_SIZE);
+  os_memcpy(prim->name, name, len);
 #endif
   prim->arity = arity;
   prim->fn = fn;

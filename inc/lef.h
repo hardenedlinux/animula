@@ -20,7 +20,7 @@
 #include "types.h"
 #include "debug.h"
 #include "storage.h"
-#include "stdio.h"
+#include "__stdio.h"
 
 typedef struct LEF
 {

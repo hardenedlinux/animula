@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "stdio.h"
+#include "__stdio.h"
 
 static char line_buf[LINE_BUF_SIZE] = {0};
 

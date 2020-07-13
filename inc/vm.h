@@ -58,11 +58,11 @@ typedef struct LambdaVM
 #define VM_PANIC()                              \
   do{                                           \
     vm->state = VM_STOP;                        \
-    printk("VM: fatal error! Panic!\n");        \
+    os_printk("VM: fatal error! Panic!\n");     \
   }while(0)
 
 #define PUSH(data)                              \
-  (vm->stack[++vm->sp] = (data))
+  do{ vm->stack[++vm->sp] = (data); }while(0)
 
 #define TOP()                                   \
   (vm->stack[vm->sp])

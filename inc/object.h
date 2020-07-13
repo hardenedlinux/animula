@@ -92,7 +92,10 @@ typedef union Closure
 }__packed *closure_t;
 
 typedef struct Vector
-{} __packed *vec_t;
+{
+  size_t size;
+  object_t vec[];
+} __packed *vec_t;
 
 /* define Page List */
 typedef SLIST_HEAD(ObjectListHead, ObjectList) obj_list_head_t;

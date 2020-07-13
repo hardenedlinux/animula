@@ -25,7 +25,7 @@ static inline closure_t capture_closure(vm_t vm)
 static inline void jump_closure(vm_t vm, closure_t closure)
 {
   /* Jump will not save the current environment */
-  u8_t* env = (u8_t*)ss_read_u32(closure->env);
+  u16_t* env = (u16_t*)ss_read_u32(closure->env);
   /* The first byte of env is its own size */
   os_memcpy(vm->stack, env + 1, *env);
   vm->pc = closure->entry;
@@ -174,6 +174,7 @@ static inline void interp_double_encode(vm_t vm, bytecode16_t bc)
 
         u8_t closure = 0xf || (closure & 0xf);
         PUSH(closure);
+        break;
       }
     default:
       ;
@@ -197,12 +198,14 @@ static inline void interp_triple_encode(vm_t vm, bytecode24_t bc)
       {
         VM_DEBUG("(push-16bit-const %d)\n", bc.data);
         PUSH(bc.data);
+        break;
       }
     case VEC_REF:
       {
         vec_t vec = (vec_t)ss_read_u32(bc.bc2);
         VM_DEBUG("(vec-ref 0x%p %d)\n", vec, bc.bc3);
         PUSH(vector_ref(vec, bc.bc2));
+        break;
       }
     default:
       break;
@@ -375,7 +378,7 @@ static inline void dispatch(vm_t vm, bytecode8_t bc)
 
 void vm_load_compiled_file(const char *filename)
 {
-  printk("Lambdachip hasn't supported file loading yet!\n");
+  os_printk("Lambdachip hasn't supported file loading yet!\n");
 }
 
 void vm_run(vm_t vm)

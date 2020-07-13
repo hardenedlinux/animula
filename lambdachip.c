@@ -33,7 +33,7 @@ vm_t lambdachip_init(void)
 void lambdachip_start(void)
 {
   // TODO: Print lambdachip version information
-  os_printk("Welcome to Lambdachip! %s\n", CONFIG_BOARD);
+  os_printk("Welcome to Lambdachip! %s\n", get_platform_info());
   os_printk("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
   os_printk("Type `help' to get help\n");
   vm_t vm = lambdachip_init();

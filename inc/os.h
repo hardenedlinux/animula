@@ -23,11 +23,12 @@
 #define os_printk printk
 #define get_platform_info() CONFIG_BOARD
 #include <kernel.h>
-#define os_malloc k_malloc
-#define os_free   k_free
+#define __malloc k_malloc
+#define __free   k_free
 #include <string.h>
 #define os_memset memset
 #define os_memcpy memcpy
+#define os_strnlen strnlen
 #include <console/console.h>
 #define os_getchar console_getchar
 #define os_getline console_getline
@@ -41,12 +42,12 @@
 #define os_getline getline
 #define get_platform_info() "GNU/Linux"
 #include <stdlib.h>
-#define os_malloc malloc
-#define os_free   free
+#define __malloc malloc
+#define __free   free
 #include <string.h>
 #define os_memset memset
 #define os_memcpy memcpy
-
+#define os_strnlen strnlen
 #else
 #error "Please specify a platform!"
 #endif

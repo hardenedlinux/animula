@@ -54,7 +54,7 @@ lef_t load_lef_from_uart(vm_t vm)
   u32_t size = LEF_BODY_SIZE(lef);
   lef->body = (u8_t*)os_malloc(size);
 
-  for(int i = 0; i < size; i++)
+  for(u32_t i = 0; i < size; i++)
     {
       u8_t ch = os_getchar();
 

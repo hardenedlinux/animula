@@ -66,21 +66,11 @@ typedef __l_cp l_cp;
 typedef __gptr_t gptr_t;
 typedef __cptr_t cptr_t;
 
-
-
-
+#ifndef LAMBDACHIP_LINUX
 typedef __stdptr_t stdptr_t;
-
 typedef __intptr_t intptr_t;
 typedef __uintptr_t uintptr_t;
 typedef __physaddr_t physaddr_t;
-
-// FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
-
-#ifndef __CPU_HAS_NO_PAGE__
-typedef __ppn_t ppn_t;
-#endif
-
 // size_t is used for memory object sizes.
 typedef __size_t size_t;
 // ssize_t is a signed version of ssize_t, used in case there might be an
@@ -89,6 +79,13 @@ typedef __ssize_t ssize_t;
 
 // off_t is used for file offsets and lengths.
 typedef __off_t off_t;
+#endif
+
+// FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
+
+#ifndef __CPU_HAS_NO_PAGE__
+typedef __ppn_t ppn_t;
+#endif
 
 // mutex type
 typedef __mutex_t _mutex_t;

@@ -47,18 +47,32 @@ typedef __u32_t __longword;
 // and physaddr_t to represent physical addresses.
 #ifndef ADDRESS_64
 
+#ifndef LAMBDACHIP_LINUX
 typedef __s32_t __intptr_t;
 typedef __u32_t __uintptr_t;
 typedef __u32_t __physaddr_t;
+#endif
 
 #else
 
+#ifndef LAMBDACHIP_LINUX
 typedef __s64_t __intptr_t;
 typedef __u64_t __uintptr_t;
 typedef __u64_t __physaddr_t;
+#endif
 
 #endif // End of ADDRESS_64;
 
+#ifndef LAMBDACHIP_LINUX
+// size_t is used for memory object sizes.
+typedef __u32_t __size_t;
+// ssize_t is a signed version of ssize_t, used in case there might be an
+// error return.
+typedef __s32_t __ssize_t;
+
+// off_t is used for file offsets and lengths.
+typedef __s32_t __off_t;
+#endif
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
 
@@ -86,15 +100,6 @@ typedef __stdptr_t __mem_t;
 typedef __u32_t __ppn_t;
 //typedef __u32_t __pde_t;
 //typedef __u32_t __pte_t;
-
-// size_t is used for memory object sizes.
-typedef __u32_t __size_t;
-// ssize_t is a signed version of ssize_t, used in case there might be an
-// error return.
-typedef __s32_t __ssize_t;
-
-// off_t is used for file offsets and lengths.
-typedef __s32_t __off_t;
 
 // mutex type
 typedef __u32_t __mutex_t;
