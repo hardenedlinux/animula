@@ -22,8 +22,8 @@
 #if defined LAMBDACHIP_DEBUG
 
 #ifndef VM_DEBUG
-#define VM_DEBUG(fmt ...)                       \
-  os_printk(fmt)
+#define VM_DEBUG(...)				\
+  os_printk(__VA_ARGS__)
 #else
 #define VM_DEBUG
 #endif
