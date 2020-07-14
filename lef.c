@@ -73,3 +73,49 @@ lef_t load_lef_from_uart(vm_t vm)
 
   return lef;
 }
+
+lef_t load_lef_from_file(const char* filename)
+{
+  lef_t lef = NULL;
+
+#if defined LAMBDACHIP_LINUX
+  if (!file_exist(filename))
+    {
+      os_printk("File \"%s\" doesn't exist!\n", filename);
+      exit(-1);
+    }
+
+  int fp;
+  lef = (lef_t)os_malloc(sizeof(struct LEF));
+  int fd = os_open_input_file(filename);
+  os_read(fd, lef->sig, 3);
+
+  if(!LEF_VERIFY(lef))
+    {
+      os_printk("Wrong LEF file, please check it then re-upload!\n");
+      return NULL;
+    }
+
+  os_read(fd, lef->ver, 3);
+  for(int i=0; i<3; i++)
+    printf("ver: %d\n", lef->ver[i]);
+
+  os_read_u32(fd, &lef->msize);
+  os_read_u32(fd, &lef->psize);
+  os_read_u32(fd, &lef->csize);
+
+  u32_t size = LEF_BODY_SIZE(lef);
+  lef->body = (u8_t*)os_malloc(size);
+
+  os_read(fd, lef->body, size);
+
+  VM_DEBUG("Done\n");
+
+#else
+  os_printk("The current platform %s doesn't support filesystem!\n",
+            get_platform_info());
+  exit(-1);
+#endif
+
+  return lef;
+}

@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_OS_H__
 #define __LAMBDACHIP_OS_H__
-/*  Copyright (C) 2019,2020
+/*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -36,6 +36,7 @@
 #include <drivers/flash.h>
 
 #elif defined LAMBDACHIP_LINUX
+#include <unistd.h>
 #include <stdio.h>
 #define os_printk printf
 #define os_getchar getchar
@@ -52,10 +53,29 @@
 #error "Please specify a platform!"
 #endif
 
-#if defined BIG_ENDIAN
-#define LAMBDACHIP_BIG_ENDIAN
-#else
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 #define LAMBDACHIP_LITTLE_ENDIAN
+#else
+#define LAMBDACHIP_BIG_ENDIAN
 #endif
+
+/* BITS_LITTLE: Lowest addressed means least significant.
+ * BITS_BIG: Lowest addressed means most significant.
+ */
+#if defined LAMBDACHIP_ZEPHYR
+#define LAMBDACHIP_BITS_LITTLE
+#elif defined LAMBDACHIP_LINUX
+#define LAMBDACHIP_BITS_BIG
+#endif
+
+#define GLOBAL_REF(k)                           \
+  ____lambdachip_global_var_##k
+
+#define GLOBAL_DEF(t, k)                        \
+  t GLOBAL_REF(k)
+
+// TODO: make it atomic
+#define GLOBAL_SET(k, v)                        \
+  do{ GLOBAL_REF(k) = (v); }while(0)
 
 #endif // End of __LAMBDACHIP_OS_H__

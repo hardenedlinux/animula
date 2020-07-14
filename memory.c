@@ -48,8 +48,9 @@ void init_ram_heap(void)
 #if defined LAMBDACHIP_ZEPHYR
   os_printk("MM is managed by zephyr.\n");
 #else
-  //GLOBAL(heap) = malloc();
+#ifndef LAMBDACHIP_LINUX
   os_printk("MM is in raw mode.\n");
+#endif
 #endif
 
   /* TODO:

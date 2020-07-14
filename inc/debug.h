@@ -18,12 +18,15 @@
  */
 
 #include "os.h"
+#include "types.h"
+
+extern GLOBAL_DEF(bool, vm_verbose);
 
 #if defined LAMBDACHIP_DEBUG
 
 #ifndef VM_DEBUG
-#define VM_DEBUG(...)				\
-  os_printk(__VA_ARGS__)
+#define VM_DEBUG(...)					\
+  GLOBAL_REF(vm_verbose)?os_printk(__VA_ARGS__):0;
 #else
 #define VM_DEBUG
 #endif

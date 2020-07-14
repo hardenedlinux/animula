@@ -26,7 +26,7 @@
 
 #ifndef __ASSEMBLER__
 // Represents true-or-false values
-typedef enum BOOL { true=0 ,false=1 } __bool;
+typedef enum BOOL { true=1 ,false=0 } __bool;
 
 // Explicitly-sized versions of integer types
 typedef signed char     __s8_t;

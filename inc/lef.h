@@ -43,7 +43,19 @@ typedef struct LEF
 #define LEF_BODY_SIZE(lef) ((lef)->msize + (lef)->psize + (lef)->csize)
 #define LEF_SIZE(lef) (sizeof(struct LEF) + LEF_BODY_SIZE(lef))
 
+#if defined LAMBDACHIP_LINUX
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+static inline bool file_exist (const char* filename)
+{
+  struct stat st;
+  return (stat(filename, &st) == 0);
+}
+#endif
+
 void store_lef(lef_t lef, size_t offset);
 void free_lef(lef_t lef);
 lef_t load_lef_from_uart(vm_t vm);
+lef_t load_lef_from_file(const char* filename);
 #endif // End of __LAMBDACHIP_LEF_H__

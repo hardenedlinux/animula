@@ -150,3 +150,63 @@ int os_flash_read(char* buf, size_t offset, size_t size)
 
   return ret;
 }
+
+int os_open_input_file(const char *filename)
+{
+  int fd = -1;
+#if defined LAMBDACHIP_LINUX
+  if ((fd = open(filename, O_RDONLY)) < 0)
+    {
+      os_printk("Open file \"%s\" failed!\n", filename);
+      exit(-1);
+    }
+#else
+  os_printk("The current platform %s doesn't support filesystem!\n",
+            get_platform_info());
+  exit(-1);
+#endif
+  return fd;
+}
+
+int os_read(int fd, void *buf, size_t count)
+{
+  int ret = -1;
+#if defined LAMBDACHIP_LINUX
+  if ((ret = read(fd, buf, count)) < 0)
+    {
+      os_printk("Read file \"%d\" failed!\n", fd);
+      exit(-1);
+    }
+#else
+  os_printk("The current platform %s doesn't support filesystem!\n",
+            get_platform_info());
+  exit(-1);
+#endif
+  return ret;
+}
+
+void os_read_u32(int fd, void *buf)
+{
+#if defined LAMBDACHIP_BIG_ENDIAN
+  os_read(fd, buf, 1);
+  os_read(fd, buf+1, 1);
+  os_read(fd, buf+2, 1);
+  os_read(fd, buf+3, 1);
+#else
+  os_read(fd, buf+3, 1);
+  os_read(fd, buf+2, 1);
+  os_read(fd, buf+1, 1);
+  os_read(fd, buf, 1);
+#endif
+}
+
+void os_read_u16(int fd, void *buf)
+{
+#if defined LAMBDACHIP_BIG_ENDIAN
+  os_read(fd, buf, 1);
+  os_read(fd, buf+1, 1);
+#else
+  os_read(fd, buf+1, 1);
+  os_read(fd, buf, 1);
+#endif
+}

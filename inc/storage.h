@@ -65,6 +65,13 @@ static inline u16_t uart_get_u16(void)
   return *((u16_t*)&ret);
 }
 
+#if defined LAMBDACHIP_LINUX
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 static inline u8_t uart_get_u8(void)
 {
   return os_getchar();
@@ -79,4 +86,8 @@ void os_flash_init(void);
 int os_flash_erase(size_t offset, size_t size);
 int os_flash_write(const char* buf, size_t offset, size_t size);
 int os_flash_read(char* buf, size_t offset, size_t size);
+int os_open_input_file(const char *filename);
+int os_read(int fd, void *buf, size_t count);
+void os_read_u32(int fd, void *buf);
+void os_read_u16(int fd, void *buf);
 #endif // End of __LAMBDACHIP_STORAGE_H__

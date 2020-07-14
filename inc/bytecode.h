@@ -135,14 +135,20 @@ typedef union ByteCode8
 {
   struct
   {
+#if defined LAMBDACHIP_BITS_LITTLE
     unsigned data: 4;
     unsigned type: 4;
+#elif defined LAMBDACHIP_BITS_BIG
+    unsigned type: 4;
+    unsigned data: 4;
+#endif
   };
   u8_t all;
 } __packed bytecode8_t;
 
 typedef union ByteCode16
 {
+#if defined LAMBDACHIP_BITS_LITTLE
   struct
   {
     unsigned bc2: 8;
@@ -154,11 +160,25 @@ typedef union ByteCode16
     unsigned type: 4;
     unsigned _: 4;
   };
+#elif defined LAMBDACHIP_BITS_BIG
+  struct
+  {
+    unsigned bc1: 8;
+    unsigned bc2: 8;
+  };
+  struct
+  {
+    unsigned _: 4;
+    unsigned type: 4;
+    unsigned data: 8;
+  };
+#endif
   u16_t all;
 } __packed bytecode16_t;
 
 typedef union ByteCode24
 {
+#if defined LAMBDACHIP_BITS_LITTLE
   struct
   {
     unsigned bc3: 8;
@@ -171,10 +191,25 @@ typedef union ByteCode24
     unsigned type: 4;
     unsigned _: 4;
   };
+#elif defined LAMBDACHIP_BITS_BIG
+  struct
+  {
+    unsigned bc1: 8;
+    unsigned bc2: 8;
+    unsigned bc3: 8;
+  };
+  struct
+  {
+    unsigned _: 4;
+    unsigned type: 4;
+    unsigned data: 16;
+  };
+#endif
 } __packed bytecode24_t;
 
 typedef union ByteCode32
 {
+#if defined LAMBDACHIP_BITS_LITTLE
   struct
   {
     unsigned bc4: 8;
@@ -188,6 +223,21 @@ typedef union ByteCode32
     unsigned type: 4;
     unsigned _: 4;
   };
+#elif defined LAMBDACHIP_BITS_BIG
+  struct
+  {
+    unsigned bc1: 8;
+    unsigned bc2: 8;
+    unsigned bc3: 8;
+    unsigned bc4: 8;
+  };
+  struct
+  {
+    unsigned _: 4;
+    unsigned type: 4;
+    unsigned data: 24;
+  };
+#endif
   u32_t all;
 } __packed bytecode32_t;
 

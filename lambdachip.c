@@ -21,7 +21,10 @@ vm_t lambdachip_init(void)
 {
   vm_t vm = (vm_t)os_malloc(sizeof(struct LambdaVM));
 
+#ifndef LAMBDACHIP_LINUX
   os_flash_init();
+#endif
+
   init_ram_heap();
   primitives_init();
   // NOTE: The allocated vm object will never be freed.
@@ -32,10 +35,12 @@ vm_t lambdachip_init(void)
 
 void lambdachip_start(void)
 {
+  vm_t vm = lambdachip_init();
+
   // TODO: Print lambdachip version information
   os_printk("Welcome to Lambdachip! %s\n", get_platform_info());
   os_printk("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
   os_printk("Type `help' to get help\n");
-  vm_t vm = lambdachip_init();
+
   run_shell(vm);
 }
