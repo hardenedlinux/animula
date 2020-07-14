@@ -258,7 +258,8 @@ static inline void interp_special(vm_t vm, bytecode8_t bc)
     default:
       if (HALT == bc.all)
         vm->state = VM_STOP;
-      os_printk("Halt here!\n");
+      VM_DEBUG("Halt here!\n");
+      os_printk("%d\n", TOP());
     }
 }
 
@@ -390,8 +391,6 @@ void vm_run(vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
-      /* VM_DEBUG("stack: %d %d %d\n", vm->stack[vm->sp-2], */
-      /*          vm->stack[vm->sp-1], vm->stack[vm->sp]); */
       dispatch(vm, FETCH_NEXT_BYTECODE());
     }
 }

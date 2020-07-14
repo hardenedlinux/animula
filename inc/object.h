@@ -58,13 +58,8 @@ typedef union ObjectAttribute
     /* NOTE:
        Some object contains 2 fields, so GC has least 2 bits.
     */
-#if defined LAMBDACHIP_BITS_LITTLE
-    unsigned gc: 2;
-    unsigned type: 6;
-#elif defined LAMBDACHIP_BITS_BIG
     unsigned type: 6;
     unsigned gc: 2;
-#endif
   };
   u8_t all;
 } __packed oattr;
@@ -79,13 +74,8 @@ typedef union Continuation
 {
   struct
   {
-#if defined LAMBDACHIP_BITS_LITTLE
-    unsigned closure: 16; // the offset in ss to store closure
-    unsigned parent: 16; // the offset in ss to store parent
-#elif defined LAMBDACHIP_BITS_BIG
     unsigned parent: 16; // the offset in ss to store parent
     unsigned closure: 16; // the offset in ss to store closure
-#endif
   };
   u32_t all;
 }__packed *cont_t;
@@ -95,13 +85,8 @@ typedef union Closure
 {
   struct
   {
-#if defined LAMBDACHIP_BITS_LITTLE
-    unsigned entry: 16; // the offset in ss to entry
-    unsigned env: 16; // the offset in ss to env
-#elif defined LAMBDACHIP_BITS_BIG
     unsigned env: 16; // the offset in ss to env
     unsigned entry: 16; // the offset in ss to entry
-#endif
   };
   u32_t all;
 }__packed *closure_t;
