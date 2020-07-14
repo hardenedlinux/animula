@@ -97,9 +97,6 @@ lef_t load_lef_from_file(const char* filename)
     }
 
   os_read(fd, lef->ver, 3);
-  for(int i=0; i<3; i++)
-    printf("ver: %d\n", lef->ver[i]);
-
   os_read_u32(fd, &lef->msize);
   os_read_u32(fd, &lef->psize);
   os_read_u32(fd, &lef->csize);
