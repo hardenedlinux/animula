@@ -19,7 +19,12 @@
 
 #include "types.h"
 #include "debug.h"
+#include "object.h"
 
 u8_t int_add(u8_t x, u8_t y);
+u8_t int_sub(u8_t x, u8_t y);
+u8_t int_mul(u8_t x, u8_t y);
+u8_t int_div(u8_t x, u8_t y);
+void object_print(object_t obj);
 
 #endif // End of __LAMBDACHIP_LIB_H__

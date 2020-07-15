@@ -83,7 +83,13 @@
  -> Speical encoding
  1100xxxx                       Basic primitives (+, return, get-cont, ...)
  1101xxxx xxxxxxxx              Extended primitives
- 1110xxxx xxxxxxxx              Special instruction
+
+ 1110xxxx [xxxxxxxx]            Special instruction
+ 11100000                       Boolean false
+ 11100001                       Boolean true
+ 11100010 tttttttt              General object: t is the type, see object.h
+ 11100011 cccccccc              Char object: c: 0~256 (no UTF-8)
+
  1111xxxx xxxxxxxx              Reserved
  11111111                       Halt
 */

@@ -22,7 +22,7 @@
 #include "gc.h"
 
 /*
-  Bits:             0                     15                     31
+  Type:             0                     15                     31
   |                 |                      |                      |
   0.  Imm Int       |                  32bit int                  |
   1.  Arbi Int      |      next cell       |      16bit int       |
@@ -33,9 +33,8 @@
   6.  Vector        |      length          |      content         |
   7.  Continuation  |      parent          |      closure         |
   8.  List          |      length          |      content         |
-  9.  Boolean       |      true/false const                       |
 
-  63. Special       |      const encoding                         |
+  256.    N/A       |      const encoding                         |
 */
 
 typedef enum obj_type
