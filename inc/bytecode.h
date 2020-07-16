@@ -84,7 +84,7 @@
  1100xxxx                       Basic primitives (+, return, get-cont, ...)
  1101xxxx xxxxxxxx              Extended primitives
 
- 1110xxxx [xxxxxxxx]            Special instruction
+ 1110xxxx [xxxxxxxx]            Object encoding
  11100000                       Boolean false
  11100001                       Boolean true
  11100010 tttttttt              General object: t is the type, see object.h
@@ -128,6 +128,7 @@
 
 // special encoding
 #define PRIMITIVE       0b1100
+#define OBJECT          0b1110
 #define HALT            0xff
 
 typedef enum encode_type

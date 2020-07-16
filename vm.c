@@ -50,6 +50,52 @@ static inline void call_proc(vm_t vm, closure_t proc)
   vm->pc = proc->entry;
 }
 
+static inline void generate_object(vm_t vm, object_t obj)
+{
+  bytecode8_t bc;
+  bc.all = NEXT_DATA();
+  obj->attr.gc = 0;
+
+  switch(bc.data)
+    {
+    case GENERAL_OBJECT:
+      {
+        u8_t value[4] = {0};
+#if defined LAMBDACHIP_BIG_ENDIAN
+        value[0] = NEXT_DATA();
+        value[1] = NEXT_DATA();
+        value[2] = NEXT_DATA();
+        value[3] = NEXT_DATA();
+#else
+        value[3] = NEXT_DATA();
+        value[2] = NEXT_DATA();
+        value[1] = NEXT_DATA();
+        value[0] = NEXT_DATA();
+#endif
+        VM_DEBUG("(general-object-encode %d)\n", *((s32_t*)value));
+        obj->value = (void*)value;
+        break;
+      }
+    case FALSE:
+      {
+        VM_DEBUG("(push-boolean-false)\n");
+        obj->value = (void*)NEXT_DATA();
+        break;
+      }
+    case TRUE:
+      {
+        VM_DEBUG("(push-boolean-true)\n");
+        obj->value = (void*)NEXT_DATA();
+        break;
+      }
+    default:
+      {
+        os_printk("Oops, invalid object %d!\n", bc.type);
+        VM_PANIC();
+      }
+    }
+}
+
 static inline void interp_single_encode(vm_t vm, bytecode8_t bc)
 {
   switch(bc.type)
@@ -119,8 +165,10 @@ static inline void interp_single_encode(vm_t vm, bytecode8_t bc)
         break;
       }
     default:
-      os_printk("Invalid bytecode %X\n", bc.all);
-      panic("interp_single_encode panic!\n");
+      {
+        os_printk("Invalid bytecode %X\n", bc.all);
+        panic("interp_single_encode panic!\n");
+      }
     }
 }
 
@@ -234,9 +282,19 @@ static inline void call_prim(vm_t vm, pn_t pn)
 
   switch(pn)
     {
-    case iadd:
+    case int_add:
+    case int_sub:
+    case int_mul:
+    case int_div:
       {
         ARITH_PRIM();
+        break;
+      }
+    case object_print:
+      {
+        printer_prim_t fn = (printer_prim_t)prim->fn;
+        object_t obj = (object_t)POP_ADDR();
+        fn(obj);
         break;
       }
     default:
@@ -255,11 +313,19 @@ static inline void interp_special(vm_t vm, bytecode8_t bc)
         VM_DEBUG("result: %d\n", TOP());
         break;
       }
+    case OBJECT:
+      {
+        object_t obj = (object_t)os_malloc(sizeof(struct Object));
+        generate_object(vm, obj);
+        PUSH_ADDR(obj);
+        break;
+      }
     default:
-      if (HALT == bc.all)
-        vm->state = VM_STOP;
-      VM_DEBUG("Halt here!\n");
-      os_printk("%d\n", TOP());
+      {
+        if (HALT == bc.all)
+          vm->state = VM_STOP;
+        VM_DEBUG("Halt here!\n");
+      }
     }
 }
 
@@ -372,8 +438,10 @@ static inline void dispatch(vm_t vm, bytecode8_t bc)
       interp_special(vm, bc);
       break;
     default:
-      os_printk("Invalid bytecode type!\n");
-      panic("vm_run panic!\n");
+      {
+        os_printk("Invalid bytecode type!\n");
+        panic("vm_run panic!\n");
+      }
     };
 }
 

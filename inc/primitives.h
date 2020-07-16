@@ -21,15 +21,17 @@
 #include "memory.h"
 #include "debug.h"
 #include "bytecode.h"
+#include "object.h"
 
 #define PRIM_NAME_SIZE 16
 
 typedef enum prim_num
   {
-   iadd = 1
+   int_add = 2, int_sub, int_mul, int_div, object_print
   } pn_t;
 
 typedef u8_t (*arith_prim_t)(u8_t, u8_t);
+typedef void (*printer_prim_t)(object_t);
 
 typedef struct Primitive
 {
@@ -44,9 +46,9 @@ extern prim_t __prim_table[];
 
 #define ARITH_PRIM()                            \
   arith_prim_t fn = (arith_prim_t)prim->fn;     \
-  u8_t x = POP();                               \
-  u8_t y = POP();                               \
-  PUSH(fn(x, y));
+  object_t x = (object_t)POP_ADDR();		\
+  object_t y = (object_t)POP_ADDR();		\
+  PUSH(fn((s32_t)x->value, (s32_t)y->value));
 
 #define PRIM_MAX 10
 

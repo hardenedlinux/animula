@@ -21,10 +21,10 @@
 #include "debug.h"
 #include "object.h"
 
-u8_t int_add(u8_t x, u8_t y);
-u8_t int_sub(u8_t x, u8_t y);
-u8_t int_mul(u8_t x, u8_t y);
-u8_t int_div(u8_t x, u8_t y);
-void object_print(object_t obj);
+s32_t _int_add(s32_t x, s32_t y);
+s32_t _int_sub(s32_t x, s32_t y);
+s32_t _int_mul(s32_t x, s32_t y);
+s32_t _int_div(s32_t x, s32_t y);
+void _object_print(object_t obj);
 
 #endif // End of __LAMBDACHIP_LIB_H__

@@ -25,6 +25,11 @@
 #include <stddef.h>
 #define bool _Bool
 
+#elif defined LAMBDACHIP_LINUX
+#define CONFIG_HEAP_MEM_POOL_SIZE 90000
+#include <stdint.h>
+#include "__types.h"
+
 #else
 #define CONFIG_HEAP_MEM_POOL_SIZE 90000
 #include "__types.h"

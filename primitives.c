@@ -22,11 +22,11 @@ prim_t __prim_table[PRIM_MAX] = {0};
 
 void primitives_init(void)
 {
-  def_prim(2, "add", 2, (void*)int_add);
-  def_prim(3, "sub", 2, (void*)int_sub);
-  def_prim(4, "mul", 2, (void*)int_mul);
-  def_prim(5, "div", 2, (void*)int_div);
-  def_prim(6, "display", 1, (void*)object_print);
+  def_prim(2, "add", 2, (void*)_int_add);
+  def_prim(3, "sub", 2, (void*)_int_sub);
+  def_prim(4, "mul", 2, (void*)_int_mul);
+  def_prim(5, "div", 2, (void*)_int_div);
+  def_prim(6, "object_print", 1, (void*)_object_print);
 }
 
 #if defined LAMBDACHIP_DEBUG

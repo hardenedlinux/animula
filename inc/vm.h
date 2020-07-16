@@ -70,6 +70,15 @@ typedef struct LambdaVM
 #define POP()                                   \
   (vm->stack[vm->sp--])
 
+#define TOP_ADDR()                              \
+  (((uintptr_t*)vm->stack)[vm->sp])
+
+#define POP_ADDR()                              \
+  (((uintptr_t*)vm->stack)[vm->sp--])
+
+#define PUSH_ADDR(data)                                                 \
+  do{ ((uintptr_t*)vm->stack)[++vm->sp] = ((uintptr_t)data); }while(0)
+
 #define PUSH_FROM_SS(bc)                        \
   do{                                           \
     u8_t i = ss_read_u8(bc.data);               \

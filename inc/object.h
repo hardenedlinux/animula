@@ -24,7 +24,7 @@
 /*
   Type:             0                     15                     31
   |                 |                      |                      |
-  0.  Imm Int       |                  32bit int                  |
+  0.  Imm Int       |              32bit signed int               |
   1.  Arbi Int      |      next cell       |      16bit int       |
   2.  Closure       |      entry offset    |      env offsert     |
   3.  Pair          |      car             |      cdr             |
@@ -37,12 +37,15 @@
   256.    N/A       |      const encoding                         |
 */
 
+#define TRUE 1
+#define FALSE 0
+#define GENERAL_OBJECT 2
+
 typedef enum obj_type
   {
    imm_int = 0, arbi_int,
-   closure, pair, symbol, string, vector, continuation,
-   list, boolean,
-   special = 63
+   closure, pair, symbol, string, vector, continuation, list, boolean,
+   special = 256
   } otype_t;
 
 extern const u8_t true_const;

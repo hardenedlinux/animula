@@ -36,6 +36,7 @@
 #include <drivers/flash.h>
 
 #elif defined LAMBDACHIP_LINUX
+#include <assert.h>
 #include <unistd.h>
 #include <stdio.h>
 #define os_printk printf
@@ -49,6 +50,9 @@
 #define os_memset memset
 #define os_memcpy memcpy
 #define os_strnlen strnlen
+#if defined __x86_64__
+#define ADDRESS_64
+#endif
 #else
 #error "Please specify a platform!"
 #endif
