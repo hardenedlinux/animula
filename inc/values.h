@@ -21,14 +21,14 @@
 #include "object.h"
 #include "types.h"
 
-static inline object_t gen_boolean(bool value)
-{
-  object_t obj = (object_t)gc_malloc(sizeof(struct Object));
-  obj->attr.type = (otype_t)boolean;
-  obj->value = value ? (void*)&true_const : (void*)&false_const;
+/* static inline object_t gen_boolean(bool value) */
+/* { */
+/*   object_t obj = (object_t)gc_malloc(sizeof(struct Object)); */
+/*   obj->attr.type = (otype_t)boolean; */
+/*   obj->value = value ? (void*)&true_const : (void*)&false_const; */
 
-  return obj;
-}
+/*   return obj; */
+/* } */
 
 object_t make_continuation(void);
 object_t make_closure(u16_t env, u16_t entry);

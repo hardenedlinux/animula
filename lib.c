@@ -46,6 +46,11 @@ void _object_print(object_t obj)
         os_printk("%d", *((s32_t*)obj->value));
         break;
       }
+    case string:
+      {
+        os_printk("%s", (char*)obj->value);
+        break;
+      }
     default:
       {
         os_printk("object_print: Invalid object type %d\n", obj->attr.type);

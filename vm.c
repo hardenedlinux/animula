@@ -55,10 +55,11 @@ static inline void generate_object(vm_t vm, object_t obj)
   bytecode8_t bc;
   bc.all = NEXT_DATA();
   obj->attr.gc = 0;
+  obj->attr.type = bc.all;
 
-  switch(bc.data)
+  switch(obj->attr.type)
     {
-    case GENERAL_OBJECT:
+    case imm_int:
       {
         u8_t value[4] = {0};
 #if defined LAMBDACHIP_BIG_ENDIAN
@@ -76,16 +77,15 @@ static inline void generate_object(vm_t vm, object_t obj)
         obj->value = (void*)value;
         break;
       }
-    case FALSE:
+    case string:
       {
-        VM_DEBUG("(push-boolean-false)\n");
-        obj->value = (void*)NEXT_DATA();
-        break;
-      }
-    case TRUE:
-      {
-        VM_DEBUG("(push-boolean-true)\n");
-        obj->value = (void*)NEXT_DATA();
+        const char* str = (char*)(vm->code + vm->pc);
+        size_t size = strnlen(str, MAX_STR_LEN) + 1;
+        vm->pc += size;
+        /* char* buf = (char*)os_malloc(size); */
+        /* memcpy(buf, str, size); */
+        VM_DEBUG("(push-string-object %s)\n", str);
+        obj->value = (void*)str;
         break;
       }
     default:
@@ -315,9 +315,28 @@ static inline void interp_special(vm_t vm, bytecode8_t bc)
       }
     case OBJECT:
       {
-        object_t obj = (object_t)os_malloc(sizeof(struct Object));
-        generate_object(vm, obj);
-        PUSH_ADDR(obj);
+        switch(bc.data)
+          {
+          case GENERAL_OBJECT:
+            {
+              object_t obj = (object_t)os_malloc(sizeof(struct Object));
+              generate_object(vm, obj);
+              PUSH_ADDR(obj);
+              break;
+            }
+          case FALSE:
+            {
+              VM_DEBUG("(push-boolean-false)\n");
+              PUSH(bc.all);
+              break;
+            }
+          case TRUE:
+            {
+              VM_DEBUG("(push-boolean-true)\n");
+              PUSH(bc.all);
+              break;
+            }
+          }
         break;
       }
     default:

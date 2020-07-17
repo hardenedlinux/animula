@@ -29,24 +29,27 @@
   2.  Closure       |      entry offset    |      env offsert     |
   3.  Pair          |      car             |      cdr             |
   4.  Symbol        |      interned head pointer                  |
-  5.  String        |      head pointer                           |
-  6.  Vector        |      length          |      content         |
-  7.  Continuation  |      parent          |      closure         |
-  8.  List          |      length          |      content         |
+  5.  Vector        |      length          |      content         |
+  6.  Continuation  |      parent          |      closure         |
+  7.  List          |      length          |      content         |
+  8.  String        |      C-string encoding
 
-  256.    N/A       |      const encoding                         |
+  127.    N/A       |      const encoding                         |
 */
 
-#define TRUE 1
-#define FALSE 0
-#define GENERAL_OBJECT 2
+typedef enum obj_encoding
+  {
+   FALSE = 0, TRUE, GENERAL_OBJECT, CHAR, NULL_LIST, NONE
+  } obje_t;
 
 typedef enum obj_type
   {
    imm_int = 0, arbi_int,
-   closure, pair, symbol, string, vector, continuation, list, boolean,
-   special = 256
+   closure, pair, symbol, vector, continuation, list, string,
+   special = 127
   } otype_t;
+
+#define MAX_STR_LEN 256
 
 extern const u8_t true_const;
 extern const u8_t false_const;
@@ -57,11 +60,8 @@ typedef union ObjectAttribute
 {
   struct
   {
-    /* NOTE:
-       Some object contains 2 fields, so GC has least 2 bits.
-    */
     unsigned type: 6;
-    unsigned gc: 2;
+    unsigned gc: 2; // for generational GC
   };
   u8_t all;
 } __packed oattr;
@@ -110,12 +110,16 @@ typedef struct ObjectList
 
 static inline bool object_is_false(object_t obj)
 {
-  return (boolean == obj->attr.type) && (obj->value == (void*)&true_const);
+  panic("object_is_false hasn't been implemented yet\n");
+  //return (boolean == obj->attr.type) && (obj->value == (void*)&true_const);
+  return false;
 }
 
 static inline bool object_is_true(object_t obj)
 {
-  return !object_is_false(obj);
+  panic("object_is_false hasn't been implemented yet\n");
+  return false;
+  //return !object_is_false(obj);
 }
 
 static inline u8_t vector_ref(vec_t vec, u8_t index)

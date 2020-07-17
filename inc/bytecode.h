@@ -89,6 +89,8 @@
  11100001                       Boolean true
  11100010 tttttttt              General object: t is the type, see object.h
  11100011 cccccccc              Char object: c: 0~256 (no UTF-8)
+ 11100100                       Empty list, '() in Scheme
+ 11100101                       None object, undefined in JS, unspecified in Scheme
 
  1111xxxx xxxxxxxx              Reserved
  11111111                       Halt
