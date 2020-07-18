@@ -57,14 +57,6 @@ lef_t load_lef_from_uart()
   for(u32_t i = 0; i < size; i++)
     {
       u8_t ch = os_getchar();
-
-      if(!ch)
-        {
-          os_printk("Invalid LEF, wrong size: %d!\n", i);
-          os_free(lef);
-          return NULL;
-        }
-
       os_printk("Upload: %%%d\n", (i*100)/size);
       lef->body[i] = ch;
     }
@@ -111,7 +103,6 @@ lef_t load_lef_from_file(const char* filename)
 #else
   os_printk("The current platform %s doesn't support filesystem!\n",
             get_platform_info());
-  exit(-1);
 #endif
 
   return lef;

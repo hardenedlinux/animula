@@ -67,9 +67,9 @@
  * BITS_BIG: Lowest addressed means most significant.
  */
 #if defined LAMBDACHIP_ZEPHYR
-/* zephyr on stm32 F4, the bit-fields are little endian
+/* zephyr on stm32 F4, the bit-fields are big endian
  */
-#define LAMBDACHIP_BITS_LITTLE
+#define LAMBDACHIP_BITS_BIG
 #elif defined LAMBDACHIP_LINUX
 /* According to Linux i386 ABI, bit-fields are big endian
  * https://refspecs.linuxfoundation.org/elf/abi386-4.pdf
