@@ -30,7 +30,7 @@ void free_lef(lef_t lef)
   os_free(lef);
 }
 
-lef_t load_lef_from_uart(vm_t vm)
+lef_t load_lef_from_uart()
 {
   lef_t lef = (lef_t)os_malloc(sizeof(struct LEF));
 

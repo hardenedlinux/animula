@@ -17,6 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "memory.h"
 #include "types.h"
 #include "debug.h"
 #include "storage.h"
@@ -56,6 +57,6 @@ static inline bool file_exist (const char* filename)
 
 void store_lef(lef_t lef, size_t offset);
 void free_lef(lef_t lef);
-lef_t load_lef_from_uart(vm_t vm);
+lef_t load_lef_from_uart(void);
 lef_t load_lef_from_file(const char* filename);
 #endif // End of __LAMBDACHIP_LEF_H__

@@ -25,6 +25,7 @@
 #include "bytecode.h"
 #include "primitives.h"
 #include "types.h"
+#include "lef.h"
 
 typedef enum vm_state
   {
@@ -35,6 +36,7 @@ typedef enum vm_state
  *        Should be configurable later.
  */
 #define VM_CODESEG_SIZE 8192
+#define VM_DATASEG_SIZE 2048
 #define VM_STKSEG_SIZE 1024
 
 typedef struct LambdaVM
@@ -45,8 +47,9 @@ typedef struct LambdaVM
   vm_state_t state;
   cont_t cc; // current continuation
   bytecode8_t (*fetch_next_bytecode)(struct LambdaVM*);
-  u8_t code[VM_CODESEG_SIZE];
-  u8_t stack[VM_STKSEG_SIZE];
+  u8_t* code;
+  u8_t* data;
+  u8_t* stack;
 } __packed *vm_t;
 
 #define FETCH_NEXT_BYTECODE()                   \
@@ -101,8 +104,8 @@ typedef struct LambdaVM
     vm->stack[vm->fp] = vm->pc;                 \
   }while(0)                                     \
 
-void vm_init(vm_t);
+void vm_init(vm_t vm);
 void vm_restart(vm_t vm);
-void vm_run(vm_t);
-
+void vm_run(vm_t vm);
+void vm_load_lef(vm_t vm, lef_t lef);
 #endif // End of __LAMBDACHIP_VM_H__

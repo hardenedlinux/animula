@@ -91,7 +91,7 @@ static int serial_load(int argc, char **argv, vm_t vm)
 
   // Load to RAM
   os_printk("Ready for receiving LEF......\n");
-  lef_t lef = load_lef_from_uart(vm);
+  lef_t lef = load_lef_from_uart();
   if(!lef)
     goto end;
 

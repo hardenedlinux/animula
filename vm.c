@@ -373,9 +373,18 @@ void vm_init(vm_t vm)
   vm->state = VM_RUN;
   vm->cc = NULL;
   vm->sp = 0;
+  vm->code = (u8_t*)os_malloc(VM_CODESEG_SIZE);
+  vm->stack = (u8_t*)os_malloc(VM_STKSEG_SIZE);
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;
+}
+
+void vm_load_lef(vm_t vm, lef_t lef)
+{
+  os_memcpy(vm->code, LEF_PROG(lef), lef->psize);
+  vm->data = (u8_t*)os_malloc(lef->msize);
+  os_memcpy(vm->data, LEF_MEM(lef), lef->msize);
 }
 
 void vm_restart(vm_t vm)

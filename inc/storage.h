@@ -21,7 +21,6 @@
 #include "types.h"
 #include "debug.h"
 #include "__stdio.h"
-#include "vm.h"
 
 #if defined LAMBDACHIP_ZEPHYR
 // lds magic
