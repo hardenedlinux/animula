@@ -84,7 +84,7 @@ static inline void generate_object(vm_t vm, object_t obj)
         vm->pc += size;
         /* char* buf = (char*)os_malloc(size); */
         /* memcpy(buf, str, size); */
-        VM_DEBUG("(push-string-object %s)\n", str);
+        VM_DEBUG("(push-string-object \"%s\")\n", str);
         obj->value = (void*)str;
         break;
       }
