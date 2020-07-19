@@ -74,14 +74,13 @@ static inline int zephyr_flash_write(const char* buf, size_t offset, size_t size
       os_printk("Flash error: failed to disable flash protection - %d\n", ret);
       return ret;
     }
-  os_printk("begin\n");
+
   ret = flash_write(flash_device, offset, buf, size);
   if(ret)
     {
       os_printk("Flash error: flash_write failed - %d\n", ret);
       return ret;
     }
-  os_printk("end\n");
 
   ret = flash_write_protection_set(flash_device, true);
   if(ret)
@@ -89,7 +88,6 @@ static inline int zephyr_flash_write(const char* buf, size_t offset, size_t size
       os_printk("Flash error: failed to enable flash protection - %d\n", ret);
       return ret;
     }
-  os_printk("out\n");
 
   return ret;
 }
