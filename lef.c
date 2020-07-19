@@ -20,8 +20,9 @@
 void store_lef(lef_t lef, size_t offset)
 {
   size_t head_size = sizeof(struct LEF);
+
   os_flash_write((const void*)lef, offset, head_size);
-  os_flash_write((const void*)lef->body, head_size, LEF_SIZE(lef));
+  os_flash_write((const void*)lef->body, head_size, LEF_BODY_SIZE(lef));
 }
 
 void free_lef(lef_t lef)
