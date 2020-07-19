@@ -46,9 +46,9 @@ extern prim_t __prim_table[];
 
 #define ARITH_PRIM()                            \
   arith_prim_t fn = (arith_prim_t)prim->fn;     \
-  object_t x = (object_t)POP_ADDR();		\
-  object_t y = (object_t)POP_ADDR();		\
-  PUSH(fn((s32_t)x->value, (s32_t)y->value));
+  Object x = POPx(Object);                      \
+  Object y = POPx(Object);                      \
+  PUSH(fn((s32_t)x.value, (s32_t)y.value));
 
 #define PRIM_MAX 10
 

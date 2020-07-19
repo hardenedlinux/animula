@@ -73,14 +73,14 @@ typedef struct LambdaVM
 #define POP()                                   \
   (vm->stack[vm->sp--])
 
-#define TOP_ADDR()                              \
-  (((uintptr_t*)vm->stack)[vm->sp])
+#define TOPx(t)                                 \
+  (((t*)vm->stack)[vm->sp])
 
-#define POP_ADDR()                              \
-  (((uintptr_t*)vm->stack)[vm->sp--])
+#define POPx(t)                                 \
+  (((t*)vm->stack)[vm->sp--])
 
-#define PUSH_ADDR(data)                                                 \
-  do{ ((uintptr_t*)vm->stack)[++vm->sp] = ((uintptr_t)data); }while(0)
+#define PUSHx(t, data)                                  \
+  do{ ((t*)vm->stack)[++vm->sp] = ((t)data); }while(0)
 
 #define PUSH_FROM_SS(bc)                        \
   do{                                           \

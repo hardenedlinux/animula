@@ -293,8 +293,8 @@ static inline void call_prim(vm_t vm, pn_t pn)
     case object_print:
       {
         printer_prim_t fn = (printer_prim_t)prim->fn;
-        object_t obj = (object_t)POP_ADDR();
-        fn(obj);
+        Object obj = POPx(Object);
+        fn(&obj);
         break;
       }
     default:
@@ -319,9 +319,9 @@ static inline void interp_special(vm_t vm, bytecode8_t bc)
           {
           case GENERAL_OBJECT:
             {
-              object_t obj = (object_t)os_malloc(sizeof(struct Object));
-              generate_object(vm, obj);
-              PUSH_ADDR(obj);
+              Object obj;
+              generate_object(vm, &obj);
+              PUSHx(Object, obj);
               break;
             }
           case FALSE:
