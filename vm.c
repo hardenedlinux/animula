@@ -17,6 +17,10 @@
 
 #include "vm.h"
 
+extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
+extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
+extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
+
 static inline closure_t capture_closure (vm_t vm)
 {
   return NULL;
@@ -351,7 +355,7 @@ static inline bytecode8_t fetch_next_bytecode (vm_t vm)
 {
   bytecode8_t bc;
 
-  if (vm->pc < VM_CODESEG_SIZE)
+  if (vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
     {
       bc.all = vm->code[vm->pc++];
       // os_printk("BC type(%x) data(%x)\n", bc.type, bc.data);
@@ -372,8 +376,8 @@ void vm_init (vm_t vm)
   vm->state = VM_RUN;
   vm->cc = NULL;
   vm->sp = 0;
-  vm->code = (u8_t *)os_malloc (VM_CODESEG_SIZE);
-  vm->stack = (u8_t *)os_malloc (VM_STKSEG_SIZE);
+  vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
+  vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;

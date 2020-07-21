@@ -35,13 +35,6 @@ typedef enum vm_state
   VM_GC
 } vm_state_t;
 
-/* FIXME: I don't know the proper size, just put it here.
- *        Should be configurable later.
- */
-#define VM_CODESEG_SIZE 8192
-#define VM_DATASEG_SIZE 2048
-#define VM_STKSEG_SIZE  1024
-
 typedef struct LambdaVM
 {
   u32_t pc; // program counter
