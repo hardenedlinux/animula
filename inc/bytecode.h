@@ -17,6 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "os.h"
 #include "types.h"
 
 /*
@@ -157,6 +158,8 @@ typedef union ByteCode8
 #elif defined LAMBDACHIP_BITS_BIG
     unsigned data : 4;
     unsigned type : 4;
+#else
+#  error "Please define LAMBDACHIP_BITS_BIG or LAMBDACHIP_BITS_LITTLE"
 #endif
   };
   u8_t all;
