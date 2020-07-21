@@ -30,7 +30,7 @@
 /*   return obj; */
 /* } */
 
-object_t make_continuation(void);
-object_t make_closure(u16_t env, u16_t entry);
+object_t make_continuation (void);
+object_t make_closure (u16_t env, u16_t entry);
 
 #endif // End of __LAMBDACHIP_VALUES_H__;

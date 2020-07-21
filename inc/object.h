@@ -17,9 +17,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "qlist.h"
 #include "gc.h"
+#include "qlist.h"
+#include "types.h"
 
 /*
   Type:             0                     15                     31
@@ -38,16 +38,28 @@
 */
 
 typedef enum obj_encoding
-  {
-   FALSE = 0, TRUE, GENERAL_OBJECT, CHAR, NULL_LIST, NONE
-  } obje_t;
+{
+  FALSE = 0,
+  TRUE,
+  GENERAL_OBJECT,
+  CHAR,
+  NULL_LIST,
+  NONE
+} obje_t;
 
 typedef enum obj_type
-  {
-   imm_int = 0, arbi_int,
-   closure, pair, symbol, vector, continuation, list, string,
-   special = 127
-  } otype_t;
+{
+  imm_int = 0,
+  arbi_int,
+  closure,
+  pair,
+  symbol,
+  vector,
+  continuation,
+  list,
+  string,
+  special = 127
+} otype_t;
 
 #define MAX_STR_LEN 256
 
@@ -60,8 +72,8 @@ typedef union ObjectAttribute
 {
   struct
   {
-    unsigned type: 6;
-    unsigned gc: 2; // for generational GC
+    unsigned type : 6;
+    unsigned gc : 2; // for generational GC
   };
   u8_t all;
 } __packed oattr;
@@ -69,29 +81,28 @@ typedef union ObjectAttribute
 typedef struct Object
 {
   oattr attr;
-  void* value;
+  void *value;
 } __packed *object_t, Object;
 
 typedef union Continuation
 {
   struct
   {
-    unsigned parent: 16; // the offset in ss to store parent
-    unsigned closure: 16; // the offset in ss to store closure
+    unsigned parent : 16;  // the offset in ss to store parent
+    unsigned closure : 16; // the offset in ss to store closure
   };
   u32_t all;
-}__packed *cont_t;
-
+} __packed *cont_t;
 
 typedef union Closure
 {
   struct
   {
-    unsigned env: 16; // the offset in ss to env
-    unsigned entry: 16; // the offset in ss to entry
+    unsigned env : 16;   // the offset in ss to env
+    unsigned entry : 16; // the offset in ss to entry
   };
   u32_t all;
-}__packed *closure_t;
+} __packed *closure_t;
 
 typedef struct Vector
 {
@@ -100,46 +111,46 @@ typedef struct Vector
 } __packed *vec_t;
 
 /* define Page List */
-typedef SLIST_HEAD(ObjectListHead, ObjectList) obj_list_head_t;
+typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
 
 typedef struct ObjectList
 {
-  SLIST_ENTRY(ObjectList) obj_list;
+  SLIST_ENTRY (ObjectList) obj_list;
   object_t obj;
 } __packed obj_list_t;
 
-static inline bool object_is_false(object_t obj)
+static inline bool object_is_false (object_t obj)
 {
-  panic("object_is_false hasn't been implemented yet\n");
-  //return (boolean == obj->attr.type) && (obj->value == (void*)&true_const);
+  panic ("object_is_false hasn't been implemented yet\n");
+  // return (boolean == obj->attr.type) && (obj->value == (void*)&true_const);
   return false;
 }
 
-static inline bool object_is_true(object_t obj)
+static inline bool object_is_true (object_t obj)
 {
-  panic("object_is_false hasn't been implemented yet\n");
+  panic ("object_is_false hasn't been implemented yet\n");
   return false;
-  //return !object_is_false(obj);
+  // return !object_is_false(obj);
 }
 
-static inline u8_t vector_ref(vec_t vec, u8_t index)
+static inline u8_t vector_ref (vec_t vec, u8_t index)
 {
   /* TODO
      NOTE:
-     * The return value must be u8_t which is the address in ss, otherwise we can't
-     push it into the dynamic stack.
+     * The return value must be u8_t which is the address in ss, otherwise we
+     can't push it into the dynamic stack.
      * So the fetched value must be stored into ss.
      */
 
   return 0;
 }
 
-static inline void vector_set(vec_t vec, u8_t index, object_t value)
+static inline void vector_set (vec_t vec, u8_t index, object_t value)
 {
   // TODO
 }
 
-void init_predefined_objects(void);
-void free_object(object_t obj);
+void init_predefined_objects (void);
+void free_object (object_t obj);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

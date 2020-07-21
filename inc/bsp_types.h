@@ -26,16 +26,20 @@
 
 #ifndef __ASSEMBLER__
 // Represents true-or-false values
-typedef enum BOOL { true=1 ,false=0 } __bool;
+typedef enum BOOL
+{
+  true = 1,
+  false = 0
+} __bool;
 
 // Explicitly-sized versions of integer types
-typedef signed char     __s8_t;
-typedef unsigned char   __u8_t;
-typedef short           __s16_t;
-typedef unsigned short  __u16_t;
-typedef int             __s32_t;
-typedef unsigned int    __u32_t;
-typedef long long       __s64_t;
+typedef signed char __s8_t;
+typedef unsigned char __u8_t;
+typedef short __s16_t;
+typedef unsigned short __u16_t;
+typedef int __s32_t;
+typedef unsigned int __u32_t;
+typedef long long __s64_t;
 typedef unsigned long long __u64_t;
 
 // CPU word long ,pc32 is 32bit
@@ -45,25 +49,25 @@ typedef __u32_t __longword;
 // We use pointer types to represent virtual addresses,
 // uintptr_t to represent the numerical values of virtual addresses,
 // and physaddr_t to represent physical addresses.
-#ifndef ADDRESS_64
+#  ifndef ADDRESS_64
 
-#ifndef LAMBDACHIP_LINUX
+#    ifndef LAMBDACHIP_LINUX
 typedef __s32_t __intptr_t;
 typedef __u32_t __uintptr_t;
 typedef __u32_t __physaddr_t;
-#endif
+#    endif
 
-#else
+#  else
 
-#ifndef LAMBDACHIP_LINUX
+#    ifndef LAMBDACHIP_LINUX
 typedef __s64_t __intptr_t;
 typedef __u64_t __uintptr_t;
 typedef __u64_t __physaddr_t;
-#endif
+#    endif
 
-#endif // End of ADDRESS_64;
+#  endif // End of ADDRESS_64;
 
-#ifndef LAMBDACHIP_LINUX
+#  ifndef LAMBDACHIP_LINUX
 // size_t is used for memory object sizes.
 typedef __u32_t __size_t;
 // ssize_t is a signed version of ssize_t, used in case there might be an
@@ -72,7 +76,7 @@ typedef __s32_t __ssize_t;
 
 // off_t is used for file offsets and lengths.
 typedef __s32_t __off_t;
-#endif
+#  endif
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
 
@@ -91,15 +95,15 @@ typedef __u8_t *const __b_cp;
 typedef __u16_t *const __w_cp;
 typedef __u32_t *const __l_cp;
 
-typedef void* __gptr_t;
+typedef void *__gptr_t;
 typedef const void *__cptr_t;
-typedef char*   __stdptr_t;
+typedef char *__stdptr_t;
 typedef __stdptr_t __mem_t;
 
 // Page numbers are 32 bits long.
 typedef __u32_t __ppn_t;
-//typedef __u32_t __pde_t;
-//typedef __u32_t __pte_t;
+// typedef __u32_t __pde_t;
+// typedef __u32_t __pte_t;
 
 // mutex type
 typedef __u32_t __mutex_t;
@@ -109,26 +113,22 @@ typedef __u32_t frame_pt;
 typedef __u32_t ereg_t;
 typedef __u16_t reg_t;
 
-
 // gcc attributes;
 // may be need some mechnism to check GCC, but do it later...;
-#ifdef __GNUC__
-#define __no_return __attribute__((noreturn))
-#define __true_inline __attribute__((always_inline));
-#else
-#define __no_return
-#define __true_inline
-#endif // End of __GNUC__;
+#  ifdef __GNUC__
+#    define __no_return   __attribute__ ((noreturn))
+#    define __true_inline __attribute__ ((always_inline));
+#  else
+#    define __no_return
+#    define __true_inline
+#  endif // End of __GNUC__;
 
+#  define __MIN(_a, _b) ((_a) >= (_b) ? (_b) : (_a))
 
-#define __MIN(_a, _b)                           \
-  ( (_a) >= (_b) ? (_b) : (_a) )
-
-#define __MAX(_a, _b)                           \
-  ( (_a) >= (_b) ? (_a) : (_b) )
+#  define __MAX(_a, _b) ((_a) >= (_b) ? (_a) : (_b))
 
 // kernel entry type
-typedef void (*entry_t)(void);
+typedef void (*entry_t) (void);
 
 #endif // !__ASSEMBLER__
 

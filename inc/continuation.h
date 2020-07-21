@@ -19,5 +19,4 @@
 
 #include "types.h"
 
-
 #endif // End of __LAMBDACHIP_CONTINUATION_H__

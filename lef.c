@@ -17,93 +17,93 @@
 
 #include "lef.h"
 
-void store_lef(lef_t lef, size_t offset)
+void store_lef (lef_t lef, size_t offset)
 {
-  size_t head_size = sizeof(struct LEF);
+  size_t head_size = sizeof (struct LEF);
 
-  os_flash_write((const void*)lef, offset, head_size);
-  os_flash_write((const void*)lef->body, head_size, LEF_BODY_SIZE(lef));
+  os_flash_write ((const void *)lef, offset, head_size);
+  os_flash_write ((const void *)lef->body, head_size, LEF_BODY_SIZE (lef));
 }
 
-void free_lef(lef_t lef)
+void free_lef (lef_t lef)
 {
-  os_free(lef->body);
-  os_free(lef);
+  os_free (lef->body);
+  os_free (lef);
 }
 
-lef_t load_lef_from_uart()
+lef_t load_lef_from_uart ()
 {
-  lef_t lef = (lef_t)os_malloc(sizeof(struct LEF));
+  lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
-  for(int i = 0; i < 3; i++)
-    lef->sig[i] = os_getchar();
+  for (int i = 0; i < 3; i++)
+    lef->sig[i] = os_getchar ();
 
-  if(!LEF_VERIFY(lef))
+  if (!LEF_VERIFY (lef))
     {
-      uart_drop_rest_data();
-      os_printk("Wrong LEF file, please check it then re-upload!\n");
+      uart_drop_rest_data ();
+      os_printk ("Wrong LEF file, please check it then re-upload!\n");
       return NULL;
     }
 
-  for(int i = 0; i < 3; i++)
-    lef->ver[i] = os_getchar();
+  for (int i = 0; i < 3; i++)
+    lef->ver[i] = os_getchar ();
 
-  lef->msize = uart_get_u32();
-  lef->psize = uart_get_u32();
-  lef->csize = uart_get_u32();
+  lef->msize = uart_get_u32 ();
+  lef->psize = uart_get_u32 ();
+  lef->csize = uart_get_u32 ();
 
-  u32_t size = LEF_BODY_SIZE(lef);
-  lef->body = (u8_t*)os_malloc(size);
+  u32_t size = LEF_BODY_SIZE (lef);
+  lef->body = (u8_t *)os_malloc (size);
 
-  for(u32_t i = 0; i < size; i++)
+  for (u32_t i = 0; i < size; i++)
     {
-      u8_t ch = os_getchar();
-      os_printk("Upload: %%%d\n", (i*100)/size);
+      u8_t ch = os_getchar ();
+      os_printk ("Upload: %%%d\n", (i * 100) / size);
       lef->body[i] = ch;
     }
 
-  os_printk("Done\n");
+  os_printk ("Done\n");
 
   return lef;
 }
 
-lef_t load_lef_from_file(const char* filename)
+lef_t load_lef_from_file (const char *filename)
 {
   lef_t lef = NULL;
 
 #if defined LAMBDACHIP_LINUX
-  if (!file_exist(filename))
+  if (!file_exist (filename))
     {
-      os_printk("File \"%s\" doesn't exist!\n", filename);
-      exit(-1);
+      os_printk ("File \"%s\" doesn't exist!\n", filename);
+      exit (-1);
     }
 
   int fp;
-  lef = (lef_t)os_malloc(sizeof(struct LEF));
-  int fd = os_open_input_file(filename);
-  os_read(fd, lef->sig, 3);
+  lef = (lef_t)os_malloc (sizeof (struct LEF));
+  int fd = os_open_input_file (filename);
+  os_read (fd, lef->sig, 3);
 
-  if(!LEF_VERIFY(lef))
+  if (!LEF_VERIFY (lef))
     {
-      os_printk("Wrong LEF file, please check it then re-upload!\n");
+      os_printk ("Wrong LEF file, please check it then re-upload!\n");
       return NULL;
     }
 
-  os_read(fd, lef->ver, 3);
-  os_read_u32(fd, &lef->msize);
-  os_read_u32(fd, &lef->psize);
-  os_read_u32(fd, &lef->csize);
+  os_read (fd, lef->ver, 3);
+  os_read_u32 (fd, &lef->msize);
+  os_read_u32 (fd, &lef->psize);
+  os_read_u32 (fd, &lef->csize);
 
-  u32_t size = LEF_BODY_SIZE(lef);
-  lef->body = (u8_t*)os_malloc(size);
+  u32_t size = LEF_BODY_SIZE (lef);
+  lef->body = (u8_t *)os_malloc (size);
 
-  os_read(fd, lef->body, size);
+  os_read (fd, lef->body, size);
 
-  VM_DEBUG("Done\n");
+  VM_DEBUG ("Done\n");
 
 #else
-  os_printk("The current platform %s doesn't support filesystem!\n",
-            get_platform_info());
+  os_printk ("The current platform %s doesn't support filesystem!\n",
+             get_platform_info ());
 #endif
 
   return lef;

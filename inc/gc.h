@@ -17,13 +17,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
 #include "memory.h"
 #include "object.h"
+#include "types.h"
 
-void gc_init(void);
-bool gc(void);
-void* gc_malloc(size_t size);
-void gc_free(void* ptr);
+void gc_init (void);
+bool gc (void);
+void *gc_malloc (size_t size);
+void gc_free (void *ptr);
 
 #endif // End of __LAMBDACHIP_GC_H__

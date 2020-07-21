@@ -33,17 +33,15 @@ const u8_t false_const = 1;
 const u8_t null_const = 2;
 const u8_t none_const = 3;
 
-void init_predefined_objects(void)
-{
-}
+void init_predefined_objects (void) {}
 
 // This should only be called by GC
-void free_object(object_t obj)
+void free_object (object_t obj)
 {
-  gc_free(obj->value);
+  gc_free (obj->value);
   /* We should set value to NULL here, since obj is not guarrenteed to be
    * freed by GC, since it could be recycled by the pool.
    */
   obj->value = NULL;
-  gc_free((void*)obj);
+  gc_free ((void *)obj);
 }

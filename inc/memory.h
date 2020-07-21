@@ -17,110 +17,110 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "debug.h"
 #include "os.h"
 #include "types.h"
-#include "debug.h"
 
-#define SS_MAX_SIZE 100
+#define SS_MAX_SIZE   100
 #define GARR_MAX_SIZE 50
 
-extern u8_t* __static_stack;
-extern u8_t* __global_array;
+extern u8_t *__static_stack;
+extern u8_t *__global_array;
 extern u32_t __store_offset;
 
 /* FIXME: Don't check bound here, since it's slower.
  *        It's possible to verify it in LEF with a tool.
  */
 
-static inline u8_t ss_read_u8(u8_t offset)
+static inline u8_t ss_read_u8 (u8_t offset)
 {
-  if(offset >= SS_MAX_SIZE)
+  if (offset >= SS_MAX_SIZE)
     {
       /* FIXME:
        * Shouldn't panic here, the elegant way is to return to the ready
        * state of VM, and stop running the current LEF.
        */
-      os_printk("ss_read_u8: Invalid offset %u\n", offset);
-      panic("Fatal error when read from static stack!\n");
+      os_printk ("ss_read_u8: Invalid offset %u\n", offset);
+      panic ("Fatal error when read from static stack!\n");
     }
   return __static_stack[offset];
 }
 
-static inline u16_t ss_read_u16(u8_t offset)
+static inline u16_t ss_read_u16 (u8_t offset)
 {
-  if(offset >= SS_MAX_SIZE)
+  if (offset >= SS_MAX_SIZE)
     {
       /* FIXME:
        * Shouldn't panic here, the elegant way is to return to the ready
        * state of VM, and stop running the current LEF.
        */
-      os_printk("ss_read_u16: Invalid offset %u\n", offset);
-      panic("Fatal error when read from static stack!\n");
+      os_printk ("ss_read_u16: Invalid offset %u\n", offset);
+      panic ("Fatal error when read from static stack!\n");
     }
-  return ((u16_t*)__static_stack)[offset];
+  return ((u16_t *)__static_stack)[offset];
 }
 
-static inline u32_t ss_read_u32(u8_t offset)
+static inline u32_t ss_read_u32 (u8_t offset)
 {
-  if(offset >= SS_MAX_SIZE)
+  if (offset >= SS_MAX_SIZE)
     {
       /* FIXME:
        * Shouldn't panic here, the elegant way is to return to the ready
        * state of VM, and stop running the current LEF.
        */
-      os_printk("ss_read_u32: Invalid offset %u\n", offset);
-      panic("Fatal error when read from static stack!\n");
+      os_printk ("ss_read_u32: Invalid offset %u\n", offset);
+      panic ("Fatal error when read from static stack!\n");
     }
-  return ((u32_t*)__static_stack)[offset];
+  return ((u32_t *)__static_stack)[offset];
 }
 
 /* NOTE:
  * return u16_t as the ss offset.
  */
-static inline u16_t ss_store_u32(u32_t addr)
+static inline u16_t ss_store_u32 (u32_t addr)
 {
-  u32_t *ptr = (u32_t*)(__static_stack + __store_offset);
+  u32_t *ptr = (u32_t *)(__static_stack + __store_offset);
   *ptr = addr;
   __store_offset += 4;
 
   return __store_offset - 4;
 }
 
-static inline u8_t ss_store_tiny_encode(u32_t addr)
+static inline u8_t ss_store_tiny_encode (u32_t addr)
 {
   __static_stack[++__store_offset] = addr;
   return __store_offset;
 }
 
-static inline u8_t global_get(u8_t offset)
+static inline u8_t global_get (u8_t offset)
 {
-  if(offset >=  GARR_MAX_SIZE)
+  if (offset >= GARR_MAX_SIZE)
     {
       /* FIXME:
        * Shouldn't panic here, the elegant way is to return to the ready
        * state of VM, and stop running the current LEF.
        */
-      os_printk("ss_read_u8: Invalid offset %u\n", offset);
-      panic("Fatal error when read from static stack!\n");
+      os_printk ("ss_read_u8: Invalid offset %u\n", offset);
+      panic ("Fatal error when read from static stack!\n");
     }
   return __global_array[offset];
 }
 
-static inline void global_set(u8_t offset, u8_t data)
+static inline void global_set (u8_t offset, u8_t data)
 {
-  if(offset >=  GARR_MAX_SIZE)
+  if (offset >= GARR_MAX_SIZE)
     {
       /* FIXME:
        * Shouldn't panic here, the elegant way is to return to the ready
        * state of VM, and stop running the current LEF.
        */
-      os_printk("ss_read_u8: Invalid offset %u\n", offset);
-      panic("Fatal error when read from static stack!\n");
+      os_printk ("ss_read_u8: Invalid offset %u\n", offset);
+      panic ("Fatal error when read from static stack!\n");
     }
   __global_array[offset] = data;
 }
 
-void init_ram_heap(void);
-void* os_malloc(size_t size);
-void os_free(void* ptr);
+void init_ram_heap (void);
+void *os_malloc (size_t size);
+void os_free (void *ptr);
 #endif // End of __LAMBDACHIP_MEMORY_H__

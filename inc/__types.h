@@ -19,14 +19,14 @@
 
 #ifndef __ASSEMBLER__
 
-#include "bsp_types.h"
+#  include "bsp_types.h"
 
-#define no_return __no_return
-#define true_inline __true_inline
+#  define no_return   __no_return
+#  define true_inline __true_inline
 
-#ifndef NULL
-#define NULL ((void*) 0)
-#endif
+#  ifndef NULL
+#    define NULL ((void *)0)
+#  endif
 
 // Represents true-or-false values
 typedef __bool bool;
@@ -39,14 +39,14 @@ typedef __s8_t s8_t;
 typedef __u8_t u8_t;
 typedef __s16_t s16_t;
 typedef __u16_t u16_t;
-#ifndef __NO_32_T
+#  ifndef __NO_32_T
 typedef __s32_t s32_t;
 typedef __u32_t u32_t;
-#endif
-#ifndef __NO_64_T
+#  endif
+#  ifndef __NO_64_T
 typedef __s64_t s64_t;
 typedef __u64_t u64_t;
-#endif
+#  endif
 
 // generic pointer, one step vary pointer
 typedef __bptr bptr;
@@ -66,7 +66,7 @@ typedef __l_cp l_cp;
 typedef __gptr_t gptr_t;
 typedef __cptr_t cptr_t;
 
-#ifndef LAMBDACHIP_LINUX
+#  ifndef LAMBDACHIP_LINUX
 typedef __stdptr_t stdptr_t;
 typedef __intptr_t intptr_t;
 typedef __uintptr_t uintptr_t;
@@ -79,20 +79,20 @@ typedef __ssize_t ssize_t;
 
 // off_t is used for file offsets and lengths.
 typedef __off_t off_t;
-#endif
+#  endif
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
 
-#ifndef __CPU_HAS_NO_PAGE__
+#  ifndef __CPU_HAS_NO_PAGE__
 typedef __ppn_t ppn_t;
-#endif
+#  endif
 
 // mutex type
 typedef __mutex_t _mutex_t;
 
-#define MIN(_a ,_b) __MIN(_a ,_b)
+#  define MIN(_a, _b) __MIN (_a, _b)
 
-#define MAX(_a ,_b) __MAX(_a ,_b)
+#  define MAX(_a, _b) __MAX (_a, _b)
 
 /* These two useful macros must be familar to you
  * (IF NOT, GO BACK TO BASIC HACKING!)
@@ -101,11 +101,10 @@ typedef __mutex_t _mutex_t;
  * macros.
  * So here is a ANSI C version.
  */
-#define container_of(elem_addr ,struct_type ,member)                    \
-  ( (struct_type*)((stdptr_t)(elem_addr) - offsetof(struct_type ,member)) )
+#  define container_of(elem_addr, struct_type, member) \
+    ((struct_type *)((stdptr_t) (elem_addr)-offsetof (struct_type, member)))
 
-#define offsetof(type ,member)                  \
-  (off_t)(&((type*)0)->member)
+#  define offsetof(type, member) (off_t) (&((type *)0)->member)
 
 #endif // !__ASSEMBLER__
 

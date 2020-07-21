@@ -18,49 +18,49 @@
  */
 
 #if defined LAMBDACHIP_ZEPHYR
-#include <zephyr.h>
-#include <sys/printk.h>
-#define os_printk printk
-#define get_platform_info() CONFIG_BOARD
-#include <kernel.h>
-#define __malloc k_malloc
-#define __free   k_free
-#include <string.h>
-#define os_memset memset
-#define os_memcpy memcpy
-#define os_strnlen strnlen
-#include <console/console.h>
-#define os_getchar console_getchar
-#define os_getline console_getline
-#include <device.h>
-#include <drivers/flash.h>
+#  include <sys/printk.h>
+#  include <zephyr.h>
+#  define os_printk           printk
+#  define get_platform_info() CONFIG_BOARD
+#  include <kernel.h>
+#  define __malloc k_malloc
+#  define __free   k_free
+#  include <string.h>
+#  define os_memset  memset
+#  define os_memcpy  memcpy
+#  define os_strnlen strnlen
+#  include <console/console.h>
+#  define os_getchar console_getchar
+#  define os_getline console_getline
+#  include <device.h>
+#  include <drivers/flash.h>
 
 #elif defined LAMBDACHIP_LINUX
-#include <assert.h>
-#include <unistd.h>
-#include <stdio.h>
-#define os_printk printf
-#define os_getchar getchar
-#define os_getline getline
-#define get_platform_info() "GNU/Linux"
-#include <stdlib.h>
-#define __malloc malloc
-#define __free   free
-#include <string.h>
-#define os_memset memset
-#define os_memcpy memcpy
-#define os_strnlen strnlen
-#if defined __x86_64__
-#define ADDRESS_64
-#endif
+#  include <assert.h>
+#  include <stdio.h>
+#  include <unistd.h>
+#  define os_printk           printf
+#  define os_getchar          getchar
+#  define os_getline          getline
+#  define get_platform_info() "GNU/Linux"
+#  include <stdlib.h>
+#  define __malloc malloc
+#  define __free   free
+#  include <string.h>
+#  define os_memset  memset
+#  define os_memcpy  memcpy
+#  define os_strnlen strnlen
+#  if defined __x86_64__
+#    define ADDRESS_64
+#  endif
 #else
-#error "Please specify a platform!"
+#  error "Please specify a platform!"
 #endif
 
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-#define LAMBDACHIP_LITTLE_ENDIAN
+#  define LAMBDACHIP_LITTLE_ENDIAN
 #else
-#define LAMBDACHIP_BIG_ENDIAN
+#  define LAMBDACHIP_BIG_ENDIAN
 #endif
 
 /* BITS_LITTLE: Lowest addressed means least significant.
@@ -69,22 +69,24 @@
 #if defined LAMBDACHIP_ZEPHYR
 /* zephyr on stm32 F4, the bit-fields are big endian
  */
-#define LAMBDACHIP_BITS_BIG
+#  define LAMBDACHIP_BITS_BIG
 #elif defined LAMBDACHIP_LINUX
 /* According to Linux i386 ABI, bit-fields are big endian
  * https://refspecs.linuxfoundation.org/elf/abi386-4.pdf
  */
-#define LAMBDACHIP_BITS_BIG
+#  define LAMBDACHIP_BITS_BIG
 #endif
 
-#define GLOBAL_REF(k)                           \
-  ____lambdachip_global_var_##k
+#define GLOBAL_REF(k) ____lambdachip_global_var_##k
 
-#define GLOBAL_DEF(t, k)                        \
-  t GLOBAL_REF(k)
+#define GLOBAL_DEF(t, k) t GLOBAL_REF (k)
 
 // TODO: make it atomic
-#define GLOBAL_SET(k, v)                        \
-  do{ GLOBAL_REF(k) = (v); }while(0)
+#define GLOBAL_SET(k, v)    \
+  do                        \
+    {                       \
+      GLOBAL_REF (k) = (v); \
+    }                       \
+  while (0)
 
 #endif // End of __LAMBDACHIP_OS_H__

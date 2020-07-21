@@ -19,12 +19,12 @@
 
 static char line_buf[LINE_BUF_SIZE] = {0};
 
-char* read_line(const char* prompt)
+char *read_line (const char *prompt)
 {
-  os_printk(prompt);
-  for(int i = 0; i < LINE_BUF_SIZE; i++)
+  os_printk (prompt);
+  for (int i = 0; i < LINE_BUF_SIZE; i++)
     {
-      line_buf[i] = os_getchar();
+      line_buf[i] = os_getchar ();
       if ('\n' == line_buf[i])
         {
           line_buf[i] = '\0';
@@ -35,9 +35,9 @@ char* read_line(const char* prompt)
   return line_buf;
 }
 
-void stdio_init(void)
+void stdio_init (void)
 {
 #if defined LAMBDACHIP_ZEPHYR
-  console_init();
+  console_init ();
 #endif
 }

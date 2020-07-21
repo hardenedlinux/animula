@@ -31,8 +31,8 @@
  *      the lambdachip executable format (LEF). It'll be mapped to
  *      __static_stack when LEF is loaded by VM.
  */
-u8_t* __static_stack = NULL;
-u8_t* __global_array = NULL;
+u8_t *__static_stack = NULL;
+u8_t *__global_array = NULL;
 
 /* NOTE:
  * Current storeable offset in ss.
@@ -43,14 +43,14 @@ u8_t* __global_array = NULL;
 u32_t __store_offset = 0;
 
 // malloc and free should work after init_ram_heap
-void init_ram_heap(void)
+void init_ram_heap (void)
 {
 #if defined LAMBDACHIP_ZEPHYR
-  os_printk("MM is managed by zephyr.\n");
+  os_printk ("MM is managed by zephyr.\n");
 #else
-#ifndef LAMBDACHIP_LINUX
-  os_printk("MM is in raw mode.\n");
-#endif
+#  ifndef LAMBDACHIP_LINUX
+  os_printk ("MM is in raw mode.\n");
+#  endif
 #endif
 
   /* TODO:
@@ -58,49 +58,49 @@ void init_ram_heap(void)
    *    But our hardware haven't prepared yet, so let it be in RAM.
    * 2. The ss malloc size should be dynamic determined by LEF.
    */
-  if(NULL == (__static_stack = (u8_t*)os_malloc(SS_MAX_SIZE)))
+  if (NULL == (__static_stack = (u8_t *)os_malloc (SS_MAX_SIZE)))
     {
-      os_printk("Fatal: static stack init failed, request size: %d\n",
-                SS_MAX_SIZE);
+      os_printk ("Fatal: static stack init failed, request size: %d\n",
+                 SS_MAX_SIZE);
     }
 
-  if(NULL == (__global_array = (u8_t*)os_malloc(GARR_MAX_SIZE)))
+  if (NULL == (__global_array = (u8_t *)os_malloc (GARR_MAX_SIZE)))
     {
-      os_printk("Fatal: global array init failed, request size: %d\n",
-                GARR_MAX_SIZE);
+      os_printk ("Fatal: global array init failed, request size: %d\n",
+                 GARR_MAX_SIZE);
     }
 }
 
-void* raw_malloc(size_t size)
+void *raw_malloc (size_t size)
 {
 #if defined LAMBDACHIP_BOOTSTRAP
-#error "raw_malloc hasn't been implemented yet!"
+#  error "raw_malloc hasn't been implemented yet!"
 #endif
   return NULL;
 }
 
-void raw_free(void* ptr)
+void raw_free (void *ptr)
 {
 #if defined LAMBDACHIP_BOOTSTRAP
-#error "raw_free hasn't been implemented yet!"
+#  error "raw_free hasn't been implemented yet!"
 #endif
 }
 
-void* os_malloc(size_t size)
+void *os_malloc (size_t size)
 {
-  void* ptr = (void*)__malloc(size);
+  void *ptr = (void *)__malloc (size);
 
   if (NULL == ptr)
     {
-      os_printk("Failed to allocate memory!\n");
-      panic("BUG in os_malloc\n");
+      os_printk ("Failed to allocate memory!\n");
+      panic ("BUG in os_malloc\n");
     }
 
   return ptr;
 }
 
-void os_free(void* ptr)
+void os_free (void *ptr)
 {
   if (NULL != ptr)
-    __free(ptr);
+    __free (ptr);
 }

@@ -17,20 +17,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
 #include "__stdio.h"
 #include "lef.h"
 #include "storage.h"
+#include "types.h"
 #include "vm.h"
 
-#define KSC_DESC_LEN    32
-#define KSC_NAME_LEN    8
-#define KSC_MAXARGS     8
-#define KSC_WHITESPACE  "\t\r\n "
+#define KSC_DESC_LEN   32
+#define KSC_NAME_LEN   8
+#define KSC_MAXARGS    8
+#define KSC_WHITESPACE "\t\r\n "
 
-typedef int (*ksc_run_t)(int, char**, vm_t vm);
+typedef int (*ksc_run_t) (int, char **, vm_t vm);
 
-#define KSC_END  { {}, {}, NULL }
+#define KSC_END  \
+  {              \
+    {}, {}, NULL \
+  }
 
 typedef struct KernelShellCommand
 {
@@ -41,15 +44,15 @@ typedef struct KernelShellCommand
   ksc_run_t run;
 } __packed ksc_t;
 
-#define _E(x)   (-(0xE000 + x))
+#define _E(x) (-(0xE000 + x))
 
 typedef enum return_value
-  {
-   /* EINVSZ = _E(1), */
-   /* ENOMEM = _E(2), */
-   /* EINVAL = _E(2), */
-   OK = 0
-  } retval_t;
+{
+  /* EINVSZ = _E(1), */
+  /* ENOMEM = _E(2), */
+  /* EINVAL = _E(2), */
+  OK = 0
+} retval_t;
 
-void run_shell(vm_t vm);
+void run_shell (vm_t vm);
 #endif // End of __LAMBDACHIP_SHELL_H__

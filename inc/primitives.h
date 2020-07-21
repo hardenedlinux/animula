@@ -17,21 +17,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "memory.h"
-#include "debug.h"
 #include "bytecode.h"
+#include "debug.h"
+#include "memory.h"
 #include "object.h"
+#include "types.h"
 
 #define PRIM_NAME_SIZE 16
 
 typedef enum prim_num
-  {
-   int_add = 2, int_sub, int_mul, int_div, object_print
-  } pn_t;
+{
+  int_add = 2,
+  int_sub,
+  int_mul,
+  int_div,
+  object_print
+} pn_t;
 
-typedef u8_t (*arith_prim_t)(u8_t, u8_t);
-typedef void (*printer_prim_t)(object_t);
+typedef u8_t (*arith_prim_t) (u8_t, u8_t);
+typedef void (*printer_prim_t) (object_t);
 
 typedef struct Primitive
 {
@@ -39,25 +43,25 @@ typedef struct Primitive
   char name[PRIM_NAME_SIZE];
 #endif
   u8_t arity;
-  void* fn;
+  void *fn;
 } __packed *prim_t;
 
 extern prim_t __prim_table[];
 
-#define ARITH_PRIM()                            \
-  arith_prim_t fn = (arith_prim_t)prim->fn;     \
-  Object x = POPx(Object);                      \
-  Object y = POPx(Object);                      \
-  PUSH(fn((s32_t)x.value, (s32_t)y.value));
+#define ARITH_PRIM()                        \
+  arith_prim_t fn = (arith_prim_t)prim->fn; \
+  Object x = POPx (Object);                 \
+  Object y = POPx (Object);                 \
+  PUSH (fn ((s32_t)x.value, (s32_t)y.value));
 
 #define PRIM_MAX 10
 
-static inline void def_prim(u16_t pn, const char* name, u8_t arity, void* fn)
+static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 {
-  prim_t prim = (prim_t)os_malloc(sizeof(struct Primitive));
+  prim_t prim = (prim_t)os_malloc (sizeof (struct Primitive));
 #if defined LAMBDACHIP_DEBUG
-  size_t len = os_strnlen(name, PRIM_NAME_SIZE);
-  os_memcpy(prim->name, name, len);
+  size_t len = os_strnlen (name, PRIM_NAME_SIZE);
+  os_memcpy (prim->name, name, len);
 #endif
   prim->arity = arity;
   prim->fn = fn;
@@ -65,10 +69,10 @@ static inline void def_prim(u16_t pn, const char* name, u8_t arity, void* fn)
 }
 
 #if defined LAMBDACHIP_DEBUG
-char* prim_name(u16_t pn);
+char *prim_name (u16_t pn);
 #endif
 
-void primitives_init(void);
-prim_t get_prim(u16_t pn);
+void primitives_init (void);
+prim_t get_prim (u16_t pn);
 
 #endif // End of __LAMBDACHIP_PRIMITIVE_H__

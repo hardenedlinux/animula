@@ -19,22 +19,22 @@
 
 static obj_list_head_t gc_free_list;
 
-static void mark(object_t obj)
+static void mark (object_t obj)
 {
   // TODO
 }
 
-static void sweep(void)
+static void sweep (void)
 {
   // TODO
 }
 
-void gc_init(void)
+void gc_init (void)
 {
-  SLIST_INIT(&gc_free_list);
+  SLIST_INIT (&gc_free_list);
 }
 
-bool gc(void)
+bool gc (void)
 {
   /* TODO:
    * 1. Obj pool is empty, goto 3
@@ -47,7 +47,7 @@ bool gc(void)
   return false;
 }
 
-static inline void* pool_malloc(size_t size)
+static inline void *pool_malloc (size_t size)
 {
   /* NOTE:
    * Object pool design is based on the facts:
@@ -65,7 +65,7 @@ static inline void* pool_malloc(size_t size)
   return NULL;
 }
 
-void* gc_malloc(size_t size)
+void *gc_malloc (size_t size)
 {
   do
     {
@@ -79,18 +79,22 @@ void* gc_malloc(size_t size)
        *    b. malloc again
        *    c. malloc is still failed, then waiting and printing error
        */
-      void* ptr = pool_malloc(size);
-      if(ptr) return ptr;
+      void *ptr = pool_malloc (size);
+      if (ptr)
+        return ptr;
 
-      ptr = os_malloc(size);
-      if(ptr) return ptr;
+      ptr = os_malloc (size);
+      if (ptr)
+        return ptr;
 
-      gc();
-    } while(1);
+      gc ();
+    }
+  while (1);
 }
 
 // gc_free shouldn't be called explicitly, it should be only used by GC
-void gc_free(void* ptr)
+void gc_free (void *ptr)
 {
-  // TODO: recycle to pool, if pool size exceeds to max, then call low-level free.
+  // TODO: recycle to pool, if pool size exceeds to max, then call low-level
+  // free.
 }

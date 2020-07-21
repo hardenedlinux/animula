@@ -17,27 +17,30 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "os.h"
+#include "bytecode.h"
 #include "debug.h"
+#include "lef.h"
 #include "memory.h"
 #include "object.h"
-#include "values.h"
-#include "bytecode.h"
+#include "os.h"
 #include "primitives.h"
 #include "types.h"
-#include "lef.h"
+#include "values.h"
 
 typedef enum vm_state
-  {
-   VM_RUN, VM_STOP, VM_PAUSE, VM_GC
-  } vm_state_t;
+{
+  VM_RUN,
+  VM_STOP,
+  VM_PAUSE,
+  VM_GC
+} vm_state_t;
 
 /* FIXME: I don't know the proper size, just put it here.
  *        Should be configurable later.
  */
 #define VM_CODESEG_SIZE 8192
 #define VM_DATASEG_SIZE 2048
-#define VM_STKSEG_SIZE 1024
+#define VM_STKSEG_SIZE  1024
 
 typedef struct LambdaVM
 {
@@ -46,66 +49,74 @@ typedef struct LambdaVM
   u32_t fp; // last frame pointer, move when env was created
   vm_state_t state;
   cont_t cc; // current continuation
-  bytecode8_t (*fetch_next_bytecode)(struct LambdaVM*);
-  u8_t* code;
-  u8_t* data;
-  u8_t* stack;
+  bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);
+  u8_t *code;
+  u8_t *data;
+  u8_t *stack;
 } __packed *vm_t;
 
-#define FETCH_NEXT_BYTECODE()                   \
-  (vm->fetch_next_bytecode(vm))
+#define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
 
-#define NEXT_DATA()                             \
-  ((vm->fetch_next_bytecode(vm)).all)
+#define NEXT_DATA() ((vm->fetch_next_bytecode (vm)).all)
 
-#define VM_PANIC()                              \
-  do{                                           \
-    vm->state = VM_STOP;                        \
-    os_printk("VM: fatal error! Panic!\n");     \
-  }while(0)
+#define VM_PANIC()                             \
+  do                                           \
+    {                                          \
+      vm->state = VM_STOP;                     \
+      os_printk ("VM: fatal error! Panic!\n"); \
+    }                                          \
+  while (0)
 
-#define PUSH(data)                              \
-  do{ vm->stack[++vm->sp] = (data); }while(0)
+#define PUSH(data)                  \
+  do                                \
+    {                               \
+      vm->stack[++vm->sp] = (data); \
+    }                               \
+  while (0)
 
-#define TOP()                                   \
-  (vm->stack[vm->sp])
+#define TOP() (vm->stack[vm->sp])
 
-#define POP()                                   \
-  (vm->stack[vm->sp--])
+#define POP() (vm->stack[vm->sp--])
 
-#define TOPx(t)                                 \
-  (((t*)vm->stack)[vm->sp])
+#define TOPx(t) (((t *)vm->stack)[vm->sp])
 
-#define POPx(t)                                 \
-  (((t*)vm->stack)[vm->sp--])
+#define POPx(t) (((t *)vm->stack)[vm->sp--])
 
-#define PUSHx(t, data)                                  \
-  do{ ((t*)vm->stack)[++vm->sp] = ((t)data); }while(0)
+#define PUSHx(t, data)                        \
+  do                                          \
+    {                                         \
+      ((t *)vm->stack)[++vm->sp] = ((t)data); \
+    }                                         \
+  while (0)
 
-#define PUSH_FROM_SS(bc)                        \
-  do{                                           \
-    u8_t i = ss_read_u8(bc.data);               \
-    vm->stack[++vm->sp] = i;                    \
-  }while(0)
+#define PUSH_FROM_SS(bc)             \
+  do                                 \
+    {                                \
+      u8_t i = ss_read_u8 (bc.data); \
+      vm->stack[++vm->sp] = i;       \
+    }                                \
+  while (0)
 
-#define HANDLE_ARITY(data)                      \
-  for(int i = 0; i < data; i++)                 \
-    {                                           \
-      PUSH(NEXT_DATA());                        \
+#define HANDLE_ARITY(data)       \
+  for (int i = 0; i < data; i++) \
+    {                            \
+      PUSH (NEXT_DATA ());       \
     }
 
 /* Convention:
  * 1. Save sp to fp to restore the last frame
  * 2. Save pc to [fp] as the return address
  */
-#define SAVE_ENV()                              \
-  do{                                           \
-    vm->fp = vm->sp;                            \
-    vm->stack[vm->fp] = vm->pc;                 \
-  }while(0)                                     \
+#define SAVE_ENV()                \
+  do                              \
+    {                             \
+      vm->fp = vm->sp;            \
+      vm->stack[vm->fp] = vm->pc; \
+    }                             \
+  while (0)
 
-void vm_init(vm_t vm);
-void vm_restart(vm_t vm);
-void vm_run(vm_t vm);
-void vm_load_lef(vm_t vm, lef_t lef);
+void vm_init (vm_t vm);
+void vm_restart (vm_t vm);
+void vm_run (vm_t vm);
+void vm_load_lef (vm_t vm, lef_t lef);
 #endif // End of __LAMBDACHIP_VM_H__

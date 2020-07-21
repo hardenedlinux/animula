@@ -17,14 +17,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
 #include "debug.h"
 #include "object.h"
+#include "types.h"
 
-s32_t _int_add(s32_t x, s32_t y);
-s32_t _int_sub(s32_t x, s32_t y);
-s32_t _int_mul(s32_t x, s32_t y);
-s32_t _int_div(s32_t x, s32_t y);
-void _object_print(object_t obj);
+s32_t _int_add (s32_t x, s32_t y);
+s32_t _int_sub (s32_t x, s32_t y);
+s32_t _int_mul (s32_t x, s32_t y);
+s32_t _int_div (s32_t x, s32_t y);
+void _object_print (object_t obj);
 
 #endif // End of __LAMBDACHIP_LIB_H__

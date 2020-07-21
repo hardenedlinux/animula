@@ -17,15 +17,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "os.h"
 #include "debug.h"
+#include "os.h"
 
 #if defined LAMBDACHIP_ZEPHYR
-#define LINE_BUF_SIZE CONFIG_CONSOLE_GETCHAR_BUFSIZE
+#  define LINE_BUF_SIZE CONFIG_CONSOLE_GETCHAR_BUFSIZE
 #else
-#define LINE_BUF_SIZE  80 // enough for one text line on VGA
+#  define LINE_BUF_SIZE 80 // enough for one text line on VGA
 #endif
 
-char* read_line(const char* prompt);
-void stdio_init(void);
+char *read_line (const char *prompt);
+void stdio_init (void);
 #endif // End of __LAMBDACHIP_STDIO_H__

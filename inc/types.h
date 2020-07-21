@@ -18,27 +18,27 @@
  */
 
 #if defined LAMBDACHIP_ZEPHYR
-#ifndef CONFIG_HEAP_MEM_POOL_SIZE
-#error "You must define CONFIG_HEAP_MEM_POOL_SIZE for Zephyr!"
-#endif
-#include <zephyr/types.h>
-#include <stddef.h>
-#define bool _Bool
+#  ifndef CONFIG_HEAP_MEM_POOL_SIZE
+#    error "You must define CONFIG_HEAP_MEM_POOL_SIZE for Zephyr!"
+#  endif
+#  include <stddef.h>
+#  include <zephyr/types.h>
+#  define bool _Bool
 
 #elif defined LAMBDACHIP_LINUX
-#define CONFIG_HEAP_MEM_POOL_SIZE 90000
-#include <stdint.h>
-#include "__types.h"
+#  define CONFIG_HEAP_MEM_POOL_SIZE 90000
+#  include "__types.h"
+#  include <stdint.h>
 
 #else
-#define CONFIG_HEAP_MEM_POOL_SIZE 90000
-#include "__types.h"
+#  define CONFIG_HEAP_MEM_POOL_SIZE 90000
+#  include "__types.h"
 #endif
 
 #if defined __GNUC__
-#ifndef __packed
-#define __packed __attribute__((packed))
-#endif
+#  ifndef __packed
+#    define __packed __attribute__ ((packed))
+#  endif
 #endif
 
 #endif // End of __LAMBDACHIP_TYPES_H;

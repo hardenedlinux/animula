@@ -18,29 +18,29 @@
 #include "values.h"
 
 // -------- Continuation
-object_t make_continuation()
+object_t make_continuation ()
 {
-  object_t obj = (object_t)gc_malloc(sizeof(struct Object));
-  cont_t cont = (cont_t)gc_malloc(sizeof(union Continuation));
+  object_t obj = (object_t)gc_malloc (sizeof (struct Object));
+  cont_t cont = (cont_t)gc_malloc (sizeof (union Continuation));
 
   obj->attr.gc = 0;
   obj->attr.type = (otype_t)continuation;
-  obj->value = (void*)cont;
+  obj->value = (void *)cont;
 
   return obj;
 }
 
 // ----------- Closure
-object_t make_closure(u16_t env, u16_t entry)
+object_t make_closure (u16_t env, u16_t entry)
 {
-  object_t obj = (object_t)gc_malloc(sizeof(struct Object));
-  closure_t closure = (closure_t)gc_malloc(sizeof(union Closure));
+  object_t obj = (object_t)gc_malloc (sizeof (struct Object));
+  closure_t closure = (closure_t)gc_malloc (sizeof (union Closure));
 
   closure->env = env;
   closure->entry = entry;
   obj->attr.gc = 0;
   obj->attr.type = (otype_t)closure;
-  obj->value = (void*)closure;
+  obj->value = (void *)closure;
 
   return obj;
 }

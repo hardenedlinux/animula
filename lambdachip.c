@@ -17,30 +17,30 @@
 
 #include "lambdachip.h"
 
-vm_t lambdachip_init(void)
+vm_t lambdachip_init (void)
 {
-  vm_t vm = (vm_t)os_malloc(sizeof(struct LambdaVM));
+  vm_t vm = (vm_t)os_malloc (sizeof (struct LambdaVM));
 
 #ifndef LAMBDACHIP_LINUX
-  os_flash_init();
+  os_flash_init ();
 #endif
 
-  init_ram_heap();
-  primitives_init();
+  init_ram_heap ();
+  primitives_init ();
   // NOTE: The allocated vm object will never be freed.
-  vm_init(vm);
-  stdio_init();
+  vm_init (vm);
+  stdio_init ();
   return vm;
 }
 
-void lambdachip_start(void)
+void lambdachip_start (void)
 {
-  vm_t vm = lambdachip_init();
+  vm_t vm = lambdachip_init ();
 
   // TODO: Print lambdachip version information
-  os_printk("Welcome to Lambdachip! %s\n", get_platform_info());
-  os_printk("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
-  os_printk("Type `help' to get help\n");
+  os_printk ("Welcome to Lambdachip! %s\n", get_platform_info ());
+  os_printk ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
+  os_printk ("Type `help' to get help\n");
 
-  run_shell(vm);
+  run_shell (vm);
 }

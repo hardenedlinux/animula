@@ -24,7 +24,8 @@
  * <<PICOBIT: A Compact Scheme System for Microcontrollers>>
  * Authors: Vincent St-Amour and Marc Feeley
 
- * I've redesigned it for better extensibility. The object encoding was redesigned
+ * I've redesigned it for better extensibility. The object encoding was
+ redesigned
  * as well, and it's expected NOT ONLY SUPPORT Scheme. -- by NalaGinrut
 
  * Terms:
@@ -90,29 +91,30 @@
  11100010 tttttttt              General object: t is the type, see object.h
  11100011 cccccccc              Char object: c: 0~256 (no UTF-8)
  11100100                       Empty list, '() in Scheme
- 11100101                       None object, undefined in JS, unspecified in Scheme
+ 11100101                       None object, undefined in JS, unspecified in
+ Scheme
 
  1111xxxx xxxxxxxx              Reserved
  11111111                       Halt
 */
 
-#define SINGLE_ENCODE(bc) (((bc).type >= 0) && ((bc).type <= 0b0111))
-#define DOUBLE_ENCODE(bc) (0b1010 == (bc).type)
-#define TRIPLE_ENCODE(bc) (0b1011 == (bc).type)
+#define SINGLE_ENCODE(bc)    (((bc).type >= 0) && ((bc).type <= 0b0111))
+#define DOUBLE_ENCODE(bc)    (0b1010 == (bc).type)
+#define TRIPLE_ENCODE(bc)    (0b1011 == (bc).type)
 #define QUADRUPLE_ENCODE(bc) (0b0010 == (bc).type)
-#define IS_SPECIAL(bc) (0b1100 & (bc).type)
+#define IS_SPECIAL(bc)       (0b1100 & (bc).type)
 
 // small encode
 #define PUSH_SMALL_CONST 0
-#define LOAD_SS_SMALL 1
+#define LOAD_SS_SMALL    1
 
 // single encode
-#define PUSH_GLOBAL     0b0010
-#define SET_GLOBAL      0b0011
-#define CALL_CLOSURE    0b0100
-#define JUMP_CLOSURE    0b0101
-#define JUMP            0b0110
-#define JUMP_FALSE      0b0111
+#define PUSH_GLOBAL  0b0010
+#define SET_GLOBAL   0b0011
+#define CALL_CLOSURE 0b0100
+#define JUMP_CLOSURE 0b0101
+#define JUMP         0b0110
+#define JUMP_FALSE   0b0111
 
 // double encode
 #define PUSH_8BIT_CONST 0b0000
@@ -126,17 +128,22 @@
 #define VEC_REF          0b0010
 
 // quadruple encoding
-#define VEC_SET   0b0000
+#define VEC_SET 0b0000
 
 // special encoding
-#define PRIMITIVE       0b1100
-#define OBJECT          0b1110
-#define HALT            0xff
+#define PRIMITIVE 0b1100
+#define OBJECT    0b1110
+#define HALT      0xff
 
 typedef enum encode_type
-  {
-   SMALL, SINGLE, DOUBLE, TRIPLE, QUADRUPLE, SPECIAL
-  } encode_t;
+{
+  SMALL,
+  SINGLE,
+  DOUBLE,
+  TRIPLE,
+  QUADRUPLE,
+  SPECIAL
+} encode_t;
 
 // FIXME: tweak bit-fields order by bits endian
 
@@ -145,11 +152,11 @@ typedef union ByteCode8
   struct
   {
 #if defined LAMBDACHIP_BITS_LITTLE
-    unsigned type: 4;
-    unsigned data: 4;
+    unsigned type : 4;
+    unsigned data : 4;
 #elif defined LAMBDACHIP_BITS_BIG
-    unsigned data: 4;
-    unsigned type: 4;
+    unsigned data : 4;
+    unsigned type : 4;
 #endif
   };
   u8_t all;
@@ -160,26 +167,26 @@ typedef union ByteCode16
 #if defined LAMBDACHIP_BITS_LITTLE
   struct
   {
-    unsigned bc1: 8;
-    unsigned bc2: 8;
+    unsigned bc1 : 8;
+    unsigned bc2 : 8;
   };
   struct
   {
-    unsigned _: 4;
-    unsigned type: 4;
-    unsigned data: 8;
+    unsigned _ : 4;
+    unsigned type : 4;
+    unsigned data : 8;
   };
 #elif defined LAMBDACHIP_BITS_BIG
   struct
   {
-    unsigned bc2: 8;
-    unsigned bc1: 8;
+    unsigned bc2 : 8;
+    unsigned bc1 : 8;
   };
   struct
   {
-    unsigned data: 8;
-    unsigned type: 4;
-    unsigned _: 4;
+    unsigned data : 8;
+    unsigned type : 4;
+    unsigned _ : 4;
   };
 #endif
   u16_t all;
@@ -190,28 +197,28 @@ typedef union ByteCode24
 #if defined LAMBDACHIP_BITS_LITTLE
   struct
   {
-    unsigned bc1: 8;
-    unsigned bc2: 8;
-    unsigned bc3: 8;
+    unsigned bc1 : 8;
+    unsigned bc2 : 8;
+    unsigned bc3 : 8;
   };
   struct
   {
-    unsigned _: 4;
-    unsigned type: 4;
-    unsigned data: 16;
+    unsigned _ : 4;
+    unsigned type : 4;
+    unsigned data : 16;
   };
 #elif defined LAMBDACHIP_BITS_BIG
   struct
   {
-    unsigned bc3: 8;
-    unsigned bc2: 8;
-    unsigned bc1: 8;
+    unsigned bc3 : 8;
+    unsigned bc2 : 8;
+    unsigned bc1 : 8;
   };
   struct
   {
-    unsigned data: 16;
-    unsigned type: 4;
-    unsigned _: 4;
+    unsigned data : 16;
+    unsigned type : 4;
+    unsigned _ : 4;
   };
 #endif
 } __packed bytecode24_t;
@@ -221,30 +228,30 @@ typedef union ByteCode32
 #if defined LAMBDACHIP_BITS_LITTLE
   struct
   {
-    unsigned bc1: 8;
-    unsigned bc2: 8;
-    unsigned bc3: 8;
-    unsigned bc4: 8;
+    unsigned bc1 : 8;
+    unsigned bc2 : 8;
+    unsigned bc3 : 8;
+    unsigned bc4 : 8;
   };
   struct
   {
-    unsigned _: 4;
-    unsigned type: 4;
-    unsigned data: 24;
+    unsigned _ : 4;
+    unsigned type : 4;
+    unsigned data : 24;
   };
 #elif defined LAMBDACHIP_BITS_BIG
   struct
   {
-    unsigned bc4: 8;
-    unsigned bc3: 8;
-    unsigned bc2: 8;
-    unsigned bc1: 8;
+    unsigned bc4 : 8;
+    unsigned bc3 : 8;
+    unsigned bc2 : 8;
+    unsigned bc1 : 8;
   };
   struct
   {
-    unsigned data: 24;
-    unsigned type: 4;
-    unsigned _: 4;
+    unsigned data : 24;
+    unsigned type : 4;
+    unsigned _ : 4;
   };
 #endif
   u32_t all;

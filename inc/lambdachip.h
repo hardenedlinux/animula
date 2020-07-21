@@ -17,16 +17,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "vm.h"
-#include "os.h"
 #include "debug.h"
 #include "memory.h"
-#include "stdio.h"
-#include "types.h"
-#include "shell.h"
-#include "storage.h"
+#include "os.h"
 #include "primitives.h"
+#include "shell.h"
+#include "stdio.h"
+#include "storage.h"
+#include "types.h"
+#include "vm.h"
 
-vm_t lambdachip_init(void);
-void lambdachip_start(void);
+vm_t lambdachip_init (void);
+void lambdachip_start (void);
 #endif // End of __LAMBDACHIP_H__

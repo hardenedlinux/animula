@@ -20,29 +20,29 @@
 
 prim_t __prim_table[PRIM_MAX] = {0};
 
-void primitives_init(void)
+void primitives_init (void)
 {
-  def_prim(2, "add", 2, (void*)_int_add);
-  def_prim(3, "sub", 2, (void*)_int_sub);
-  def_prim(4, "mul", 2, (void*)_int_mul);
-  def_prim(5, "div", 2, (void*)_int_div);
-  def_prim(6, "object_print", 1, (void*)_object_print);
+  def_prim (2, "add", 2, (void *)_int_add);
+  def_prim (3, "sub", 2, (void *)_int_sub);
+  def_prim (4, "mul", 2, (void *)_int_mul);
+  def_prim (5, "div", 2, (void *)_int_div);
+  def_prim (6, "object_print", 1, (void *)_object_print);
 }
 
 #if defined LAMBDACHIP_DEBUG
-char* prim_name(u16_t pn)
+char *prim_name (u16_t pn)
 {
   if (pn >= PRIM_MAX)
     {
-      VM_DEBUG("Invalid prim number: %d\n", pn);
-      panic("prim_name halt\n");
+      VM_DEBUG ("Invalid prim number: %d\n", pn);
+      panic ("prim_name halt\n");
     }
 
   return __prim_table[pn]->name;
 }
 #endif
 
-prim_t get_prim(u16_t pn)
+prim_t get_prim (u16_t pn)
 {
   return __prim_table[pn];
 }

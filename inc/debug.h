@@ -20,22 +20,22 @@
 #include "os.h"
 #include "types.h"
 
-extern GLOBAL_DEF(bool, vm_verbose);
+extern GLOBAL_DEF (bool, vm_verbose);
 
 #if defined LAMBDACHIP_DEBUG
 
-#ifndef VM_DEBUG
-#define VM_DEBUG(...)					\
-  GLOBAL_REF(vm_verbose)?os_printk(__VA_ARGS__):0;
-#else
-#define VM_DEBUG
-#endif
+#  ifndef VM_DEBUG
+#    define VM_DEBUG(...) GLOBAL_REF (vm_verbose) ? os_printk (__VA_ARGS__) : 0;
+#  else
+#    define VM_DEBUG
+#  endif
 
 #endif
 
-static inline void panic(const char* reason)
+static inline void panic (const char *reason)
 {
-  os_printk("%s", reason);
-  while(1);
+  os_printk ("%s", reason);
+  while (1)
+    ;
 }
 #endif // End of __LAMBDACHIP_DEBUG_H__
