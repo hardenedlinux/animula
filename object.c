@@ -38,7 +38,20 @@ void init_predefined_objects (void) {}
 // This should only be called by GC
 void free_object (object_t obj)
 {
-  gc_free (obj->value);
+  switch (obj->attr.type)
+    {
+    case imm_int:
+    case closure:
+    case pair:
+    case list:
+    case symbol:
+    case continuation:
+      gc_free (obj->value);
+      break;
+    default:
+      break;
+    }
+
   /* We should set value to NULL here, since obj is not guarrenteed to be
    * freed by GC, since it could be recycled by the pool.
    */
