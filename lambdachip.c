@@ -33,6 +33,13 @@ vm_t lambdachip_init (void)
   return vm;
 }
 
+void lambdachip_clean (vm_t vm)
+{
+  vm_clean (vm);
+  primitives_clean ();
+  stdio_clean ();
+}
+
 void lambdachip_start (void)
 {
   vm_t vm = lambdachip_init ();

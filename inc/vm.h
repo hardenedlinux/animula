@@ -109,6 +109,7 @@ typedef struct LambdaVM
   while (0)
 
 void vm_init (vm_t vm);
+void vm_clean (vm_t vm);
 void vm_restart (vm_t vm);
 void vm_run (vm_t vm);
 void vm_load_lef (vm_t vm, lef_t lef);

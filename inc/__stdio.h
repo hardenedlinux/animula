@@ -28,4 +28,5 @@
 
 char *read_line (const char *prompt);
 void stdio_init (void);
+void stdio_clean (void);
 #endif // End of __LAMBDACHIP_STDIO_H__

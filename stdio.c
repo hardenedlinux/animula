@@ -41,3 +41,5 @@ void stdio_init (void)
   console_init ();
 #endif
 }
+
+void stdio_clean (void) {}

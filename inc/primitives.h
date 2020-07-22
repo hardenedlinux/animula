@@ -46,7 +46,7 @@ typedef struct Primitive
   void *fn;
 } __packed *prim_t;
 
-extern prim_t __prim_table[];
+extern GLOBAL_DEF (prim_t, prim_table[]);
 
 #define ARITH_PRIM()                        \
   arith_prim_t fn = (arith_prim_t)prim->fn; \
@@ -65,7 +65,7 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 #endif
   prim->arity = arity;
   prim->fn = fn;
-  __prim_table[pn] = prim;
+  GLOBAL_REF (prim_table)[pn] = prim;
 }
 
 #if defined LAMBDACHIP_DEBUG
@@ -73,6 +73,7 @@ char *prim_name (u16_t pn);
 #endif
 
 void primitives_init (void);
+void primitives_clean (void);
 prim_t get_prim (u16_t pn);
 
 #endif // End of __LAMBDACHIP_PRIMITIVE_H__

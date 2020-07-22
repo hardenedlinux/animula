@@ -18,7 +18,7 @@
 #include "primitives.h"
 #include "lib.h"
 
-prim_t __prim_table[PRIM_MAX] = {0};
+GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 void primitives_init (void)
 {
@@ -38,11 +38,20 @@ char *prim_name (u16_t pn)
       panic ("prim_name halt\n");
     }
 
-  return __prim_table[pn]->name;
+  return GLOBAL_REF (prim_table)[pn]->name;
 }
 #endif
 
 prim_t get_prim (u16_t pn)
 {
-  return __prim_table[pn];
+  return GLOBAL_REF (prim_table)[pn];
+}
+
+void primitives_clean (void)
+{
+  for (int i = int_add; i <= object_print; i++)
+    {
+      os_free (GLOBAL_REF (prim_table)[i]);
+      GLOBAL_REF (prim_table)[i] = NULL;
+    }
 }

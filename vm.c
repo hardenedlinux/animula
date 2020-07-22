@@ -377,10 +377,23 @@ void vm_init (vm_t vm)
   vm->cc = NULL;
   vm->sp = 0;
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
+  vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;
+}
+
+void vm_clean (vm_t vm)
+{
+  os_free (vm->code);
+  vm->code = NULL;
+
+  os_free (vm->data);
+  vm->data = NULL;
+
+  os_free (vm->stack);
+  vm->stack = NULL;
 }
 
 void vm_load_lef (vm_t vm, lef_t lef)

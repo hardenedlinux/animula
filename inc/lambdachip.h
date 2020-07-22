@@ -28,5 +28,6 @@
 #include "vm.h"
 
 vm_t lambdachip_init (void);
+void lambdachip_clean (vm_t vm);
 void lambdachip_start (void);
 #endif // End of __LAMBDACHIP_H__
