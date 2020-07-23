@@ -27,7 +27,8 @@
 
 typedef enum prim_num
 {
-  int_add = 2,
+  ret = 1,
+  int_add,
   int_sub,
   int_mul,
   int_div,
@@ -48,11 +49,13 @@ typedef struct Primitive
 
 extern GLOBAL_DEF (prim_t, prim_table[]);
 
-#define ARITH_PRIM()                        \
-  arith_prim_t fn = (arith_prim_t)prim->fn; \
-  Object x = POPx (Object);                 \
-  Object y = POPx (Object);                 \
-  PUSH (fn ((s32_t)x.value, (s32_t)y.value));
+#define ARITH_PRIM()                                              \
+  arith_prim_t fn = (arith_prim_t)prim->fn;                       \
+  Object x = POPx (Object);                                       \
+  Object y = POPx (Object);                                       \
+  Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL}; \
+  z.value = (void *)fn ((s32_t)x.value, (s32_t)y.value);          \
+  PUSHx (Object, z);
 
 #define PRIM_MAX 10
 

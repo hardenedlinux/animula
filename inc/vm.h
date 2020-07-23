@@ -32,8 +32,15 @@ typedef enum vm_state
   VM_RUN,
   VM_STOP,
   VM_PAUSE,
-  VM_GC
+  VM_GC,
+  VM_POP
 } vm_state_t;
+
+typedef enum vm_op
+{
+  VM_PUSH = 0,
+  VM_POP
+} vm_op_t;
 
 typedef struct LambdaVM
 {
@@ -82,6 +89,13 @@ typedef struct LambdaVM
     }                                         \
   while (0)
 
+/* NOTE:
+ * 1. frame[0] is return address, so the offset begins from 1
+ * 2. The type of frame[offset] is void*
+ */
+#define LOCAL(offset)           (vm->stack[vm->fp + (offset) + 1])
+#define FREE_VAR(frame, offset) (vm->stack[vm->stack[frame] + (offset) + 1])
+
 #define PUSH_FROM_SS(bc)             \
   do                                 \
     {                                \
@@ -96,9 +110,19 @@ typedef struct LambdaVM
       PUSH (NEXT_DATA ());       \
     }
 
+/* NOTE:
+ * Jump to code[offset]
+ */
+#define JUMP(offset)     \
+  do                     \
+    {                    \
+      vm->pc = (offset); \
+    }                    \
+  while (0)
+
 /* Convention:
  * 1. Save sp to fp to restore the last frame
- * 2. Save pc to [fp] as the return address
+ * 2. Save pc to stack[fp] as the return address
  */
 #define SAVE_ENV()                \
   do                              \

@@ -104,31 +104,33 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
 {
   switch (bc.type)
     {
-    case PUSH_SMALL_CONST:
+    case LOCAL_REF:
       {
-        /* Push bc.data to the current stack top */
-        VM_DEBUG ("(push-4bit-const %d)\n", bc.data);
-        PUSH (bc.data);
+        VM_DEBUG ("(local %d)\n", bc.data);
+        object_t obj = (object_t)LOCAL (bc.data);
+        PUSHx (Object, *obj);
         break;
       }
-    case LOAD_SS_SMALL:
+    case LOCAL_REF_EXTEND:
       {
-        /* Load small offset from static stack, 0<= offset <=31 */
-        VM_DEBUG ("(ss-load-4bit-const %d)\n", bc.data);
-        PUSH_FROM_SS (bc);
+        VM_DEBUG ("(local %d)\n", bc.data);
+        object_t obj = (object_t)LOCAL (bc.data + 16);
+        PUSHx (Object, *obj);
         break;
       }
-    case PUSH_GLOBAL:
+    case FREE_REF:
       {
-        u8_t global = global_get (bc.data);
-        VM_DEBUG ("(global-ref %d)\n", global);
-        PUSH (global);
+        u8_t frame = NEXT_DATA ();
+        VM_DEBUG ("(free %x %d)\n", frame, bc.data);
+        object_t obj = (object_t)FREE_VAR (frame, bc.data);
+        PUSHx (Object, *obj);
         break;
       }
-    case SET_GLOBAL:
+    case FREE_REF_EXTEND:
       {
-        VM_DEBUG ("(global-set! %d %d)\n", bc.data, TOP ());
-        global_set (bc.data, POP ());
+        VM_DEBUG ("(free %d)\n", bc.data);
+        object_t obj = (object_t)LOCAL (bc.data + 16);
+        PUSHx (Object, *obj);
         break;
       }
     case CALL_CLOSURE:
@@ -141,26 +143,23 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
         jump_closure (vm, closure);
         break;
       }
-    case JUMP_CLOSURE:
+    case POP_NEXT:
       {
-        closure_t closure = (closure_t)ss_read_u32 (POP ());
-        VM_DEBUG ("(jump-closure 0x%p)\n", closure);
-        // bc.data is the number of arguments
-        HANDLE_ARITY (bc.data);
-        jump_closure (vm, closure);
+        VM_DEBUG ("(pop-next %d)\n", bc.data);
+        // bc.data is the number of popped bytes
         break;
       }
-    case JUMP:
+    case JMP:
       {
-        VM_DEBUG ("(jump 0x%x)\n", bc.data);
+        VM_DEBUG ("(jmp 0x%x)\n", bc.data);
         // relative jump, bc.data is the offset
         vm->pc += bc.data;
         break;
       }
-    case JUMP_FALSE:
+    case JMP_FALSE:
       {
         object_t obj = (object_t)ss_read_u32 (TOP ());
-        VM_DEBUG ("(jump-tos-false 0x%x 0x%p)\n", bc.data, obj);
+        VM_DEBUG ("(jmp-tos-false 0x%x 0x%p)\n", bc.data, obj);
         if (object_is_false (obj))
           {
             vm->sp++;
@@ -180,20 +179,14 @@ static inline void interp_double_encode (vm_t vm, bytecode16_t bc)
 {
   switch (bc.type)
     {
-    case PUSH_8BIT_CONST:
-      {
-        VM_DEBUG ("(push-8bit-const %d)\n", bc.data);
-        PUSH (bc.data);
-        break;
-      }
-    case LONG_JUMP:
-      {
-        VM_DEBUG ("(long-jump 0x%x)\n", bc.data);
-        u16_t offset = ss_read_u16 (bc.data) + 128;
-        vm->pc += offset;
-        break;
-      }
-    case LONG_JUMP_TOS:
+    /* case LONG_JMP: */
+    /*   { */
+    /*     VM_DEBUG ("(long-jmp 0x%x)\n", bc.data); */
+    /*     u16_t offset = ss_read_u16 (bc.data) + 128; */
+    /*     vm->pc += offset; */
+    /*     break; */
+    /*   } */
+    case LONG_JMP_TOS:
       {
         object_t obj = (object_t)ss_read_u32 (TOP ());
         VM_DEBUG ("(long-jump-tos-false 0x%x 0x%p)\n", bc.data, obj);
@@ -238,11 +231,10 @@ static inline void interp_triple_encode (vm_t vm, bytecode24_t bc)
     {
     case CALL_PROC:
       {
-        closure_t proc = (closure_t)ss_read_u32 (bc.bc3);
-        VM_DEBUG ("(call-proc %d 0x%p)\n", bc.bc2, proc);
+        VM_DEBUG ("(call-proc 0x%x %d)\n", bc.bc3, bc.bc2);
         SAVE_ENV ();
         HANDLE_ARITY (bc.bc2);
-        call_proc (vm, proc);
+        JUMP (bc.bc3);
         break;
       }
     case PUSH_16BIT_CONST:
@@ -285,6 +277,11 @@ static inline void call_prim (vm_t vm, pn_t pn)
 
   switch (pn)
     {
+    case ret:
+      {
+        vm->pc = vm->fp;
+        break;
+      }
     case int_add:
     case int_sub:
     case int_mul:
@@ -298,6 +295,7 @@ static inline void call_prim (vm_t vm, pn_t pn)
         printer_prim_t fn = (printer_prim_t)prim->fn;
         Object obj = POPx (Object);
         fn (&obj);
+        PUSH (NONE_OBJ); // return NONE object
         break;
       }
     default:
@@ -374,6 +372,7 @@ void vm_init (vm_t vm)
   os_memset (vm, 0, sizeof (struct LambdaVM));
   vm->fetch_next_bytecode = fetch_next_bytecode;
   vm->state = VM_RUN;
+  vm->op = VM_PUSH;
   vm->cc = NULL;
   vm->sp = 0;
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));

@@ -36,25 +36,28 @@
  * ---------------------------------------------------------------
 
  * Limits:
- * 1. The max size of stack frame is 256
+ * 1. The max offset of local is 32
+ * 2. The max offset of free is 256
 
  -> single encode
- 0000xxxx                      Push constant x
- 0001xxxx                      Push element from ss[x]
- 0010xxxx                      Push next bytecode to global offset xxxx
- 0011xxxx                      Set TOS to global
+ 0000xxxx                      Ref local [x]
+ 0001xxxx                      Ref local [x + 16]
  0100xxxx                      Call closure at TOS with x arguments
- 0101xxxx                      Jump to closure at TOS with x arguments
+ 0101xxxx                      Pop next x bytes
  0110xxxx                      Jump to entry point at address pc + x
  0111xxxx                      Go to address pc + x if TOS is false
 
+ -> special double encoding
+ 0010 xxxx aaaaaaaa             Ref free [local[x] + a]
+ 0011 xxxx aaaaaaaa             Ref free [local[x + 16] + a]
+
  -> double encoding (start from 1010)
- 1010 0000 xxxxxxxx             Push constant u8 x
+ 1010 0000 xxxxxxxx             Push next bytecode to global offset xxxxxxxx
  1010 0001 xxxxxxxx             Long jump to HSA
  1010 0010 xxxxxxxx             Go to HSA if TOS is false, ss32[x] is the offset
  1010 0011 xxxxxxxx             Build a closure with entry point ss[x] to TOS
  1010 0100 xxxxxxxx             Pop constant from ss[x] to TOS
- 1010 0101 xxxxxxxx             Push constant s8 x
+ 1010 0101 xxxxxxxx             Set TOS to global
  1010 0110 xxxxxxxx             Reserved
  1010 0111 xxxxxxxx             Reserved
  1010 1000 xxxxxxxx             Reserved
@@ -63,8 +66,8 @@
  1010 1111 xxxxxxxx             Reserved
 
  -> triple encoding (start from 1011)
- 1011 0000 nnnnnnnn xxxxxxxx    Call procedure at address ss[x] with n args
- 1011 0001 xxxxxxxx xxxxxxxx    Push s16 constant x
+ 1011 0000 nnnnnnnn xxxxxxxx    Call procedure at address code[x] with n args
+ 1011 0001 xxxxxxxx xxxxxxxx    Same, but address os code[x + 256]
  1011 0010 xxxxxxxx iiiiiiii    Vector ss[x] ref i
  1011 0011 xxxxxxxx xxxxxxxx    Push u16 constant x
  1011 0100 xxxxxxxx xxxxxxxx    Reserved
@@ -83,17 +86,16 @@
  1001
 
  -> Speical encoding
- 1100xxxx                       Basic primitives (+, return, get-cont, ...)
- 1101xxxx xxxxxxxx              Extended primitives
+ 1100xxxx                  Basic primitives (+, return, get-cont, ...)
+ 1101xxxx xxxxxxxx         Extended primitives
 
- 1110xxxx [xxxxxxxx]            Object encoding
- 11100000                       Boolean false
- 11100001                       Boolean true
- 11100010 tttttttt              General object: t is the type, see object.h
- 11100011 cccccccc              Char object: c: 0~256 (no UTF-8)
- 11100100                       Empty list, '() in Scheme
- 11100101                       None object, undefined in JS, unspecified in
- Scheme
+ 1110xxxx [xxxxxxxx]       Object encoding
+ 11100000                  Boolean false
+ 11100001                  Boolean true
+ 11100010 tttttttt         General object: t is the type, see object.h
+ 11100011 cccccccc         Char object: c: 0~256 (no UTF-8)
+ 11100100                  Empty list, '() in Scheme
+ 11100101                  None object, undefined in JS, unspecified in Scheme
 
  1111xxxx xxxxxxxx              Reserved
  11111111                       Halt
@@ -105,23 +107,21 @@
 #define QUADRUPLE_ENCODE(bc) (0b0010 == (bc).type)
 #define IS_SPECIAL(bc)       (0b1100 & (bc).type)
 
-// small encode
-#define PUSH_SMALL_CONST 0
-#define LOAD_SS_SMALL    1
-
 // single encode
-#define PUSH_GLOBAL  0b0010
-#define SET_GLOBAL   0b0011
-#define CALL_CLOSURE 0b0100
-#define JUMP_CLOSURE 0b0101
-#define JUMP         0b0110
-#define JUMP_FALSE   0b0111
+#define LOCAL_REF        0b0000
+#define LOCAL_REF_EXTEND 0b0001
+#define FREE_REF         0b0010
+#define FREE_REF_EXTEND  0b0011
+#define CALL_CLOSURE     0b0100
+#define POP_NEXT         0b0101
+#define JMP              0b0110
+#define JMP_FALSE        0b0111
 
 // double encode
 #define PUSH_8BIT_CONST 0b0000
-#define LONG_JUMP       0b0001
-#define LONG_JUMP_TOS   0b0010
-#define MAKE_CLOSURE    0b0011
+//#define LONG_JMP        0b0001
+#define LONG_JMP_TOS 0b0010
+#define MAKE_CLOSURE 0b0011
 
 // triple encode
 #define CALL_PROC        0b0000
@@ -135,6 +135,9 @@
 #define PRIMITIVE 0b1100
 #define OBJECT    0b1110
 #define HALT      0xff
+
+// None object, undefined in JS, unspecified in Scheme
+#define NONE_OBJ 0b11100101
 
 typedef enum encode_type
 {
