@@ -28,10 +28,14 @@
  * We need to check them with pointer by the unified interface,
  * so don't use enum.
  */
-const u8_t true_const = 0;
-const u8_t false_const = 1;
-const u8_t null_const = 2;
-const u8_t none_const = 3;
+GLOBAL_DEF (const Object, true_const)
+  = {.attr = {.type = boolean, .gc = 0}, .value = (void *)1};
+GLOBAL_DEF (const Object, false_const)
+  = {.attr = {.type = boolean, .gc = 0}, .value = NULL};
+GLOBAL_DEF (const Object, null_const)
+  = {.attr = {.type = null_obj, .gc = 0}, .value = NULL};
+GLOBAL_DEF (const Object, none_const)
+  = {.attr = {.type = none, .gc = 0}, .value = NULL};
 
 void init_predefined_objects (void) {}
 
@@ -46,15 +50,17 @@ void free_object (object_t obj)
     case list:
     case symbol:
     case continuation:
-      gc_free (obj->value);
-      break;
+      {
+        gc_free (obj->value);
+        obj->value = NULL;
+        break;
+      }
     default:
       break;
     }
-
   /* We should set value to NULL here, since obj is not guarrenteed to be
-   * freed by GC, since it could be recycled by the pool.
+   * freed by GC, and it could be recycled by the pool.
    */
-  obj->value = NULL;
-  gc_free ((void *)obj);
+  gc_free (obj);
+  obj = NULL;
 }

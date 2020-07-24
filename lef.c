@@ -62,6 +62,7 @@ lef_t load_lef_from_uart ()
       lef->body[i] = ch;
     }
 
+  lef->entry = lef_entry (lef);
   os_printk ("Done\n");
 
   return lef;
@@ -98,6 +99,7 @@ lef_t load_lef_from_file (const char *filename)
   lef->body = (u8_t *)os_malloc (size);
 
   os_read (fd, lef->body, size);
+  lef->entry = lef_entry (lef);
 
   VM_DEBUG ("Done\n");
 

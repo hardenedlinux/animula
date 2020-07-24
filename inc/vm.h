@@ -32,21 +32,20 @@ typedef enum vm_state
   VM_RUN,
   VM_STOP,
   VM_PAUSE,
-  VM_GC,
-  VM_POP
+  VM_GC
 } vm_state_t;
-
-typedef enum vm_op
-{
-  VM_PUSH = 0,
-  VM_POP
-} vm_op_t;
 
 typedef struct LambdaVM
 {
   u32_t pc; // program counter
   u32_t sp; // stack pointer, move when objects pushed
   u32_t fp; // last frame pointer, move when env was created
+  /* NOTE:
+   * The prelude would pre-execute before the actual call, so the local frame
+   * was hidden by prelude, that's why we need a `local' to record the acutal
+   * frame.
+   */
+  u32_t local; // local frame
   vm_state_t state;
   cont_t cc; // current continuation
   bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);
@@ -67,34 +66,49 @@ typedef struct LambdaVM
     }                                          \
   while (0)
 
+// NOTE: vm->sp always points to the first blank
 #define PUSH(data)                  \
   do                                \
     {                               \
-      vm->stack[++vm->sp] = (data); \
+      vm->stack[vm->sp++] = (data); \
     }                               \
   while (0)
 
-#define TOP() (vm->stack[vm->sp])
+#define TOP() (vm->stack[vm->sp - 1])
 
-#define POP() (vm->stack[vm->sp--])
+#define POP() (vm->stack[--vm->sp])
 
-#define TOPx(t) (((t *)vm->stack)[vm->sp])
+#define TOPx(t, size) (*((t *)(vm->stack + vm->sp - size)))
 
-#define POPx(t) (((t *)vm->stack)[vm->sp--])
+#define POPx(t, size)             \
+  ({                              \
+    vm->sp -= size;               \
+    *((t *)(vm->stack + vm->sp)); \
+  })
 
-#define PUSHx(t, data)                        \
-  do                                          \
-    {                                         \
-      ((t *)vm->stack)[++vm->sp] = ((t)data); \
-    }                                         \
+#define PUSHx(t, size, data)                    \
+  do                                            \
+    {                                           \
+      *((t *)(vm->stack + vm->sp)) = ((t)data); \
+      vm->sp += size;                           \
+    }                                           \
   while (0)
 
+#define PUSH_OBJ(obj) PUSHx (Object, sizeof (Object), obj)
+#define POP_OBJ()     POPx (Object, sizeof (Object))
+#define TOP_OBJ()     TOPx (Object, sizeof (Object))
+
 /* NOTE:
- * 1. frame[0] is return address, so the offset begins from 1
+ * 1. frame[0] is return address, frame[1] is the last fp, so the actual offset
+      begins from 2
  * 2. The type of frame[offset] is void*
  */
-#define LOCAL(offset)           (vm->stack[vm->fp + (offset) + 1])
-#define FREE_VAR(frame, offset) (vm->stack[vm->stack[frame] + (offset) + 1])
+#define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
+/* #define LOCAL_CALL(offset) \ */
+/*   (vm->stack + vm->stack[vm->fp + 1] + 2 + offset * sizeof (Object)) */
+
+#define FREE_VAR(frame, offset) \
+  (object_t) (&vm->stack[vm->stack[frame] + (offset) + 2])
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \
@@ -104,10 +118,10 @@ typedef struct LambdaVM
     }                                \
   while (0)
 
-#define HANDLE_ARITY(data)       \
-  for (int i = 0; i < data; i++) \
-    {                            \
-      PUSH (NEXT_DATA ());       \
+#define HANDLE_ARITY(data)         \
+  for (hov_t i = 0; i < data; i++) \
+    {                              \
+      PUSH (NEXT_DATA ());         \
     }
 
 /* NOTE:
@@ -120,17 +134,151 @@ typedef struct LambdaVM
     }                    \
   while (0)
 
+/* NOTE:
+ * The pc+1 should be store here, since it's the next instruction.
+ */
+#define PROC_CALL(offset)             \
+  do                                  \
+    {                                 \
+      vm->stack[vm->fp] = vm->pc + 1; \
+      vm->local = vm->fp + 2;         \
+      JUMP (offset);                  \
+    }                                 \
+  while (0)
+
 /* Convention:
  * 1. Save sp to fp to restore the last frame
  * 2. Save pc to stack[fp] as the return address
+
+ stack
+ +----------+---> fp
+ | ret_addr |
+ +----------+
+ | last_fp  |
+ +----------+---> local
+ | local 0  |
+ +----------+
+ | local 1  |
+ +----------+
+ | local 2  |
+ +----------+---> sp
+
+*/
+
+#define PLACEHOLD 0
+/* The pc should be stored before jump, here we just fill it with a placeholder.
  */
-#define SAVE_ENV()                \
-  do                              \
-    {                             \
-      vm->fp = vm->sp;            \
-      vm->stack[vm->fp] = vm->pc; \
-    }                             \
+#define SAVE_ENV()         \
+  do                       \
+    {                      \
+      PUSH (PLACEHOLD);    \
+      PUSH (vm->fp);       \
+      vm->fp = vm->sp - 2; \
+    }                      \
   while (0)
+
+#define CALL_PROCEDURE(obj)                \
+  do                                       \
+    {                                      \
+      u32_t offset = (u32_t) (obj)->value; \
+      SAVE_ENV ();                         \
+      PROC_CALL (offset);                  \
+    }                                      \
+  while (0)
+
+#define CALL_PRIMITIVE(obj)                      \
+  do                                             \
+    {                                            \
+      uintptr_t prim = (uintptr_t) (obj)->value; \
+      call_prim (vm, prim);                      \
+    }                                            \
+  while (0)
+
+#define CALL(obj)                                                    \
+  do                                                                 \
+    {                                                                \
+      switch (obj->attr.type)                                        \
+        {                                                            \
+        case procedure:                                              \
+          {                                                          \
+            CALL_PROCEDURE (obj);                                    \
+            break;                                                   \
+          }                                                          \
+        case primitive:                                              \
+          {                                                          \
+            CALL_PRIMITIVE (obj);                                    \
+            break;                                                   \
+          }                                                          \
+        default:                                                     \
+          {                                                          \
+            os_printk ("Not a callable type %d!\n", obj->attr.type); \
+            panic ("VM panic!");                                     \
+          }                                                          \
+        }                                                            \
+    }                                                                \
+  while (0)
+
+static inline void call_prim (vm_t vm, pn_t pn)
+{
+  prim_t prim = get_prim (pn);
+
+  switch (pn)
+    {
+    case ret:
+      {
+        // printf ("ret sp: %d, fp: %d\n", vm->sp, vm->fp);
+        for (int i = 0; i < 2; i++)
+          {
+            /* NOTE:
+             * ret is a special primitive that implies it's the tail call.
+             * So we pop twice to skip its own prelude to restore the last
+             * frame.
+             */
+            vm->sp = vm->fp + 2;
+            vm->fp = POP ();
+            vm->pc = POP ();
+            vm->local = vm->fp + 2;
+            // printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
+            // vm->pc);
+          }
+        break;
+      }
+    case int_add:
+    case int_sub:
+    case int_mul:
+    case int_div:
+      {
+        ARITH_PRIM ();
+        break;
+      }
+    case object_print:
+      {
+        printer_prim_t fn = (printer_prim_t)prim->fn;
+        Object obj = POP_OBJ ();
+        fn (&obj);
+        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        break;
+      }
+    default:
+      os_printk ("Invalid prim number: %d\n", pn);
+    }
+}
+
+static inline uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
+{
+#if defined LAMBDACHIP_BIG_ENDIAN
+  buf[0] = NEXT_DATA ();
+  buf[1] = NEXT_DATA ();
+  buf[2] = NEXT_DATA ();
+  buf[3] = NEXT_DATA ();
+#else
+  buf[3] = NEXT_DATA ();
+  buf[2] = NEXT_DATA ();
+  buf[1] = NEXT_DATA ();
+  buf[0] = NEXT_DATA ();
+#endif
+  return *((uintptr_t *)buf);
+}
 
 void vm_init (vm_t vm);
 void vm_clean (vm_t vm);

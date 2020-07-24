@@ -77,6 +77,11 @@
 #  define LAMBDACHIP_BITS_BIG
 #endif
 
+// __LLP64__ is for Windows, even it's GCC
+#if defined(__LP64__) || defined(__LLP64__)
+#  define ADDRESS_64
+#endif
+
 #define GLOBAL_REF(k) ____lambdachip_global_var_##k
 
 #define GLOBAL_DEF(t, k) t GLOBAL_REF (k)

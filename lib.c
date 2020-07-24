@@ -43,7 +43,7 @@ void _object_print (object_t obj)
     {
     case imm_int:
       {
-        os_printk ("%d", *((s32_t *)obj->value));
+        os_printk ("%d", (s32_t)obj->value);
         break;
       }
     case string:

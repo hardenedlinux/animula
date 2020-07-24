@@ -22,6 +22,12 @@
 #include "types.h"
 
 /*
+ * NOTE:
+ * Mostly, LambdaChip supports 32bit MCU, so the object uses 32bit encoding.
+ * When the platform is 64bit, then the object encoding is 64bit, however, we
+ * don't bother to show it here.
+
+
   Type:             0                     15                     31
   |                 |                      |                      |
   0.  Imm Int       |              32bit signed int               |
@@ -32,9 +38,10 @@
   5.  Vector        |      length          |      content         |
   6.  Continuation  |      parent          |      closure         |
   7.  List          |      length          |      content         |
-  8.  String        |      C-string encoding
-
-  127.    N/A       |      const encoding                         |
+  8.  String        |      C-string encoding                      |
+  9.  Procedure     |      codeseg offset                         |
+  10. Primitive     |      primitive number                       |
+  63.    N/A       |       const encoding                         |
 */
 
 typedef enum obj_encoding
@@ -58,15 +65,24 @@ typedef enum obj_type
   continuation,
   list,
   string,
-  special = 127
+  procedure,
+  primitive,
+
+  boolean = 61,
+  null_obj = 62,
+  none = 63
 } otype_t;
 
 #define MAX_STR_LEN 256
 
-extern const u8_t true_const;
-extern const u8_t false_const;
-extern const u8_t null_const;
-extern const u8_t none_const;
+#if defined ADDRESS_64
+typedef s32_t imm_int_t;
+// hov stands for half-of-value
+typedef u32_t hov_t;
+#else
+typedef s16_t imm_int_t;
+typedef u16_t hov_t;
+#endif
 
 typedef union ObjectAttribute
 {
@@ -88,20 +104,30 @@ typedef union Continuation
 {
   struct
   {
+#ifndef ADDRESS_64
     unsigned parent : 16;  // the offset in ss to store parent
     unsigned closure : 16; // the offset in ss to store closure
+#else
+    unsigned parent : 32;
+    unsigned closure : 32;
+#endif
   };
-  u32_t all;
+  uintptr_t all;
 } __packed *cont_t;
 
 typedef union Closure
 {
   struct
   {
+#ifndef ADDRESS_64
     unsigned env : 16;   // the offset in ss to env
     unsigned entry : 16; // the offset in ss to entry
+#else
+    unsigned env : 32;
+    unsigned entry : 32;
+#endif
   };
-  u32_t all;
+  uintptr_t all;
 } __packed *closure_t;
 
 typedef struct Vector
@@ -119,18 +145,17 @@ typedef struct ObjectList
   object_t obj;
 } __packed obj_list_t;
 
-static inline bool object_is_false (object_t obj)
+/* NOTE: All objects are stored in stack by copying, so we can't just compared
+ *       the head pointer.
+ */
+static inline bool is_false (object_t obj)
 {
-  panic ("object_is_false hasn't been implemented yet\n");
-  // return (boolean == obj->attr.type) && (obj->value == (void*)&true_const);
-  return false;
+  return ((boolean == obj->attr.type) && (NULL == obj->value));
 }
 
-static inline bool object_is_true (object_t obj)
+static inline bool is_true (object_t obj)
 {
-  panic ("object_is_false hasn't been implemented yet\n");
-  return false;
-  // return !object_is_false(obj);
+  return !is_false (obj);
 }
 
 static inline u8_t vector_ref (vec_t vec, u8_t index)
@@ -149,6 +174,12 @@ static inline void vector_set (vec_t vec, u8_t index, object_t value)
 {
   // TODO
 }
+
+extern GLOBAL_DEF (const Object, true_const);
+extern GLOBAL_DEF (const Object, false_const);
+extern GLOBAL_DEF (const Object, null_const);
+// None object, undefined in JS, unspecified in Scheme
+extern GLOBAL_DEF (const Object, none_const);
 
 void init_predefined_objects (void);
 void free_object (object_t obj);

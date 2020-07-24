@@ -42,18 +42,18 @@
  -> single encode
  0000xxxx                      Ref local [x]
  0001xxxx                      Ref local [x + 16]
- 0100xxxx                      Call closure at TOS with x arguments
- 0101xxxx                      Pop next x bytes
- 0110xxxx                      Jump to entry point at address pc + x
- 0111xxxx                      Go to address pc + x if TOS is false
+ 0100xxxx                      Call local [x]
+ 0101xxxx                      Call local [x + 16]
 
  -> special double encoding
  0010 xxxx aaaaaaaa             Ref free [local[x] + a]
  0011 xxxx aaaaaaaa             Ref free [local[x + 16] + a]
+ 0110 xxxx aaaaaaaa             Call free [local[x] + a]
+ 0111 xxxx aaaaaaaa             Call free [local[x + 16] + a]
 
  -> double encoding (start from 1010)
- 1010 0000 xxxxxxxx             Push next bytecode to global offset xxxxxxxx
- 1010 0001 xxxxxxxx             Long jump to HSA
+ 1010 0000 nnnnnnnn             Prelude with n args
+ 1010 0001 xxxxxxxx             Jump to code[x]
  1010 0010 xxxxxxxx             Go to HSA if TOS is false, ss32[x] is the offset
  1010 0011 xxxxxxxx             Build a closure with entry point ss[x] to TOS
  1010 0100 xxxxxxxx             Pop constant from ss[x] to TOS
@@ -66,7 +66,7 @@
  1010 1111 xxxxxxxx             Reserved
 
  -> triple encoding (start from 1011)
- 1011 0000 nnnnnnnn xxxxxxxx    Call procedure at address code[x] with n args
+ 1011 0000 nnnnnnnn xxxxxxxx    Reserved
  1011 0001 xxxxxxxx xxxxxxxx    Same, but address os code[x + 256]
  1011 0010 xxxxxxxx iiiiiiii    Vector ss[x] ref i
  1011 0011 xxxxxxxx xxxxxxxx    Push u16 constant x
@@ -108,25 +108,21 @@
 #define IS_SPECIAL(bc)       (0b1100 & (bc).type)
 
 // single encode
-#define LOCAL_REF        0b0000
-#define LOCAL_REF_EXTEND 0b0001
-#define FREE_REF         0b0010
-#define FREE_REF_EXTEND  0b0011
-#define CALL_CLOSURE     0b0100
-#define POP_NEXT         0b0101
-#define JMP              0b0110
-#define JMP_FALSE        0b0111
+#define LOCAL_REF         0b0000
+#define LOCAL_REF_EXTEND  0b0001
+#define FREE_REF          0b0010
+#define FREE_REF_EXTEND   0b0011
+#define CALL_LOCAL        0b0100
+#define CALL_LOCAL_EXTEND 0b0101
+#define CALL_FREE         0b0110
+#define CALL_FREE_EXTEND  0b0111
 
 // double encode
-#define PUSH_8BIT_CONST 0b0000
-//#define LONG_JMP        0b0001
-#define LONG_JMP_TOS 0b0010
-#define MAKE_CLOSURE 0b0011
+#define PRELUDE   0b0000
+#define CALL_PROC 0b0001
+//#define JMP     0b0001
 
-// triple encode
-#define CALL_PROC        0b0000
-#define PUSH_16BIT_CONST 0b0001
-#define VEC_REF          0b0010
+#define VEC_REF 0b0010
 
 // quadruple encoding
 #define VEC_SET 0b0000
@@ -135,9 +131,6 @@
 #define PRIMITIVE 0b1100
 #define OBJECT    0b1110
 #define HALT      0xff
-
-// None object, undefined in JS, unspecified in Scheme
-#define NONE_OBJ 0b11100101
 
 typedef enum encode_type
 {

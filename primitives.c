@@ -22,6 +22,7 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 void primitives_init (void)
 {
+  def_prim (0, "ret", 1, NULL); // never called
   def_prim (2, "add", 2, (void *)_int_add);
   def_prim (3, "sub", 2, (void *)_int_sub);
   def_prim (4, "mul", 2, (void *)_int_mul);
