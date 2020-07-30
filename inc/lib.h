@@ -19,6 +19,7 @@
 
 #include "debug.h"
 #include "object.h"
+#include "primitives.h"
 #include "types.h"
 
 s32_t _int_add (s32_t x, s32_t y);

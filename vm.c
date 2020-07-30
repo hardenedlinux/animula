@@ -49,7 +49,7 @@ static inline void generate_object (vm_t vm, object_t obj)
       {
         u8_t buf[4] = {0};
         imm_int_t value = vm_get_uintptr (vm, buf);
-        VM_DEBUG ("(general-object-encode %d)\n", value);
+        VM_DEBUG ("(push-integer-object %d)\n", value);
         obj->value = (void *)value;
         break;
       }

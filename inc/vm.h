@@ -137,13 +137,13 @@ typedef struct LambdaVM
 /* NOTE:
  * The pc+1 should be store here, since it's the next instruction.
  */
-#define PROC_CALL(offset)             \
-  do                                  \
-    {                                 \
-      vm->stack[vm->fp] = vm->pc + 1; \
-      vm->local = vm->fp + 2;         \
-      JUMP (offset);                  \
-    }                                 \
+#define PROC_CALL(offset)         \
+  do                              \
+    {                             \
+      vm->stack[vm->fp] = vm->pc; \
+      vm->local = vm->fp + 2;     \
+      JUMP (offset);              \
+    }                             \
   while (0)
 
 /* Convention:
@@ -165,7 +165,7 @@ typedef struct LambdaVM
 
 */
 
-#define PLACEHOLD 0
+#define PLACEHOLD 123
 /* The pc should be stored before jump, here we just fill it with a placeholder.
  */
 #define SAVE_ENV()         \
@@ -181,7 +181,6 @@ typedef struct LambdaVM
   do                                       \
     {                                      \
       u32_t offset = (u32_t) (obj)->value; \
-      SAVE_ENV ();                         \
       PROC_CALL (offset);                  \
     }                                      \
   while (0)
@@ -190,6 +189,8 @@ typedef struct LambdaVM
   do                                             \
     {                                            \
       uintptr_t prim = (uintptr_t) (obj)->value; \
+      vm->stack[vm->fp] = vm->pc;                \
+      vm->local = vm->fp + 2;                    \
       call_prim (vm, prim);                      \
     }                                            \
   while (0)
@@ -226,7 +227,7 @@ static inline void call_prim (vm_t vm, pn_t pn)
     {
     case ret:
       {
-        // printf ("ret sp: %d, fp: %d\n", vm->sp, vm->fp);
+        // printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
         for (int i = 0; i < 2; i++)
           {
             /* NOTE:
