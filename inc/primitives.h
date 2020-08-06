@@ -35,7 +35,7 @@ typedef enum prim_num
   object_print
 } pn_t;
 
-typedef u8_t (*arith_prim_t) (u8_t, u8_t);
+typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
 
 typedef struct Primitive
@@ -49,13 +49,13 @@ typedef struct Primitive
 
 extern GLOBAL_DEF (prim_t, prim_table[]);
 
-#define ARITH_PRIM()                                             \
-  arith_prim_t fn = (arith_prim_t)prim->fn;                      \
-  size_t size = sizeof (struct Object);                          \
-  Object x = POP_OBJ ();                                         \
-  Object y = POP_OBJ ();                                         \
-  Object z = {.attr = {.type = imm_int, .gc = 0}, .value = 0};   \
-  z.value = (void *)fn ((imm_int_t)x.value, (imm_int_t)y.value); \
+#define ARITH_PRIM()                                              \
+  arith_prim_t fn = (arith_prim_t)prim->fn;                       \
+  size_t size = sizeof (struct Object);                           \
+  Object x = POP_OBJ ();                                          \
+  Object y = POP_OBJ ();                                          \
+  Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL}; \
+  z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);  \
   PUSH_OBJ (z);
 
 #define PRIM_MAX 10

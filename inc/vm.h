@@ -27,6 +27,10 @@
 #include "types.h"
 #include "values.h"
 
+extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
+extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
+extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
+
 typedef enum vm_state
 {
   VM_RUN,
@@ -66,11 +70,18 @@ typedef struct LambdaVM
     }                                          \
   while (0)
 
+static inline void vm_stack_check (vm_t vm)
+{
+  if (vm->sp >= GLOBAL_REF (VM_STKSEG_SIZE))
+    panic ("Stack overflow!\n");
+}
+
 // NOTE: vm->sp always points to the first blank
 #define PUSH(data)                  \
   do                                \
     {                               \
       vm->stack[vm->sp++] = (data); \
+      vm_stack_check (vm);          \
     }                               \
   while (0)
 
@@ -91,6 +102,7 @@ typedef struct LambdaVM
     {                                           \
       *((t *)(vm->stack + vm->sp)) = ((t)data); \
       vm->sp += size;                           \
+      vm_stack_check (vm);                      \
     }                                           \
   while (0)
 
@@ -166,15 +178,34 @@ typedef struct LambdaVM
 */
 
 #define PLACEHOLD 123
-/* The pc should be stored before jump, here we just fill it with a placeholder.
+/* 1. The pc should be stored before jump, here we just fill it with a
+ *    placeholder.
+ * 2. If bc.bc2 is 0, then it's tail call.
+      If bc.bc2 is 1, then it's tail recursive.
  */
-#define SAVE_ENV()         \
-  do                       \
-    {                      \
-      PUSH (PLACEHOLD);    \
-      PUSH (vm->fp);       \
-      vm->fp = vm->sp - 2; \
-    }                      \
+#define SAVE_ENV()               \
+  do                             \
+    {                            \
+      switch (bc.bc2)            \
+        {                        \
+        case 0:                  \
+          {                      \
+            break;               \
+          }                      \
+        case 1:                  \
+          {                      \
+            vm->sp = vm->local;  \
+            break;               \
+          }                      \
+        default:                 \
+          {                      \
+            PUSH (PLACEHOLD);    \
+            PUSH (vm->fp);       \
+            vm->fp = vm->sp - 2; \
+            break;               \
+          }                      \
+        }                        \
+    }                            \
   while (0)
 
 #define CALL_PROCEDURE(obj)                \
@@ -189,8 +220,6 @@ typedef struct LambdaVM
   do                                             \
     {                                            \
       uintptr_t prim = (uintptr_t) (obj)->value; \
-      vm->stack[vm->fp] = vm->pc;                \
-      vm->local = vm->fp + 2;                    \
       call_prim (vm, prim);                      \
     }                                            \
   while (0)
@@ -219,6 +248,21 @@ typedef struct LambdaVM
     }                                                                \
   while (0)
 
+/* NOTE:
+ * ret is a special primitive that implies it's the tail call.
+ * So we pop twice to skip its own prelude to restore the last
+ * frame.
+ */
+#define RESTORE()             \
+  do                          \
+    {                         \
+      vm->sp = vm->fp + 2;    \
+      vm->fp = POP ();        \
+      vm->pc = POP ();        \
+      vm->local = vm->fp + 2; \
+    }                         \
+  while (0)
+
 static inline void call_prim (vm_t vm, pn_t pn)
 {
   prim_t prim = get_prim (pn);
@@ -230,18 +274,9 @@ static inline void call_prim (vm_t vm, pn_t pn)
         // printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
         for (int i = 0; i < 2; i++)
           {
-            /* NOTE:
-             * ret is a special primitive that implies it's the tail call.
-             * So we pop twice to skip its own prelude to restore the last
-             * frame.
-             */
-            vm->sp = vm->fp + 2;
-            vm->fp = POP ();
-            vm->pc = POP ();
-            vm->local = vm->fp + 2;
-            // printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
-            // vm->pc);
+            RESTORE ();
           }
+        // printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
         break;
       }
     case int_add:

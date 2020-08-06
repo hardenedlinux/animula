@@ -17,10 +17,6 @@
 
 #include "vm.h"
 
-extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
-extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
-extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
-
 static inline closure_t capture_closure (vm_t vm)
 {
   // TODO
@@ -443,6 +439,7 @@ void vm_run (vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
+      printf ("local: %d, sp: %d\n", vm->local, vm->sp);
       dispatch (vm, FETCH_NEXT_BYTECODE ());
     }
 }

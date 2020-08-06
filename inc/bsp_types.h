@@ -37,9 +37,9 @@ typedef signed char __s8_t;
 typedef unsigned char __u8_t;
 typedef short __s16_t;
 typedef unsigned short __u16_t;
-typedef int __s32_t;
+typedef signed int __s32_t;
 typedef unsigned int __u32_t;
-typedef long long __s64_t;
+typedef signed long long __s64_t;
 typedef unsigned long long __u64_t;
 
 // CPU word long ,pc32 is 32bit

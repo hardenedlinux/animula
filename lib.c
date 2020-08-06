@@ -17,22 +17,23 @@
 
 #include "lib.h"
 
-s32_t _int_add (s32_t x, s32_t y)
+imm_int_t _int_add (imm_int_t x, imm_int_t y)
 {
   return x + y;
 }
 
-s32_t _int_sub (s32_t x, s32_t y)
+imm_int_t _int_sub (imm_int_t x, imm_int_t y)
 {
+  printf ("%d - %d = %d\n", x, y, x - y);
   return x - y;
 }
 
-s32_t _int_mul (s32_t x, s32_t y)
+imm_int_t _int_mul (imm_int_t x, imm_int_t y)
 {
   return x + y;
 }
 
-s32_t _int_div (s32_t x, s32_t y)
+imm_int_t _int_div (imm_int_t x, imm_int_t y)
 {
   return x / y;
 }
@@ -43,7 +44,7 @@ void _object_print (object_t obj)
     {
     case imm_int:
       {
-        os_printk ("%d", (s32_t)obj->value);
+        os_printk ("%d", (imm_int_t)obj->value);
         break;
       }
     case string:

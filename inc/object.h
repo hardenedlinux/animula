@@ -76,11 +76,11 @@ typedef enum obj_type
 #define MAX_STR_LEN 256
 
 #if defined ADDRESS_64
-typedef s32_t imm_int_t;
+typedef s64_t imm_int_t;
 // hov stands for half-of-value
 typedef u32_t hov_t;
 #else
-typedef s16_t imm_int_t;
+typedef s32_t imm_int_t;
 typedef u16_t hov_t;
 #endif
 
