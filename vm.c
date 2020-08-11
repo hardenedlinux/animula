@@ -141,6 +141,7 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
          */
         u8_t frame = NEXT_DATA ();
         VM_DEBUG ("(call-free %x %d)\n", frame, bc.data);
+        // object_t obj = (object_t)FREE_VAR (frame, bc.data);
         object_t obj = (object_t)LOCAL (bc.data);
         CALL (obj);
         break;
@@ -149,7 +150,7 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         u8_t frame = NEXT_DATA ();
         VM_DEBUG ("(call-free %x %d)\n", frame, bc.data + 16);
-        object_t obj = (object_t)LOCAL (bc.data + 16);
+        object_t obj = (object_t)FREE_VAR (frame, bc.data + 16);
         CALL (obj);
         break;
       }
@@ -175,6 +176,19 @@ static inline void interp_double_encode (vm_t vm, bytecode16_t bc)
       {
         VM_DEBUG ("(call-proc 0x%x)\n", bc.bc2);
         PROC_CALL (bc.bc2);
+        break;
+      }
+    case F_JMP:
+      {
+        VM_DEBUG ("(fjump 0x%x)\n", bc.bc2);
+        Object obj = POP_OBJ ();
+
+        if (is_false (&obj))
+          {
+            VM_DEBUG ("False! Jump!\n");
+            JUMP (bc.bc2);
+          }
+
         break;
       }
     default:
@@ -254,21 +268,15 @@ static inline void interp_special (vm_t vm, bytecode8_t bc)
           case FALSE:
             {
               VM_DEBUG ("(push-boolean-false)\n");
-              /* uintptr_t b = (uintptr_t)&GLOBAL_REF (false_const); */
-              /* Object obj */
-              /*   = {.attr = {.type = boolean, .gc = 0}, .value = (void *)b};
-               */
-              /* PUSH_OBJ (obj); */
+              Object obj = GLOBAL_REF (false_const);
+              PUSH_OBJ (obj);
               break;
             }
           case TRUE:
             {
               VM_DEBUG ("(push-boolean-true)\n");
-              /* uintptr_t obj = (uintptr_t)&GLOBAL_REF (true_const); */
-              /* Object obj */
-              /*   = {.attr = {.type = boolean, .gc = 0}, .value = (void *)b};
-               */
-              /* PUSH_OBJ (obj); */
+              Object obj = GLOBAL_REF (true_const);
+              PUSH_OBJ (obj);
               break;
             }
           }
@@ -439,7 +447,7 @@ void vm_run (vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
-      printf ("local: %d, sp: %d\n", vm->local, vm->sp);
+      // printf ("local: %d, sp: %d\n", vm->local, vm->sp);
       dispatch (vm, FETCH_NEXT_BYTECODE ());
     }
 }

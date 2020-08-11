@@ -116,11 +116,12 @@ static inline void vm_stack_check (vm_t vm)
  * 2. The type of frame[offset] is void*
  */
 #define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
-/* #define LOCAL_CALL(offset) \ */
-/*   (vm->stack + vm->stack[vm->fp + 1] + 2 + offset * sizeof (Object)) */
+
+/* #define FREE_VAR(frame, offset) \ */
+/*   (object_t) (&vm->stack[vm->stack[frame] + (offset) + 2]) */
 
 #define FREE_VAR(frame, offset) \
-  (object_t) (&vm->stack[vm->stack[frame] + (offset) + 2])
+  (&((object_t) (vm->stack + vm->stack[vm->fp + 1] + 2))[offset])
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \
@@ -183,16 +184,19 @@ static inline void vm_stack_check (vm_t vm)
  * 2. If bc.bc2 is 0, then it's tail call.
       If bc.bc2 is 1, then it's tail recursive.
  */
+#define TAIL_CALL   0
+#define TAIL_REC    1
+#define NORMAL_CALL 2
 #define SAVE_ENV()               \
   do                             \
     {                            \
       switch (bc.bc2)            \
         {                        \
-        case 0:                  \
+        case TAIL_CALL:          \
           {                      \
             break;               \
           }                      \
-        case 1:                  \
+        case TAIL_REC:           \
           {                      \
             vm->sp = vm->local;  \
             break;               \

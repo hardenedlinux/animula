@@ -53,8 +53,8 @@
 
  -> double encoding (start from 1010)
  1010 0000 nnnnnnnn             Prelude with n args
- 1010 0001 xxxxxxxx             Jump to code[x]
- 1010 0010 xxxxxxxx             Go to HSA if TOS is false, ss32[x] is the offset
+ 1010 0001 xxxxxxxx             Call proc at code[x]
+ 1010 0010 xxxxxxxx             Jump to code[x] when TOS is false
  1010 0011 xxxxxxxx             Build a closure with entry point ss[x] to TOS
  1010 0100 xxxxxxxx             Pop constant from ss[x] to TOS
  1010 0101 xxxxxxxx             Set TOS to global
@@ -97,8 +97,8 @@
  11100100                  Empty list, '() in Scheme
  11100101                  None object, undefined in JS, unspecified in Scheme
 
- 1111xxxx xxxxxxxx              Reserved
- 11111111                       Halt
+ 1111xxxx xxxxxxxx         Reserved
+ 11111111                  Halt
 */
 
 #define SINGLE_ENCODE(bc)    (((bc).type >= 0) && ((bc).type <= 0b0111))
@@ -120,7 +120,7 @@
 // double encode
 #define PRELUDE   0b0000
 #define CALL_PROC 0b0001
-//#define JMP     0b0001
+#define F_JMP     0b0010
 
 #define VEC_REF 0b0010
 

@@ -41,7 +41,10 @@
   8.  String        |      C-string encoding                      |
   9.  Procedure     |      codeseg offset                         |
   10. Primitive     |      primitive number                       |
-  63.    N/A       |       const encoding                         |
+
+  61. Boolean       |      false: 0,     true: 1                  |
+  62. null_object   |                                             |
+  63.    N/A        |       const encoding                        |
 */
 
 typedef enum obj_encoding
