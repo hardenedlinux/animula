@@ -110,6 +110,31 @@ static inline void vm_stack_check (vm_t vm)
 #define POP_OBJ()     POPx (Object, sizeof (Object))
 #define TOP_OBJ()     TOPx (Object, sizeof (Object))
 
+#define PUSH_U32(obj) PUSHx (u32_t, sizeof (u32_t), obj)
+#define POP_U32()     POPx (u32_t, sizeof (u32_t))
+#define TOP_U32()     TOPx (u32_t, sizeof (u32_t))
+
+#define PUSH_U16(obj) PUSHx (u16_t, sizeof (u16_t), obj)
+#define POP_U16()     POPx (u16_t, sizeof (u16_t))
+#define TOP_U16()     TOPx (u16_t, sizeof (u16_t))
+
+#ifndef PC_SIZE
+#  define PC_SIZE 2
+#  if (4 == PC_SIZE)
+#    define PUSH_REG    PUSH_U32
+#    define POP_REG     POP_U32
+#    define NORMAL_JUMP 0xFFFFFFFF
+#  endif
+#  if (2 == PC_SIZE)
+#    define PUSH_REG    PUSH_U16
+#    define POP_REG     POP_U16
+#    define NORMAL_JUMP 0xFFFF
+#  endif
+#endif
+
+// Frame Pre-store Size = sizeof(pc) + sizeof(fp)
+#define FPS 2 * PC_SIZE
+
 /* NOTE:
  * 1. frame[0] is return address, frame[1] is the last fp, so the actual offset
       begins from 2
@@ -118,10 +143,10 @@ static inline void vm_stack_check (vm_t vm)
 #define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
 
 /* #define FREE_VAR(frame, offset) \ */
-/*   (object_t) (&vm->stack[vm->stack[frame] + (offset) + 2]) */
+/*   (object_t) (&vm->stack[vm->stack[frame] + (offset) + FPS]) */
 
 #define FREE_VAR(frame, offset) \
-  (&((object_t) (vm->stack + vm->stack[vm->fp + 1] + 2))[offset])
+  (&((object_t) (vm->stack + vm->stack[vm->fp + 1] + FPS))[offset])
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \
@@ -149,14 +174,17 @@ static inline void vm_stack_check (vm_t vm)
 
 /* NOTE:
  * The pc+1 should be store here, since it's the next instruction.
+ * If fp is not NORMAL_JUMP, then it's tail-call or tail-recursive.
+ * In this situation, we mustn't store pc.
  */
-#define PROC_CALL(offset)         \
-  do                              \
-    {                             \
-      vm->stack[vm->fp] = vm->pc; \
-      vm->local = vm->fp + 2;     \
-      JUMP (offset);              \
-    }                             \
+#define PROC_CALL(offset)                              \
+  do                                                   \
+    {                                                  \
+      if (NORMAL_JUMP == ((u32_t *)vm->stack)[vm->fp]) \
+        ((u32_t *)vm->stack)[vm->fp] = vm->pc;         \
+      vm->local = vm->fp + FPS;                        \
+      JUMP (offset);                                   \
+    }                                                  \
   while (0)
 
 /* Convention:
@@ -178,7 +206,6 @@ static inline void vm_stack_check (vm_t vm)
 
 */
 
-#define PLACEHOLD 123
 /* 1. The pc should be stored before jump, here we just fill it with a
  *    placeholder.
  * 2. If bc.bc2 is 0, then it's tail call.
@@ -187,29 +214,29 @@ static inline void vm_stack_check (vm_t vm)
 #define TAIL_CALL   0
 #define TAIL_REC    1
 #define NORMAL_CALL 2
-#define SAVE_ENV()               \
-  do                             \
-    {                            \
-      switch (bc.bc2)            \
-        {                        \
-        case TAIL_CALL:          \
-          {                      \
-            break;               \
-          }                      \
-        case TAIL_REC:           \
-          {                      \
-            vm->sp = vm->local;  \
-            break;               \
-          }                      \
-        default:                 \
-          {                      \
-            PUSH (PLACEHOLD);    \
-            PUSH (vm->fp);       \
-            vm->fp = vm->sp - 2; \
-            break;               \
-          }                      \
-        }                        \
-    }                            \
+#define SAVE_ENV()                  \
+  do                                \
+    {                               \
+      switch (bc.bc2)               \
+        {                           \
+        case TAIL_CALL:             \
+          {                         \
+            break;                  \
+          }                         \
+        case TAIL_REC:              \
+          {                         \
+            vm->sp = vm->local;     \
+            break;                  \
+          }                         \
+        default:                    \
+          {                         \
+            PUSH_REG (NORMAL_JUMP); \
+            PUSH_REG (vm->fp);      \
+            vm->fp = vm->sp - FPS;  \
+            break;                  \
+          }                         \
+        }                           \
+    }                               \
   while (0)
 
 #define CALL_PROCEDURE(obj)                \
@@ -257,68 +284,15 @@ static inline void vm_stack_check (vm_t vm)
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()             \
-  do                          \
-    {                         \
-      vm->sp = vm->fp + 2;    \
-      vm->fp = POP ();        \
-      vm->pc = POP ();        \
-      vm->local = vm->fp + 2; \
-    }                         \
+#define RESTORE()               \
+  do                            \
+    {                           \
+      vm->sp = vm->fp + FPS;    \
+      vm->fp = POP_REG ();      \
+      vm->pc = POP_REG ();      \
+      vm->local = vm->fp + FPS; \
+    }                           \
   while (0)
-
-static inline void call_prim (vm_t vm, pn_t pn)
-{
-  prim_t prim = get_prim (pn);
-
-  switch (pn)
-    {
-    case ret:
-      {
-        // printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
-        for (int i = 0; i < 2; i++)
-          {
-            RESTORE ();
-          }
-        // printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
-        break;
-      }
-    case int_add:
-    case int_sub:
-    case int_mul:
-    case int_div:
-      {
-        ARITH_PRIM ();
-        break;
-      }
-    case object_print:
-      {
-        printer_prim_t fn = (printer_prim_t)prim->fn;
-        Object obj = POP_OBJ ();
-        fn (&obj);
-        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
-        break;
-      }
-    default:
-      os_printk ("Invalid prim number: %d\n", pn);
-    }
-}
-
-static inline uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
-{
-#if defined LAMBDACHIP_BIG_ENDIAN
-  buf[0] = NEXT_DATA ();
-  buf[1] = NEXT_DATA ();
-  buf[2] = NEXT_DATA ();
-  buf[3] = NEXT_DATA ();
-#else
-  buf[3] = NEXT_DATA ();
-  buf[2] = NEXT_DATA ();
-  buf[1] = NEXT_DATA ();
-  buf[0] = NEXT_DATA ();
-#endif
-  return *((uintptr_t *)buf);
-}
 
 void vm_init (vm_t vm);
 void vm_clean (vm_t vm);

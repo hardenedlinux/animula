@@ -17,6 +17,71 @@
 
 #include "vm.h"
 
+static inline void call_prim (vm_t vm, pn_t pn)
+{
+  prim_t prim = get_prim (pn);
+
+  switch (pn)
+    {
+    case ret:
+      {
+        // printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
+        for (int i = 0; i < 2; i++)
+          {
+            RESTORE ();
+            //  printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
+            //  vm->pc);
+          }
+        break;
+      }
+    case int_add:
+    case int_sub:
+    case int_mul:
+    case int_div:
+      {
+        ARITH_PRIM ();
+        break;
+      }
+    case object_print:
+      {
+        printer_prim_t fn = (printer_prim_t)prim->fn;
+        Object obj = POP_OBJ ();
+        fn (&obj);
+        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        break;
+      }
+    case int_eq:
+      {
+        arith_prim_t fn = (arith_prim_t)prim->fn;
+        size_t size = sizeof (struct Object);
+        Object x = POP_OBJ ();
+        Object y = POP_OBJ ();
+        Object z = {.attr = {.type = boolean, .gc = 0}, .value = NULL};
+        z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);
+        PUSH_OBJ (z);
+        break;
+      }
+    default:
+      os_printk ("Invalid prim number: %d\n", pn);
+    }
+}
+
+static inline uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
+{
+#if defined LAMBDACHIP_BIG_ENDIAN
+  buf[0] = NEXT_DATA ();
+  buf[1] = NEXT_DATA ();
+  buf[2] = NEXT_DATA ();
+  buf[3] = NEXT_DATA ();
+#else
+  buf[3] = NEXT_DATA ();
+  buf[2] = NEXT_DATA ();
+  buf[1] = NEXT_DATA ();
+  buf[0] = NEXT_DATA ();
+#endif
+  return *((uintptr_t *)buf);
+}
+
 static inline closure_t capture_closure (vm_t vm)
 {
   // TODO
@@ -447,7 +512,9 @@ void vm_run (vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
-      // printf ("local: %d, sp: %d\n", vm->local, vm->sp);
+      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
+       * vm->sp, */
+      /*         vm->fp); */
       dispatch (vm, FETCH_NEXT_BYTECODE ());
     }
 }

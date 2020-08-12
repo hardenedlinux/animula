@@ -28,11 +28,14 @@
 typedef enum prim_num
 {
   ret = 0,
+
   int_add = 2,
-  int_sub,
-  int_mul,
-  int_div,
-  object_print
+  int_sub = 3,
+  int_mul = 4,
+  int_div = 5,
+  object_print = 6,
+
+  int_eq = 9
 } pn_t;
 
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);

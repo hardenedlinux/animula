@@ -16,9 +16,65 @@
  */
 
 #include "primitives.h"
-#include "lib.h"
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
+
+// primitives implementation
+
+static inline imm_int_t _int_add (imm_int_t x, imm_int_t y)
+{
+  return x + y;
+}
+
+static inline imm_int_t _int_sub (imm_int_t x, imm_int_t y)
+{
+  return x - y;
+}
+
+static inline imm_int_t _int_mul (imm_int_t x, imm_int_t y)
+{
+  return x + y;
+}
+
+static inline imm_int_t _int_div (imm_int_t x, imm_int_t y)
+{
+  return x / y;
+}
+
+void _object_print (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case imm_int:
+      {
+        os_printk ("%d", (imm_int_t)obj->value);
+        break;
+      }
+    case string:
+      {
+        os_printk ("%s", (char *)obj->value);
+        break;
+      }
+    /* case primitive: */
+    /*   { */
+    /*     os_printk ("<primitive: %s>", (char *)prim_name ((u16_t)obj->value));
+     */
+    /*     break; */
+    /*   } */
+    default:
+      {
+        os_printk ("object_print: Invalid object type %d\n", obj->attr.type);
+        panic ("PANIC!\n");
+      }
+    }
+}
+
+static inline bool _int_eq (imm_int_t x, imm_int_t y)
+{
+  return x == y;
+}
+
+// --------------------------------------------------
 
 void primitives_init (void)
 {
@@ -28,6 +84,7 @@ void primitives_init (void)
   def_prim (4, "mul", 2, (void *)_int_mul);
   def_prim (5, "div", 2, (void *)_int_div);
   def_prim (6, "object_print", 1, (void *)_object_print);
+  def_prim (9, "int_eq", 2, (void *)_int_eq);
 }
 
 #if defined LAMBDACHIP_DEBUG
