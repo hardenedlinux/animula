@@ -34,7 +34,8 @@ typedef enum prim_num
   int_mul = 4,
   int_div = 5,
   object_print = 6,
-
+  int_modulo = 7,
+  int_remainder = 8,
   int_eq = 9
 } pn_t;
 

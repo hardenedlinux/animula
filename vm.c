@@ -38,6 +38,8 @@ static inline void call_prim (vm_t vm, pn_t pn)
     case int_sub:
     case int_mul:
     case int_div:
+    case int_modulo:
+    case int_remainder:
       {
         ARITH_PRIM ();
         break;
@@ -512,9 +514,8 @@ void vm_run (vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
-      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
-       * vm->sp, */
-      /*         vm->fp); */
+      printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, vm->sp,
+              vm->fp);
       dispatch (vm, FETCH_NEXT_BYTECODE ());
     }
 }

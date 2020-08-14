@@ -41,6 +41,17 @@ static inline imm_int_t _int_div (imm_int_t x, imm_int_t y)
   return x / y;
 }
 
+imm_int_t _int_modulo (imm_int_t x, imm_int_t y)
+{
+  imm_int_t m = x % y;
+  return y < 0 ? (m <= 0 ? m : m + y) : (m >= 0 ? m : m + y);
+}
+
+static inline imm_int_t _int_remainder (imm_int_t x, imm_int_t y)
+{
+  return x % y;
+}
+
 void _object_print (object_t obj)
 {
   switch (obj->attr.type)
@@ -84,6 +95,8 @@ void primitives_init (void)
   def_prim (4, "mul", 2, (void *)_int_mul);
   def_prim (5, "div", 2, (void *)_int_div);
   def_prim (6, "object_print", 1, (void *)_object_print);
+  def_prim (7, "modulo", 2, (void *)_int_modulo);
+  def_prim (8, "remainder", 2, (void *)_int_remainder);
   def_prim (9, "int_eq", 2, (void *)_int_eq);
 }
 
