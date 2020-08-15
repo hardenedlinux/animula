@@ -62,7 +62,7 @@ extern GLOBAL_DEF (prim_t, prim_table[]);
   z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);  \
   PUSH_OBJ (z);
 
-#define PRIM_MAX 10
+#define PRIM_MAX 16
 
 static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 {

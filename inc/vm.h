@@ -50,6 +50,7 @@ typedef struct LambdaVM
    * frame.
    */
   u32_t local; // local frame
+  u8_t shadow; // shadow frame
   vm_state_t state;
   cont_t cc; // current continuation
   bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);
@@ -162,6 +163,17 @@ static inline void vm_stack_check (vm_t vm)
       PUSH (NEXT_DATA ());         \
     }
 
+#define IS_SHADOW_FRAME() (vm->shadow && vm->sp != vm->local)
+#define COPY_SHADOW_FRAME()                                               \
+  do                                                                      \
+    {                                                                     \
+      size_t size = sizeof (Object) * vm->shadow;                         \
+      os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - size, size); \
+      vm->shadow = 0;                                                     \
+      vm->sp = vm->local + size;                                          \
+    }                                                                     \
+  while (0)
+
 /* NOTE:
  * Jump to code[offset]
  */
@@ -173,7 +185,7 @@ static inline void vm_stack_check (vm_t vm)
   while (0)
 
 /* NOTE:
- * The pc+1 should be store here, since it's the next instruction.
+ * We should store pc+1 here, since it's the next instruction.
  * If fp is not NORMAL_JUMP, then it's tail-call or tail-recursive.
  * In this situation, we mustn't store pc.
  */
@@ -182,6 +194,8 @@ static inline void vm_stack_check (vm_t vm)
     {                                                  \
       if (NORMAL_JUMP == ((u32_t *)vm->stack)[vm->fp]) \
         ((u32_t *)vm->stack)[vm->fp] = vm->pc;         \
+      else if (IS_SHADOW_FRAME ())                     \
+        COPY_SHADOW_FRAME ();                          \
       vm->local = vm->fp + FPS;                        \
       JUMP (offset);                                   \
     }                                                  \
@@ -211,32 +225,38 @@ static inline void vm_stack_check (vm_t vm)
  * 2. If bc.bc2 is 0, then it's tail call.
       If bc.bc2 is 1, then it's tail recursive.
  */
-#define TAIL_CALL   0
-#define TAIL_REC    1
-#define NORMAL_CALL 2
-#define SAVE_ENV()                  \
-  do                                \
-    {                               \
-      switch (bc.bc2)               \
-        {                           \
-        case TAIL_CALL:             \
-          {                         \
-            break;                  \
-          }                         \
-        case TAIL_REC:              \
-          {                         \
-            vm->sp = vm->local;     \
-            break;                  \
-          }                         \
-        default:                    \
-          {                         \
-            PUSH_REG (NORMAL_JUMP); \
-            PUSH_REG (vm->fp);      \
-            vm->fp = vm->sp - FPS;  \
-            break;                  \
-          }                         \
-        }                           \
-    }                               \
+#define TAIL_CALL     0
+#define TAIL_REC      1
+#define NORMAL_CALL   2
+#define PROC_ARITY(b) (((b)&0xC) >> 2)
+#define PROC_MODE(b)  ((b)&0x3)
+#define SAVE_ENV()                             \
+  do                                           \
+    {                                          \
+      u8_t arity = PROC_ARITY (bc.bc2);        \
+      u8_t mode = PROC_MODE (bc.bc2);          \
+      switch (mode)                            \
+        {                                      \
+        case TAIL_CALL:                        \
+          {                                    \
+            break;                             \
+          }                                    \
+        case TAIL_REC:                         \
+          {                                    \
+            vm->shadow = arity;                \
+            vm->sp += sizeof (Object) * arity; \
+            vm_stack_check (vm);               \
+            break;                             \
+          }                                    \
+        default:                               \
+          {                                    \
+            PUSH_REG (NORMAL_JUMP);            \
+            PUSH_REG (vm->fp);                 \
+            vm->fp = vm->sp - FPS;             \
+            break;                             \
+          }                                    \
+        }                                      \
+    }                                          \
   while (0)
 
 #define CALL_PROCEDURE(obj)                \

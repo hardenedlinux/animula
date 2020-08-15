@@ -189,6 +189,8 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
         u8_t frame = NEXT_DATA ();
         VM_DEBUG ("(free %x %d)\n", frame, bc.data);
         object_t obj = (object_t)FREE_VAR (frame, bc.data);
+        /* printf ("obj: type = %d, value = %d\n", obj->attr.type, */
+        /*         (imm_int_t)obj->value); */
         PUSH_OBJ (*obj);
         break;
       }
@@ -384,6 +386,7 @@ void vm_init (vm_t vm)
   vm->sp = 0;
   vm->fp = 0;
   vm->local = 0;
+  vm->shadow = 0;
   vm->cc = NULL;
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
@@ -514,8 +517,17 @@ void vm_run (vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
-      printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, vm->sp,
-              vm->fp);
+      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
+       * vm->sp, */
+      /*         vm->fp); */
+      /* printf ("----------LOCAL------------\n"); */
+      /* for (int i = 0; i < 6; i++) */
+      /*   { */
+      /*     object_t obj = (object_t)LOCAL (i); */
+      /*     printf ("obj: type = %d, value = %d\n", obj->attr.type, */
+      /*             (imm_int_t)obj->value); */
+      /*   } */
+      /* printf ("------------END-----------\n"); */
       dispatch (vm, FETCH_NEXT_BYTECODE ());
     }
 }
