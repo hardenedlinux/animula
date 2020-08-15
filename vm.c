@@ -57,6 +57,7 @@ static void call_prim (vm_t vm, pn_t pn)
     case int_lt:
     case int_gt:
     case int_le:
+    case int_ge:
       {
         arith_prim_t fn = (arith_prim_t)prim->fn;
         size_t size = sizeof (struct Object);
