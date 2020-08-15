@@ -39,6 +39,7 @@ typedef enum prim_num
   int_eq = 9,
   int_lt = 10,
   int_gt = 11,
+  int_le = 12,
 } pn_t;
 
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);

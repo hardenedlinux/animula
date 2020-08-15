@@ -95,6 +95,11 @@ static inline bool _int_gt (imm_int_t x, imm_int_t y)
 {
   return x > y;
 }
+
+static inline bool _int_le (imm_int_t x, imm_int_t y)
+{
+  return x <= y;
+}
 // --------------------------------------------------
 
 void primitives_init (void)
@@ -111,6 +116,7 @@ void primitives_init (void)
   def_prim (9, "int_eq", 2, (void *)_int_eq);
   def_prim (10, "int_lt", 2, (void *)_int_lt);
   def_prim (11, "int_gt", 2, (void *)_int_gt);
+  def_prim (12, "int_le", 2, (void *)_int_le);
 }
 
 #if defined LAMBDACHIP_DEBUG
