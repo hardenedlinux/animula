@@ -60,7 +60,8 @@ extern GLOBAL_DEF (prim_t, prim_table[]);
   Object y = POP_OBJ ();                                          \
   Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL}; \
   z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);  \
-  PUSH_OBJ (z);
+  if (vm->prelude)                                                \
+    PUSH_OBJ (z);
 
 #define PRIM_MAX 16
 

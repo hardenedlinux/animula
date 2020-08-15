@@ -25,7 +25,8 @@ static inline void call_prim (vm_t vm, pn_t pn)
     {
     case ret:
       {
-        // printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc);
+        //        printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
+        //        vm->pc);
         for (int i = 0; i < 2; i++)
           {
             RESTORE ();
@@ -49,7 +50,8 @@ static inline void call_prim (vm_t vm, pn_t pn)
         printer_prim_t fn = (printer_prim_t)prim->fn;
         Object obj = POP_OBJ ();
         fn (&obj);
-        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        if (vm->prelude)
+          PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
         break;
       }
     case int_eq:
@@ -60,7 +62,8 @@ static inline void call_prim (vm_t vm, pn_t pn)
         Object y = POP_OBJ ();
         Object z = {.attr = {.type = boolean, .gc = 0}, .value = NULL};
         z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);
-        PUSH_OBJ (z);
+        if (vm->prelude)
+          PUSH_OBJ (z);
         break;
       }
     default:
@@ -237,7 +240,7 @@ static inline void interp_double_encode (vm_t vm, bytecode16_t bc)
     {
     case PRELUDE:
       {
-        VM_DEBUG ("(prelude %d)\n", bc.bc2);
+        VM_DEBUG ("(prelude %d %d)\n", PROC_MODE (bc.bc2), PROC_ARITY (bc.bc2));
         SAVE_ENV ();
         break;
       }
@@ -328,8 +331,8 @@ static inline void interp_special (vm_t vm, bytecode8_t bc)
               /* printf ("vm->stack (%p) + vm->sp (%d) - size (%d)= %p\n", */
               /*         vm->stack, vm->sp, sizeof (Object), */
               /*         vm->stack + vm->sp - sizeof (Object)); */
-              /* printf ("vm->stack (%p) + vm->fp (%d) + 2 + offset (%d) =
-               * %p\n", */
+              /* printf ("vm->stack (%p) + vm->fp (%d) + 2 + offset (%d) = %p\n
+               * ", */
               /*         vm->stack, vm->fp, 0, LOCAL (0)); */
 
               break;
@@ -387,6 +390,7 @@ void vm_init (vm_t vm)
   vm->fp = 0;
   vm->local = 0;
   vm->shadow = 0;
+  vm->prelude = 0;
   vm->cc = NULL;
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
