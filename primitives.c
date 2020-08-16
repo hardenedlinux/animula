@@ -90,6 +90,7 @@ static inline bool _int_eq (imm_int_t x, imm_int_t y)
 void primitives_init (void)
 {
   def_prim (0, "ret", 0, NULL);
+  def_prim (1, "pop", 0, NULL);
   def_prim (2, "add", 2, (void *)_int_add);
   def_prim (3, "sub", 2, (void *)_int_sub);
   def_prim (4, "mul", 2, (void *)_int_mul);

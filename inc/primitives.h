@@ -28,7 +28,7 @@
 typedef enum prim_num
 {
   ret = 0,
-
+  pop = 1,
   int_add = 2,
   int_sub = 3,
   int_mul = 4,
@@ -60,8 +60,7 @@ extern GLOBAL_DEF (prim_t, prim_table[]);
   Object y = POP_OBJ ();                                          \
   Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL}; \
   z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);  \
-  if (vm->prelude)                                                \
-    PUSH_OBJ (z);
+  PUSH_OBJ (z);
 
 #define PRIM_MAX 16
 

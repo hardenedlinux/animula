@@ -31,16 +31,6 @@ extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
 
-#define PRELUDE_END()  \
-  do                   \
-    {                  \
-      if (vm->prelude) \
-        vm->prelude--; \
-    }                  \
-  while (0)
-
-#define PRELUDE_START() (vm->prelude++)
-
 typedef enum vm_state
 {
   VM_STOP = 0,
@@ -66,8 +56,7 @@ typedef struct LambdaVM
   u8_t *code;
   u8_t *data;
   u8_t *stack;
-  u8_t shadow;  // shadow frame
-  u8_t prelude; // prelude level
+  u8_t shadow; // shadow frame
 } __packed *vm_t;
 
 #define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
@@ -208,7 +197,6 @@ static inline void vm_stack_check (vm_t vm)
       else if (IS_SHADOW_FRAME ())                     \
         COPY_SHADOW_FRAME ();                          \
       vm->local = vm->fp + FPS;                        \
-      PRELUDE_END ();                                  \
       JUMP (offset);                                   \
     }                                                  \
   while (0)
@@ -268,7 +256,6 @@ static inline void vm_stack_check (vm_t vm)
           }                                    \
         }                                      \
       vm_stack_check (vm);                     \
-      PRELUDE_START ();                        \
     }                                          \
   while (0)
 
@@ -288,9 +275,6 @@ static inline void vm_stack_check (vm_t vm)
     }                                            \
   while (0)
 
-/* If the returned result of calling is not useful in the context, say, not in
- * VM_PRELUDE context, then we pop it to save stack space.
- */
 #define CALL(obj)                                                    \
   do                                                                 \
     {                                                                \

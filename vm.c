@@ -50,8 +50,7 @@ static inline void call_prim (vm_t vm, pn_t pn)
         printer_prim_t fn = (printer_prim_t)prim->fn;
         Object obj = POP_OBJ ();
         fn (&obj);
-        if (vm->prelude)
-          PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
         break;
       }
     case int_eq:
@@ -62,8 +61,13 @@ static inline void call_prim (vm_t vm, pn_t pn)
         Object y = POP_OBJ ();
         Object z = {.attr = {.type = boolean, .gc = 0}, .value = NULL};
         z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);
-        if (vm->prelude)
-          PUSH_OBJ (z);
+        PUSH_OBJ (z);
+        break;
+      }
+    case pop:
+      {
+        if (vm->sp)
+          POP_OBJ ();
         break;
       }
     default:
@@ -390,7 +394,6 @@ void vm_init (vm_t vm)
   vm->fp = 0;
   vm->local = 0;
   vm->shadow = 0;
-  vm->prelude = 0;
   vm->cc = NULL;
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
