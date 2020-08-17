@@ -125,11 +125,13 @@ static inline void vm_stack_check (vm_t vm)
 #    define PUSH_REG    PUSH_U32
 #    define POP_REG     POP_U32
 #    define NORMAL_JUMP 0xFFFFFFFF
+typedef u32_t reg_t;
 #  endif
 #  if (2 == PC_SIZE)
 #    define PUSH_REG    PUSH_U16
 #    define POP_REG     POP_U16
 #    define NORMAL_JUMP 0xFFFF
+typedef u16_t reg_t;
 #  endif
 #endif
 
@@ -143,11 +145,18 @@ static inline void vm_stack_check (vm_t vm)
  */
 #define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
 
-/* #define FREE_VAR(frame, offset) \ */
-/*   (object_t) (&vm->stack[vm->stack[frame] + (offset) + FPS]) */
+#define FREE_VAR(back, offset)                    \
+  ({                                              \
+    reg_t up = vm->fp;                            \
+    for (int i = 0; i < back; i++)                \
+      {                                           \
+        up = ((reg_t *)vm->stack)[up];            \
+      }                                           \
+    (object_t) (&vm->stack[up + (offset) + FPS]); \
+  })
 
-#define FREE_VAR(frame, offset) \
-  (&((object_t) (vm->stack + vm->stack[vm->fp + 1] + FPS))[offset])
+/* #define FREE_VAR(frame, offset) \ */
+/*   (&((object_t) (vm->stack + vm->stack[vm->fp + 1] + FPS))[offset]) */
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \
