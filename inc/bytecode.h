@@ -32,12 +32,22 @@
  * Terms:
  * ---------------------------------------------------------------
  TOS: top of stack
- HSA: Higher Segment Address == pc + ss16[x] + 128
+
  * ---------------------------------------------------------------
 
  * Limits:
  * 1. The max offset of local is 32
- * 2. The max offset of free is 256
+ * 2. The offset of free is 256
+ * 3. The up frame of free is 16
+ * 4. The code size is no more than 2^16, we can extend to around 16MB or even
+      4GB, but it's not a good idea, since we have to tweak conditions and
+      closures either. Do we really care about big RAMs in embedded world?
+ * 5. Closure arity is no more than 64
+ * 6. Closure frame-size is no more than 64
+
+ * New idea:
+   * Combine all local/free to just one instruction, 0101mmmm, m for mode, make
+     sure offset and up-frame is 256.
 
  -> single encode
  0000xxxx                      Ref local [x]
@@ -46,18 +56,18 @@
  0101xxxx                      Call local [x + 16]
 
  -> special double encoding
- 0010 xxxx aaaaaaaa             Ref free [local[x] + a]
- 0011 xxxx aaaaaaaa             Ref free [local[x + 16] + a]
- 0110 xxxx aaaaaaaa             Call free [local[x] + a]
- 0111 xxxx aaaaaaaa             Call free [local[x + 16] + a]
+ 0010 xxxx xxaaaaaa             Ref free up(fp)^a in offset x
+ 0011 xxxx xxaaaaaa             Call free up(fp)^a in offset x
+ 0110 xxxx                      Reserved
+ 0111 xxxx                      Reserved
 
  -> double encoding (start from 1010)
  1010 0000 nnnnnnnn             Prelude with n args
- 1010 0001 xxxxxxxx             Call proc at code[x]
- 1010 0010 xxxxxxxx             Jump to code[x] when TOS is false
- 1010 0011 xxxxxxxx             Build a closure with entry point ss[x] to TOS
- 1010 0100 xxxxxxxx             Pop constant from ss[x] to TOS
- 1010 0101 xxxxxxxx             Set TOS to global
+ 1010 0001 xxxxxxxx             Reserved
+ 1010 0010 xxxxxxxx             Reserved
+ 1010 0011 xxxxxxxx             Reserved
+ 1010 0100 xxxxxxxx             Reserved
+ 1010 0101 xxxxxxxx             Reserved
  1010 0110 xxxxxxxx             Reserved
  1010 0111 xxxxxxxx             Reserved
  1010 1000 xxxxxxxx             Reserved
@@ -66,10 +76,10 @@
  1010 1111 xxxxxxxx             Reserved
 
  -> triple encoding (start from 1011)
- 1011 0000 nnnnnnnn xxxxxxxx    Reserved
- 1011 0001 xxxxxxxx xxxxxxxx    Same, but address os code[x + 256]
- 1011 0010 xxxxxxxx iiiiiiii    Vector ss[x] ref i
- 1011 0011 xxxxxxxx xxxxxxxx    Push u16 constant x
+ 1011 0000 xxxxxxxx xxxxxxxx    Call proc at code[x]
+ 1011 0001 xxxxxxxx xxxxxxxx    Jump to code[x] when TOS is false
+ 1011 0010 xxxxxxxx xxxxxxxx    Jump to code[x] without condition
+ 1011 0011 xxxxxxxx iiiiiiii    Vector ss[x] ref i
  1011 0100 xxxxxxxx xxxxxxxx    Reserved
  1011 0101 xxxxxxxx xxxxxxxx    Reserved
  1011 0110 xxxxxxxx xxxxxxxx    Reserved
@@ -81,12 +91,15 @@
 
  -> quadruple
  1000 0000 xxxxxxxx iiiiiiii vvvvvvvv   Vector ss[x] set i with v
+ 1000 0001 ffffffff aaaaaaaa aaaaaaaa   Closure on heap with frame, and the
+                                        entry is code[a]
+ 1000 0010 ffffffff aaaaaaaa aaaaaaaa   Closure on stack
 
  -> Reserved
  1001
 
  -> Speical encoding
- 1100xxxx                  Basic primitives (+, return, get-cont, ...)
+ 1100xxxx                  Basic primitives
  1101xxxx xxxxxxxx         Extended primitives
 
  1110xxxx [xxxxxxxx]       Object encoding
@@ -104,33 +117,36 @@
 #define SINGLE_ENCODE(bc)    (((bc).type >= 0) && ((bc).type <= 0b0111))
 #define DOUBLE_ENCODE(bc)    (0b1010 == (bc).type)
 #define TRIPLE_ENCODE(bc)    (0b1011 == (bc).type)
-#define QUADRUPLE_ENCODE(bc) (0b0010 == (bc).type)
+#define QUADRUPLE_ENCODE(bc) (0b1000 == (bc).type)
 #define IS_SPECIAL(bc)       (0b1100 & (bc).type)
 
 // single encode
 #define LOCAL_REF         0b0000
 #define LOCAL_REF_EXTEND  0b0001
 #define FREE_REF          0b0010
-#define FREE_REF_EXTEND   0b0011
 #define CALL_LOCAL        0b0100
 #define CALL_LOCAL_EXTEND 0b0101
-#define CALL_FREE         0b0110
-#define CALL_FREE_EXTEND  0b0111
+#define CALL_FREE         0b0011
 
 // double encode
-#define PRELUDE   0b0000
-#define CALL_PROC 0b0001
-#define F_JMP     0b0010
+#define PRELUDE 0b0000
 
-#define VEC_REF 0b0010
+// triple encode
+#define CALL_PROC 0b0000
+#define F_JMP     0b0001
+#define JMP       0b0010
+#define VEC_REF   0b0011
 
 // quadruple encoding
-#define VEC_SET 0b0000
+#define VEC_SET          0b0000
+#define CLOSURE_ON_HEAP  0b0001
+#define CLOSURE_ON_STACK 0b0010
 
 // special encoding
 #define PRIMITIVE 0b1100
 #define OBJECT    0b1110
-#define HALT      0xff
+#define CONTROL   0b1111
+#define HALT      0b1111
 
 typedef enum encode_type
 {

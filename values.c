@@ -31,16 +31,13 @@ object_t make_continuation ()
 }
 
 // ----------- Closure
-object_t make_closure (u16_t env, u16_t entry)
+closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 {
-  object_t obj = (object_t)gc_malloc (sizeof (struct Object));
-  closure_t closure = (closure_t)gc_malloc (sizeof (union Closure));
+  closure_t closure
+    = (closure_t)gc_malloc (sizeof (Closure) + sizeof (Object) * frame_size);
 
-  closure->env = env;
+  closure->frame_size = frame_size;
   closure->entry = entry;
-  obj->attr.gc = 0;
-  obj->attr.type = (otype_t)closure;
-  obj->value = (void *)closure;
-
-  return obj;
+  closure->arity = arity;
+  return closure;
 }

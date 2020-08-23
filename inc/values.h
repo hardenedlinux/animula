@@ -31,6 +31,6 @@
 /* } */
 
 object_t make_continuation (void);
-object_t make_closure (u16_t env, u16_t entry);
+closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
 
 #endif // End of __LAMBDACHIP_VALUES_H__;

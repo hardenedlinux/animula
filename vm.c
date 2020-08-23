@@ -17,7 +17,7 @@
 
 #include "vm.h"
 
-static inline void call_prim (vm_t vm, pn_t pn)
+static void call_prim (vm_t vm, pn_t pn)
 {
   prim_t prim = get_prim (pn);
 
@@ -75,7 +75,7 @@ static inline void call_prim (vm_t vm, pn_t pn)
     }
 }
 
-static inline uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
+static uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
 {
 #if defined LAMBDACHIP_BIG_ENDIAN
   buf[0] = NEXT_DATA ();
@@ -91,22 +91,7 @@ static inline uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
   return *((uintptr_t *)buf);
 }
 
-static inline closure_t capture_closure (vm_t vm)
-{
-  // TODO
-  return NULL;
-}
-
-static inline void jump_closure (vm_t vm, closure_t closure)
-{
-  /* Jump will not save the current environment */
-  //  u16_t env = (u16_t)ss_read_u32 (closure->env);
-  /* The first byte of env is its own size */
-  // os_memcpy (vm->stack, env + 1, *env);
-  // vm->pc = closure->entry;
-}
-
-static inline void generate_object (vm_t vm, object_t obj)
+static object_t generate_object (vm_t vm, object_t obj)
 {
   bytecode8_t bc;
   bc.all = NEXT_DATA ();
@@ -135,7 +120,7 @@ static inline void generate_object (vm_t vm, object_t obj)
       {
         u8_t buf[sizeof (uintptr_t)] = {0};
         u32_t offset = vm_get_uintptr (vm, buf);
-        VM_DEBUG ("(push-proc-object %x)\n", offset);
+        VM_DEBUG ("(push-proc-object 0x%x)\n", offset);
         obj->value = (void *)offset;
         break;
       }
@@ -144,19 +129,21 @@ static inline void generate_object (vm_t vm, object_t obj)
         u8_t buf[sizeof (uintptr_t)] = {0};
         uintptr_t prim = vm_get_uintptr (vm, buf);
         // vm->pc += sizeof (uintptr_t);
-        VM_DEBUG ("(push-prim-object %d)\n", prim);
+        VM_DEBUG ("(push-prim-object %d %s)\n", prim, prim_name (prim));
         obj->value = (void *)prim;
         break;
       }
     default:
       {
-        os_printk ("Oops, invalid object %d!\n", bc.type);
+        os_printk ("Oops, invalid object %d %d!\n", bc.type, bc.data);
         VM_PANIC ();
       }
     }
+
+  return obj;
 }
 
-static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
+static void interp_single_encode (vm_t vm, bytecode8_t bc)
 {
   switch (bc.type)
     {
@@ -186,7 +173,6 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
     case CALL_LOCAL_EXTEND:
       {
         VM_DEBUG ("(call-local %d)\n", bc.data + 16);
-        printf ("fp: %d, stack: %p, sp: %d\n", vm->fp, vm->stack, vm->sp);
         object_t obj = (object_t)LOCAL (bc.data + 16);
         CALL (obj);
         break;
@@ -194,17 +180,12 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
     case FREE_REF:
       {
         u8_t frame = NEXT_DATA ();
-        VM_DEBUG ("(free %x %d)\n", frame, bc.data);
-        object_t obj = (object_t)FREE_VAR (frame, bc.data);
+        u8_t up = (frame & 0b001111);
+        u8_t offset = ((bc.data << 2) | ((frame & 0b110000) >> 4));
+        VM_DEBUG ("(free %x %d)\n", up, offset);
+        object_t obj = (object_t)FREE_VAR (up, offset);
         /* printf ("obj: type = %d, value = %d\n", obj->attr.type, */
         /*         (imm_int_t)obj->value); */
-        PUSH_OBJ (*obj);
-        break;
-      }
-    case FREE_REF_EXTEND:
-      {
-        VM_DEBUG ("(free %d)\n", bc.data);
-        object_t obj = (object_t)LOCAL (bc.data + 16);
         PUSH_OBJ (*obj);
         break;
       }
@@ -216,17 +197,10 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
          *   3. Do we need to create proc-object when store?
          */
         u8_t frame = NEXT_DATA ();
-        VM_DEBUG ("(call-free %x %d)\n", frame, bc.data);
-        // object_t obj = (object_t)FREE_VAR (frame, bc.data);
-        object_t obj = (object_t)LOCAL (bc.data);
-        CALL (obj);
-        break;
-      }
-    case CALL_FREE_EXTEND:
-      {
-        u8_t frame = NEXT_DATA ();
-        VM_DEBUG ("(call-free %x %d)\n", frame, bc.data + 16);
-        object_t obj = (object_t)FREE_VAR (frame, bc.data + 16);
+        u8_t up = (frame & 0b001111);
+        u8_t offset = ((bc.data << 2) | ((frame & 0b110000) >> 4));
+        VM_DEBUG ("(call-free %x %d)\n", up, offset);
+        object_t obj = (object_t)FREE_VAR (up, offset);
         CALL (obj);
         break;
       }
@@ -238,7 +212,7 @@ static inline void interp_single_encode (vm_t vm, bytecode8_t bc)
     }
 }
 
-static inline void interp_double_encode (vm_t vm, bytecode16_t bc)
+static void interp_double_encode (vm_t vm, bytecode16_t bc)
 {
   switch (bc.type)
     {
@@ -248,34 +222,15 @@ static inline void interp_double_encode (vm_t vm, bytecode16_t bc)
         SAVE_ENV ();
         break;
       }
-    case CALL_PROC:
-      {
-        VM_DEBUG ("(call-proc 0x%x)\n", bc.bc2);
-        PROC_CALL (bc.bc2);
-        break;
-      }
-    case F_JMP:
-      {
-        VM_DEBUG ("(fjump 0x%x)\n", bc.bc2);
-        Object obj = POP_OBJ ();
-
-        if (is_false (&obj))
-          {
-            VM_DEBUG ("False! Jump!\n");
-            JUMP (bc.bc2);
-          }
-
-        break;
-      }
     default:
       {
-        os_printk ("Invalid bytecode %X\n", bc.all);
+        os_printk ("Invalid bytecode %X %X\n", bc.type, bc.data);
         panic ("interp_double_encode panic!\n");
       }
     };
 }
 
-static inline void interp_triple_encode (vm_t vm, bytecode24_t bc)
+static void interp_triple_encode (vm_t vm, bytecode24_t bc)
 {
   switch (bc.type)
     {
@@ -286,12 +241,43 @@ static inline void interp_triple_encode (vm_t vm, bytecode24_t bc)
         PUSH (vector_ref (vec, bc.bc2));
         break;
       }
+    case CALL_PROC:
+      {
+        u32_t offset = bc.data;
+        VM_DEBUG ("(call-proc 0x%x)\n", offset);
+        PROC_CALL (offset);
+        break;
+      }
+    case F_JMP:
+      {
+        u32_t offset = bc.data;
+        VM_DEBUG ("(fjump 0x%x)\n", offset);
+        Object obj = POP_OBJ ();
+
+        if (is_false (&obj))
+          {
+            VM_DEBUG ("False! Jump!\n");
+            JUMP (offset);
+          }
+
+        break;
+      }
+    case JMP:
+      {
+        u32_t offset = bc.data;
+        VM_DEBUG ("(jump 0x%x)\n", offset);
+        JUMP (offset);
+        break;
+      }
     default:
-      break;
+      {
+        os_printk ("Invalid bytecode %X, %X, %X\n", bc.bc1, bc.bc2, bc.bc3);
+        panic ("interp_triple_encode panic!\n");
+      }
     }
 }
 
-static inline void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
+static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
 {
   switch (bc.type)
     {
@@ -301,13 +287,49 @@ static inline void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         object_t obj = (object_t)ss_read_u32 (bc.bc3);
         VM_DEBUG ("(vec-set! 0x%p %d 0x%p)\n", vec, bc.bc2, obj);
         vector_set (vec, bc.bc2, obj);
+        break;
+      }
+    case CLOSURE_ON_STACK:
+      {
+        u8_t size = (bc.bc2 & 0xFF);
+        u8_t arity = ((bc.bc2 & 0xFF00) >> 4);
+        reg_t entry = ((bc.bc3 << 8) | bc.bc4);
+        reg_t env = vm->sp + sizeof (Object); // skip closure object
+        VM_DEBUG ("(closure-on-stack %d 0x%x)\n", size, entry);
+        Object obj = {.attr = {.type = closure_on_stack, .gc = 0},
+                      .value = (void *)((env | (size << 10) | (entry << 16)))};
+        PUSH_OBJ (obj);
+        break;
+      }
+    case CLOSURE_ON_HEAP:
+      {
+        u8_t size = (bc.bc2 & 0xF);
+        u8_t arity = ((bc.bc2 & 0xF0) >> 4);
+        reg_t entry = ((bc.bc3 << 8) | bc.bc4);
+        VM_DEBUG ("(closure-on-heap %d %d 0x%x)\n", arity, size, entry);
+        closure_t closure = make_closure (arity, size, entry);
+        Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
+                      .value = (void *)closure};
+        for (u8_t i = size; i > 0; i--)
+          {
+            closure->env[i - 1] = POP_OBJ ();
+            /* printf ("closure->env[%d]: type = %d, value = %d\n", i - 1, */
+            /*         closure->env[i - 1].attr.type, */
+            /*         (imm_int_t) (closure->env[i - 1].value)); */
+          }
+        PUSH_OBJ (obj);
+        break;
       }
     default:
-      break;
+      {
+        os_printk ("Invalid bytecode %X, %X, %X, %X\n", bc.bc1, bc.bc2, bc.bc3,
+                   bc.bc4);
+        panic ("interp_quadruple_encode panic!\n");
+      }
     }
 }
 
-static inline void interp_special (vm_t vm, bytecode8_t bc)
+static void interp_special (vm_t vm, bytecode8_t bc)
 {
   switch (bc.type)
     {
@@ -358,16 +380,30 @@ static inline void interp_special (vm_t vm, bytecode8_t bc)
           }
         break;
       }
+    case CONTROL:
+      {
+        switch (bc.data)
+          {
+          case HALT:
+            {
+              vm->state = VM_STOP;
+              VM_DEBUG ("Halt here!\n");
+              break;
+            }
+          default:
+            break;
+          }
+        break;
+      }
     default:
       {
-        if (HALT == bc.all)
-          vm->state = VM_STOP;
-        VM_DEBUG ("Halt here!\n");
+        os_printk ("Invalid special bytecode %X, %X\n", bc.type, bc.data);
+        panic ("interp_special_encode panic!\n");
       }
     }
 }
 
-static inline bytecode8_t fetch_next_bytecode (vm_t vm)
+static bytecode8_t fetch_next_bytecode (vm_t vm)
 {
   bytecode8_t bc;
 
@@ -398,6 +434,7 @@ void vm_init (vm_t vm)
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
+  vm->closure = NULL;
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;
@@ -434,7 +471,7 @@ void vm_restart (vm_t vm)
   vm_init (vm);
 }
 
-static inline encode_t pre_fetch (vm_t vm, bytecode8_t bytecode)
+static encode_t pre_fetch (vm_t vm, bytecode8_t bytecode)
 {
   //  VM_DEBUG("Prefetch: %x\n", bytecode.all);
   if (SINGLE_ENCODE (bytecode))
@@ -463,7 +500,7 @@ static inline encode_t pre_fetch (vm_t vm, bytecode8_t bytecode)
   return -1;
 }
 
-static inline void dispatch (vm_t vm, bytecode8_t bc)
+static void dispatch (vm_t vm, bytecode8_t bc)
 {
   switch (pre_fetch (vm, bc))
     {
@@ -524,17 +561,20 @@ void vm_run (vm_t vm)
       /* TODO:
        * 1. Add debug info
        */
+      dispatch (vm, FETCH_NEXT_BYTECODE ());
       /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
        * vm->sp, */
       /*         vm->fp); */
       /* printf ("----------LOCAL------------\n"); */
-      /* for (int i = 0; i < 6; i++) */
+      /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
+      /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
-      /*     object_t obj = (object_t)LOCAL (i); */
-      /*     printf ("obj: type = %d, value = %d\n", obj->attr.type, */
-      /*             (imm_int_t)obj->value); */
+      /*     object_t obj = (object_t)LOCAL_FIX (i); */
+      /*     printf ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
+       * 8, */
+      /*             obj->attr.type, (imm_int_t)obj->value); */
       /*   } */
       /* printf ("------------END-----------\n"); */
-      dispatch (vm, FETCH_NEXT_BYTECODE ());
+      /* getchar (); */
     }
 }

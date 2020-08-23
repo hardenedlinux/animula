@@ -82,6 +82,7 @@ void _object_print (object_t obj)
 
 static inline bool _int_eq (imm_int_t x, imm_int_t y)
 {
+  // printf ("%d == %d is %d\n", x, y, x == y);
   return x == y;
 }
 

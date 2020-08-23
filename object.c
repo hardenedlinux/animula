@@ -45,7 +45,6 @@ void free_object (object_t obj)
   switch (obj->attr.type)
     {
     case imm_int:
-    case closure:
     case pair:
     case list:
     case symbol:

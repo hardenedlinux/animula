@@ -24,15 +24,12 @@
 /*
  * NOTE:
  * Mostly, LambdaChip supports 32bit MCU, so the object uses 32bit encoding.
- * When the platform is 64bit, then the object encoding is 64bit, however, we
- * don't bother to show it here.
-
 
   Type:             0                     15                     31
   |                 |                      |                      |
   0.  Imm Int       |              32bit signed int               |
   1.  Arbi Int      |      next cell       |      16bit int       |
-  2.  Closure       |      entry offset    |      env offsert     |
+  2.  Reserved      |                                             |
   3.  Pair          |      car             |      cdr             |
   4.  Symbol        |      interned head pointer                  |
   5.  Vector        |      length          |      content         |
@@ -42,9 +39,17 @@
   9.  Procedure     |      codeseg offset                         |
   10. Primitive     |      primitive number                       |
 
+  Closure on heap
+                    0                                            31
+  11. Closure       |      closure_t address                      |
+
+  Closure on stack
+                    0              9      15                     31
+  12. Closure       |      env     | size  |      entry offset    |
+
   61. Boolean       |      false: 0,     true: 1                  |
   62. null_object   |                                             |
-  63.    N/A        |       const encoding                        |
+  63. None          |      const encoding                         |
 */
 
 typedef enum obj_encoding
@@ -60,16 +65,18 @@ typedef enum obj_encoding
 typedef enum obj_type
 {
   imm_int = 0,
-  arbi_int,
-  closure,
-  pair,
-  symbol,
-  vector,
-  continuation,
-  list,
-  string,
-  procedure,
-  primitive,
+  arbi_int = 1,
+  /* reserved = 2, */
+  pair = 3,
+  symbol = 4,
+  vector = 5,
+  continuation = 6,
+  list = 7,
+  string = 8,
+  procedure = 9,
+  primitive = 10,
+  closure_on_heap = 11,
+  closure_on_stack = 12,
 
   boolean = 61,
   null_obj = 62,
@@ -118,20 +125,13 @@ typedef union Continuation
   uintptr_t all;
 } __packed *cont_t;
 
-typedef union Closure
+typedef struct Closure
 {
-  struct
-  {
-#ifndef ADDRESS_64
-    unsigned env : 16;   // the offset in ss to env
-    unsigned entry : 16; // the offset in ss to entry
-#else
-    unsigned env : 32;
-    unsigned entry : 32;
-#endif
-  };
-  uintptr_t all;
-} __packed *closure_t;
+  u8_t arity;
+  u8_t frame_size;
+  reg_t entry;
+  Object env[];
+} __packed Closure, *closure_t;
 
 typedef struct Vector
 {

@@ -56,7 +56,8 @@ typedef struct LambdaVM
   u8_t *code;
   u8_t *data;
   u8_t *stack;
-  u8_t shadow; // shadow frame
+  u8_t shadow;       // shadow frame
+  closure_t closure; // for closure
 } __packed *vm_t;
 
 #define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
@@ -73,7 +74,7 @@ typedef struct LambdaVM
 
 static inline void vm_stack_check (vm_t vm)
 {
-  if (vm->sp >= GLOBAL_REF (VM_STKSEG_SIZE))
+  if (GLOBAL_REF (VM_STKSEG_SIZE) <= vm->sp)
     panic ("Stack overflow!\n");
 }
 
@@ -90,7 +91,8 @@ static inline void vm_stack_check (vm_t vm)
 
 #define POP() (vm->stack[--vm->sp])
 
-#define TOPx(t, size) (*((t *)(vm->stack + vm->sp - size)))
+#define TOPx(t, size)  (*((t *)(vm->stack + vm->sp - size)))
+#define TOPxp(t, size) ((t *)(vm->stack + vm->sp - size))
 
 #define POPx(t, size)             \
   ({                              \
@@ -110,6 +112,7 @@ static inline void vm_stack_check (vm_t vm)
 #define PUSH_OBJ(obj) PUSHx (Object, sizeof (Object), obj)
 #define POP_OBJ()     POPx (Object, sizeof (Object))
 #define TOP_OBJ()     TOPx (Object, sizeof (Object))
+#define TOP_OBJ_PTR() TOPxp (Object, sizeof (Object))
 
 #define PUSH_U32(obj) PUSHx (u32_t, sizeof (u32_t), obj)
 #define POP_U32()     POPx (u32_t, sizeof (u32_t))
@@ -119,18 +122,25 @@ static inline void vm_stack_check (vm_t vm)
 #define POP_U16()     POPx (u16_t, sizeof (u16_t))
 #define TOP_U16()     TOPx (u16_t, sizeof (u16_t))
 
+#define PUSH_CLOSURE(closure) PUSHx (Closure, sizeof (Closure), closure)
+#define POP_CLOSURE()         POPx (Closure, sizeof (Closure))
+#define TOP_CLOSURE()         TOPx (Closure, sizeof (Closure))
+#define TOP_CLOSURE_PTR()     TOPxp (Closure, sizeof (Closure))
+
 #ifndef PC_SIZE
 #  define PC_SIZE 2
 #  if (4 == PC_SIZE)
 #    define PUSH_REG    PUSH_U32
 #    define POP_REG     POP_U32
 #    define NORMAL_JUMP 0xFFFFFFFF
+#    define REG_BIT     32
 typedef u32_t reg_t;
 #  endif
 #  if (2 == PC_SIZE)
 #    define PUSH_REG    PUSH_U16
 #    define POP_REG     POP_U16
 #    define NORMAL_JUMP 0xFFFF
+#    define REG_BIT     16
 typedef u16_t reg_t;
 #  endif
 #endif
@@ -143,7 +153,14 @@ typedef u16_t reg_t;
       begins from 2
  * 2. The type of frame[offset] is void*
  */
-#define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
+#define LOCAL(offset)                                             \
+  (vm->closure ? (&vm->closure->env[offset - vm->closure->arity]) \
+               : (&((object_t) (vm->stack + vm->local))[offset]))
+
+//#define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
+
+// LOCAL_FIX is only for debug since it doesn't print stored REG.
+#define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->fp + FPS))[offset])
 
 #define FREE_VAR(back, offset)                    \
   ({                                              \
@@ -194,7 +211,6 @@ typedef u16_t reg_t;
   while (0)
 
 /* NOTE:
- * We should store pc+1 here, since it's the next instruction.
  * If fp is not NORMAL_JUMP, then it's tail-call or tail-recursive.
  * In this situation, we mustn't store pc.
  */
@@ -237,7 +253,7 @@ typedef u16_t reg_t;
 #define TAIL_CALL     0
 #define TAIL_REC      1
 #define NORMAL_CALL   2
-#define PROC_ARITY(b) (((b)&0xC) >> 2)
+#define PROC_ARITY(b) (((b)&0xFC) >> 2)
 #define PROC_MODE(b)  ((b)&0x3)
 #define SAVE_ENV()                             \
   do                                           \
@@ -268,22 +284,6 @@ typedef u16_t reg_t;
     }                                          \
   while (0)
 
-#define CALL_PROCEDURE(obj)                \
-  do                                       \
-    {                                      \
-      u32_t offset = (u32_t) (obj)->value; \
-      PROC_CALL (offset);                  \
-    }                                      \
-  while (0)
-
-#define CALL_PRIMITIVE(obj)                      \
-  do                                             \
-    {                                            \
-      uintptr_t prim = (uintptr_t) (obj)->value; \
-      call_prim (vm, prim);                      \
-    }                                            \
-  while (0)
-
 #define CALL(obj)                                                    \
   do                                                                 \
     {                                                                \
@@ -297,6 +297,16 @@ typedef u16_t reg_t;
         case primitive:                                              \
           {                                                          \
             CALL_PRIMITIVE (obj);                                    \
+            break;                                                   \
+          }                                                          \
+        case closure_on_stack:                                       \
+          {                                                          \
+            call_closure_on_stack (vm, obj);                         \
+            break;                                                   \
+          }                                                          \
+        case closure_on_heap:                                        \
+          {                                                          \
+            call_closure_on_heap (vm, obj);                          \
             break;                                                   \
           }                                                          \
         default:                                                     \
@@ -320,8 +330,55 @@ typedef u16_t reg_t;
       vm->fp = POP_REG ();      \
       vm->pc = POP_REG ();      \
       vm->local = vm->fp + FPS; \
+      if (vm->closure)          \
+        vm->closure = NULL;     \
     }                           \
   while (0)
+
+#define CALL_PROCEDURE(obj)                \
+  do                                       \
+    {                                      \
+      u32_t offset = (u32_t) (obj)->value; \
+      PROC_CALL (offset);                  \
+    }                                      \
+  while (0)
+
+#define CALL_PRIMITIVE(obj)                      \
+  do                                             \
+    {                                            \
+      uintptr_t prim = (uintptr_t) (obj)->value; \
+      call_prim (vm, prim);                      \
+    }                                            \
+  while (0)
+
+static inline void call_closure_on_stack (vm_t vm, object_t obj)
+{
+  uintptr_t data = (uintptr_t) (obj)->value;
+  reg_t env = (0x3FF & data);
+  u8_t size = (0xFC00 & data);
+  reg_t entry = ((0xFFFF0000 & data) >> 16);
+  reg_t total_size = size * sizeof (Object);
+  VM_DEBUG ("(closure-on-stack %d %d 0x%x)\n", size, env, entry);
+  memcpy ((char *)(vm->stack + vm->sp), (char *)(vm->stack + env), total_size);
+  vm->sp += total_size;
+  JUMP (entry);
+}
+
+static inline void call_closure_on_heap (vm_t vm, object_t obj)
+{
+  closure_t closure = (closure_t) (obj)->value;
+  u8_t size = closure->frame_size;
+  object_t env = closure->env;
+  reg_t entry = closure->entry;
+  u8_t arity = closure->arity;
+  reg_t total_size = size * sizeof (Object);
+  VM_DEBUG ("(closure-on-heap %d %d %p 0x%x)\n", arity, size, env, entry);
+  // memcpy ((char *)(vm->stack + vm->sp), env, total_size);
+  vm->closure = closure;
+  vm->local = vm->sp - arity * sizeof (Object);
+  vm->sp += total_size;
+  JUMP (entry);
+}
 
 void vm_init (vm_t vm);
 void vm_clean (vm_t vm);
