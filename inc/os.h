@@ -34,10 +34,12 @@
 #  define os_getline console_getline
 #  include <device.h>
 #  include <drivers/flash.h>
+#  include <sys/cdefs.h>
 
 #elif defined LAMBDACHIP_LINUX
 #  include <assert.h>
 #  include <stdio.h>
+#  include <sys/cdefs.h>
 #  include <unistd.h>
 #  define os_printk           printf
 #  define os_getchar          getchar
