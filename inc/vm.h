@@ -153,9 +153,10 @@ typedef u16_t reg_t;
       begins from 2
  * 2. The type of frame[offset] is void*
  */
-#define LOCAL(offset)                                             \
-  (vm->closure ? (&vm->closure->env[offset - vm->closure->arity]) \
-               : (&((object_t) (vm->stack + vm->local))[offset]))
+#define LOCAL(offset)                                   \
+  ((vm->closure && (offset >= vm->closure->arity))      \
+     ? (&vm->closure->env[offset - vm->closure->arity]) \
+     : (&((object_t) (vm->stack + vm->local))[offset]))
 
 //#define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
 
