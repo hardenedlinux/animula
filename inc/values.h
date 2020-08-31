@@ -19,7 +19,28 @@
 
 #include "gc.h"
 #include "object.h"
+#include "rbtree.h"
 #include "types.h"
+
+typedef struct ClosureCacheNode ClosureCacheNode;
+typedef struct ClosureCacheLookup ClosureCacheLookup;
+
+struct ClosureCacheNode
+{
+  RB_ENTRY (ClosureCacheNode) entry;
+  closure_t closure;
+};
+
+static inline closure_t return_closure (ClosureCacheNode *cn)
+{
+  return cn->closure;
+}
+
+static inline int closure_cache_compare (ClosureCacheNode *a,
+                                         ClosureCacheNode *b)
+{
+  return a->closure->entry == b->closure->entry;
+}
 
 /* static inline object_t gen_boolean(bool value) */
 /* { */
@@ -30,6 +51,7 @@
 /*   return obj; */
 /* } */
 
+closure_t remove_closure_cache (closure_t closure);
 object_t make_continuation (void);
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
 
