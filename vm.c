@@ -17,6 +17,33 @@
 
 #include "vm.h"
 
+static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
+                                 reg_t entry)
+{
+  closure_t closure = closure_cache_fetch (entry);
+
+  if (closure)
+    {
+      // FIXME: is it possible to avoid to push redundant env frame to stack?
+      printf ("use existing closure!\n");
+      // skip env frame
+      vm->sp -= frame_size * sizeof (Object);
+      return closure;
+    }
+
+  closure = make_closure (arity, frame_size, entry);
+
+  for (u8_t i = frame_size; i > 0; i--)
+    {
+      closure->env[i - 1] = POP_OBJ ();
+      /* printf ("closure->env[%d]: type = %d, value = %d\n", i - 1, */
+      /*         closure->env[i - 1].attr.type, */
+      /*         (imm_int_t) (closure->env[i - 1].value)); */
+    }
+
+  return closure;
+}
+
 static void call_prim (vm_t vm, pn_t pn)
 {
   prim_t prim = get_prim (pn);
@@ -311,16 +338,9 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         u8_t arity = ((bc.bc2 & 0xF0) >> 4);
         reg_t entry = ((bc.bc3 << 8) | bc.bc4);
         VM_DEBUG ("(closure-on-heap %d %d 0x%x)\n", arity, size, entry);
-        closure_t closure = make_closure (arity, size, entry);
+        closure_t closure = create_closure (vm, arity, size, entry);
         Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
                       .value = (void *)closure};
-        for (u8_t i = size; i > 0; i--)
-          {
-            closure->env[i - 1] = POP_OBJ ();
-            /* printf ("closure->env[%d]: type = %d, value = %d\n", i - 1, */
-            /*         closure->env[i - 1].attr.type, */
-            /*         (imm_int_t) (closure->env[i - 1].value)); */
-          }
         PUSH_OBJ (obj);
         break;
       }

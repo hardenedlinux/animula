@@ -54,7 +54,7 @@ find_from_closure_cache (reg_t entry, closure_t (*proc) (ClosureCacheNode *cn))
   return NULL;
 }
 
-static closure_t closure_cache_fetch (reg_t entry)
+closure_t closure_cache_fetch (reg_t entry)
 {
   return find_from_closure_cache (entry, return_closure);
 }
@@ -81,16 +81,8 @@ object_t make_continuation ()
 // ----------- Closure
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 {
-  closure_t closure = closure_cache_fetch (entry);
-
-  if (closure)
-    {
-      printf ("use existing closure!\n");
-      return closure;
-    }
-
   printf ("create new closure!\n");
-  closure
+  closure_t closure
     = (closure_t)gc_malloc (sizeof (Closure) + sizeof (Object) * frame_size);
 
   closure->frame_size = frame_size;
