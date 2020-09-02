@@ -23,7 +23,7 @@
 #include "object.h"
 #include "types.h"
 
-#define PRIM_NAME_SIZE 16
+#define PRIM_NAME_SIZE 32
 
 typedef enum prim_num
 {
@@ -34,17 +34,25 @@ typedef enum prim_num
   int_mul = 4,
   int_div = 5,
   object_print = 6,
-  int_modulo = 7,
+  not = 7,
   int_remainder = 8,
   int_eq = 9,
   int_lt = 10,
   int_gt = 11,
   int_le = 12,
   int_ge = 13,
+  int_modulo = 16,
+  foreach = 17,
+  map = 18,
+  list_ref = 19,
+  list_set = 20,
+
+  do_not_forget_modify_PRIM_NAME_SIZE = 31
 } pn_t;
 
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
+typedef object_t (*logic_not_t) (object_t);
 
 typedef struct Primitive
 {

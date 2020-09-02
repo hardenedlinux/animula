@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "values.h"
+#include "closure.h"
 
 static RB_HEAD (ClosureCacheLookup, ClosureCacheNode)
   ClosureCacheLookupHead = RB_INITIALIZER (&ClosureCacheLookupHead);

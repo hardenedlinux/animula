@@ -80,32 +80,37 @@ void _object_print (object_t obj)
     }
 }
 
-static inline bool _int_eq (imm_int_t x, imm_int_t y)
+static bool _int_eq (imm_int_t x, imm_int_t y)
 {
   // printf ("%d == %d is %d\n", x, y, x == y);
   return x == y;
 }
 
-static inline bool _int_lt (imm_int_t x, imm_int_t y)
+static bool _int_lt (imm_int_t x, imm_int_t y)
 {
   return x < y;
 }
 
-static inline bool _int_gt (imm_int_t x, imm_int_t y)
+static bool _int_gt (imm_int_t x, imm_int_t y)
 {
   return x > y;
 }
 
-static inline bool _int_le (imm_int_t x, imm_int_t y)
+static bool _int_le (imm_int_t x, imm_int_t y)
 {
   return x <= y;
 }
 
-static inline bool _int_ge (imm_int_t x, imm_int_t y)
+static bool _int_ge (imm_int_t x, imm_int_t y)
 {
   return x >= y;
 }
 // --------------------------------------------------
+
+static bool _not (object_t obj)
+{
+  return is_false (obj);
+}
 
 void primitives_init (void)
 {
@@ -116,13 +121,14 @@ void primitives_init (void)
   def_prim (4, "mul", 2, (void *)_int_mul);
   def_prim (5, "div", 2, (void *)_int_div);
   def_prim (6, "object_print", 1, (void *)_object_print);
-  def_prim (7, "modulo", 2, (void *)_int_modulo);
+  def_prim (7, "not", 1, (void *)_not);
   def_prim (8, "remainder", 2, (void *)_int_remainder);
   def_prim (9, "int_eq", 2, (void *)_int_eq);
   def_prim (10, "int_lt", 2, (void *)_int_lt);
   def_prim (11, "int_gt", 2, (void *)_int_gt);
   def_prim (12, "int_le", 2, (void *)_int_le);
   def_prim (13, "int_ge", 2, (void *)_int_ge);
+  def_prim (16, "modulo", 2, (void *)_int_modulo);
 }
 
 #if defined LAMBDACHIP_DEBUG

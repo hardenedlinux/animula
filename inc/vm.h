@@ -18,6 +18,7 @@
  */
 
 #include "bytecode.h"
+#include "closure.h"
 #include "debug.h"
 #include "lef.h"
 #include "memory.h"
@@ -25,7 +26,6 @@
 #include "os.h"
 #include "primitives.h"
 #include "types.h"
-#include "values.h"
 
 extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);

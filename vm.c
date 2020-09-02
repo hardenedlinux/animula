@@ -24,7 +24,9 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
 
   if (closure)
     {
-      // FIXME: is it possible to avoid to push redundant env frame to stack?
+      /* FIXME: Avoid to push redundant env frame to stack, we may add a new
+       *        instruction (closure-prefetch entry-label end-label).
+       */
       printf ("use existing closure!\n");
       // skip env frame
       vm->sp -= frame_size * sizeof (Object);
@@ -90,9 +92,20 @@ static void call_prim (vm_t vm, pn_t pn)
         size_t size = sizeof (struct Object);
         Object x = POP_OBJ ();
         Object y = POP_OBJ ();
-        Object z = {.attr = {.type = boolean, .gc = 0}, .value = NULL};
-        z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);
-        PUSH_OBJ (z);
+        if (fn ((imm_int_t)y.value, (imm_int_t)x.value))
+          PUSH_OBJ (GLOBAL_REF (true_const));
+        else
+          PUSH_OBJ (GLOBAL_REF (false_const));
+        break;
+      }
+    case not:
+      {
+        logic_not_t fn = (logic_not_t)prim->fn;
+        Object obj = POP_OBJ ();
+        if (fn (&obj))
+          PUSH_OBJ (GLOBAL_REF (true_const));
+        else
+          PUSH_OBJ (GLOBAL_REF (false_const));
         break;
       }
     case pop:
