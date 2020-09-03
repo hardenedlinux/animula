@@ -34,7 +34,7 @@
   4.  Symbol        |      interned head pointer                  |
   5.  Vector        |      length          |      content         |
   6.  Continuation  |      parent          |      closure         |
-  7.  List          |      length          |      content         |
+  7.  List          |      list_t address                         |
   8.  String        |      C-string encoding                      |
   9.  Procedure     |      codeseg offset                         |
   10. Primitive     |      primitive number                       |
@@ -133,20 +133,31 @@ typedef struct Closure
   Object env[];
 } __packed Closure, *closure_t;
 
-typedef struct Vector
-{
-  size_t size;
-  object_t vec[];
-} __packed *vec_t;
-
-/* define Page List */
-typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
-
 typedef struct ObjectList
 {
   SLIST_ENTRY (ObjectList) obj_list;
   object_t obj;
-} __packed obj_list_t;
+} __packed ObjectList, *obj_list_t;
+
+typedef struct List
+{
+  u16_t size;
+  obj_list_t list;
+} __packed List, *list_t;
+
+typedef struct Pair
+{
+  obj_list_t list;
+} __packed Pair, *pair_t;
+
+typedef struct Vector
+{
+  u16_t size;
+  Object vec[];
+} __packed Vector, *vector_t;
+
+/* define Page List */
+typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
 
 /* NOTE: All objects are stored in stack by copying, so we can't just compared
  *       the head pointer.
@@ -186,5 +197,6 @@ extern GLOBAL_DEF (const Object, none_const);
 
 void init_predefined_objects (void);
 void free_object (object_t obj);
+object_t new_object (u8_t type);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

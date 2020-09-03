@@ -177,6 +177,45 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)prim;
         break;
       }
+    case list:
+      {
+        u8_t s = NEXT_DATA ();
+        u16_t size = ((s << 8) | NEXT_DATA ());
+        list_t list = (list_t)gc_malloc (sizeof (List));
+        SLIST_INIT (&list->list);
+        obj->value = (void *)list;
+
+        for (u16_t i = 0; i < size; i++)
+          {
+            object_t new_obj = new_object (0);
+            memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
+            POP_OBJ ();
+            obj_list_t bl = (obj_list_t)gc_malloc (sizeof (ObjectList));
+            bl->obj = new_obj;
+            SLIST_INSERT_HEAD (&list->list, bl, new_obj);
+          }
+        gc_book (list);
+        break;
+      }
+    case vector:
+      {
+        u8_t s = NEXT_DATA ();
+        u16_t size = ((s << 8) | NEXT_DATA ());
+        vector_t vector = (vector_t)gc_malloc (sizeof (Vector));
+        vector->vector = (object_t)gc_malloc (sizeof (Object) * size);
+        obj->attr.type = vector;
+        obj->value = (void *)vector;
+
+        for (u16_t i = 0; i < size; i++)
+          {
+            object_t new_obj = new_object (0);
+            memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
+            POP_OBJ ();
+            vector->vector[i] = new_obj;
+          }
+        gc_book (vector);
+        break;
+      }
     default:
       {
         os_printk ("Oops, invalid object %d %d!\n", bc.type, bc.data);

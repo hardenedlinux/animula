@@ -63,3 +63,10 @@ void free_object (object_t obj)
   gc_free (obj);
   obj = NULL;
 }
+
+object_t new_object (u8_t type)
+{
+  object_t object = (object_t)gc_malloc (sizeof (Object));
+  object->attr.type = type;
+  return object;
+}
