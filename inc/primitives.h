@@ -21,6 +21,7 @@
 #include "debug.h"
 #include "memory.h"
 #include "object.h"
+#include "print.h"
 #include "types.h"
 #include "vector.h"
 

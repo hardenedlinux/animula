@@ -54,30 +54,7 @@ static inline imm_int_t _int_remainder (imm_int_t x, imm_int_t y)
 
 void _object_print (object_t obj)
 {
-  switch (obj->attr.type)
-    {
-    case imm_int:
-      {
-        os_printk ("%d", (imm_int_t)obj->value);
-        break;
-      }
-    case string:
-      {
-        os_printk ("%s", (char *)obj->value);
-        break;
-      }
-    /* case primitive: */
-    /*   { */
-    /*     os_printk ("<primitive: %s>", (char *)prim_name ((u16_t)obj->value));
-     */
-    /*     break; */
-    /*   } */
-    default:
-      {
-        os_printk ("object_print: Invalid object type %d\n", obj->attr.type);
-        panic ("PANIC!\n");
-      }
-    }
+  object_printer (obj);
 }
 
 static bool _int_eq (imm_int_t x, imm_int_t y)

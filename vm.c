@@ -181,6 +181,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
+        VM_DEBUG ("(push-list-object %d)\n", size);
         list_t l = new_list ();
         SLIST_INIT (&l->list);
         obj->attr.type = list;
@@ -201,6 +202,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
+        VM_DEBUG ("(push-vector-object %d)\n", size);
         vector_t v = new_vector ();
         v->vec = (object_t *)gc_malloc (sizeof (Object) * size);
         obj->attr.type = vector;
@@ -412,6 +414,13 @@ static void interp_special (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(primitive %d %s)\n", bc.data, prim_name (bc.data));
         call_prim (vm, (pn_t)bc.data);
+        VM_DEBUG ("result: %d\n", (s32_t)TOP_OBJ ().value);
+        break;
+      }
+    case PRIMITIVE_EXT:
+      {
+        VM_DEBUG ("(primitive %d %s)\n", bc.data + 16, prim_name (bc.data));
+        call_prim (vm, (pn_t)bc.data + 16);
         VM_DEBUG ("result: %d\n", (s32_t)TOP_OBJ ().value);
         break;
       }

@@ -143,10 +143,11 @@
 #define CLOSURE_ON_STACK 0b0010
 
 // special encoding
-#define PRIMITIVE 0b1100
-#define OBJECT    0b1110
-#define CONTROL   0b1111
-#define HALT      0b1111
+#define PRIMITIVE     0b1100
+#define PRIMITIVE_EXT 0b1101
+#define OBJECT        0b1110
+#define CONTROL       0b1111
+#define HALT          0b1111
 
 typedef enum encode_type
 {
