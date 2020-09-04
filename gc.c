@@ -17,21 +17,23 @@
 
 #include "gc.h"
 
-static obj_list_head_t gc_free_list;
+/* The GC in LambdaChip is "object-based generational GC".
+   We don't perform mark/sweep, or any reference counting.
+ */
 
-static void mark (object_t obj)
-{
-  // TODO
-}
-
-static void sweep (void)
-{
-  // TODO
-}
+static obj_list_head_t obj_free_list;
+static obj_list_head_t obj_list_free_list;
+static obj_list_head_t list_free_list;
+static obj_list_head_t vector_free_list;
+static obj_list_head_t closure_free_list;
 
 void gc_init (void)
 {
-  SLIST_INIT (&gc_free_list);
+  SLIST_INIT (&obj_free_list);
+  SLIST_INIT (&obj_list_free_list);
+  SLIST_INIT (&list_free_list);
+  SLIST_INIT (&vector_free_list);
+  SLIST_INIT (&closure_free_list);
 }
 
 bool gc (void)
@@ -47,7 +49,9 @@ bool gc (void)
   return false;
 }
 
-static inline void *pool_malloc (size_t size)
+void gc_book (gobj_t type, void *obj) {}
+
+void *gc_pool_malloc (gobj_t type)
 {
   /* NOTE:
    * Object pool design is based on the facts:
@@ -62,7 +66,40 @@ static inline void *pool_malloc (size_t size)
    * 2. If succeed, move it to ref_list
    */
 
-  return NULL;
+  void *ret = NULL;
+
+  switch (type)
+    {
+    case gc_object:
+      {
+        MALLOC_FROM_POOL (obj_free_list);
+        break;
+      }
+    case gc_list:
+      {
+        MALLOC_FROM_POOL (list_free_list);
+        break;
+      }
+    case gc_vector:
+      {
+        MALLOC_FROM_POOL (vector_free_list);
+        break;
+      }
+    case gc_obj_list:
+      {
+        MALLOC_FROM_POOL (obj_list_free_list);
+        break;
+      }
+    case gc_closure:
+      {
+        MALLOC_FROM_POOL (closure_free_list);
+        break;
+      }
+    default:
+      break;
+    }
+
+  return ret;
 }
 
 void *gc_malloc (size_t size)
@@ -79,11 +116,8 @@ void *gc_malloc (size_t size)
        *    b. malloc again
        *    c. malloc is still failed, then waiting and printing error
        */
-      void *ptr = pool_malloc (size);
-      if (ptr)
-        return ptr;
 
-      ptr = os_malloc (size);
+      void *ptr = os_malloc (size);
       if (ptr)
         return ptr;
 

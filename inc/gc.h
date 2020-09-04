@@ -21,10 +21,34 @@
 #include "object.h"
 #include "types.h"
 
+typedef enum gc_obj_type
+{
+  gc_object,
+  gc_pair,
+  gc_vector,
+  gc_continuation,
+  gc_list,
+  gc_closure,
+  gc_obj_list
+} gobj_t;
+
+#define MALLOC_FROM_POOL(lst)               \
+  do                                        \
+    {                                       \
+      obj_list_t node = SLIST_FIRST (&lst); \
+      if (node)                             \
+        {                                   \
+          SLIST_REMOVE_HEAD (&lst, next);   \
+          ret = node->obj;                  \
+        }                                   \
+    }                                       \
+  while (0)
+
 void gc_init (void);
-void gc_book (object_t obj);
 bool gc (void);
 void *gc_malloc (size_t size);
 void gc_free (void *ptr);
+void *gc_pool_malloc (gobj_t type);
+void gc_book (gobj_t type, void *obj);
 
 #endif // End of __LAMBDACHIP_GC_H__
