@@ -42,7 +42,7 @@ lef_t load_lef_from_uart ()
     {
       uart_drop_rest_data ();
       os_printk ("Wrong LEF file, please check it then re-upload!\n");
-      return NULL;
+      exit (-1);
     }
 
   for (int i = 0; i < 3; i++)
@@ -87,7 +87,7 @@ lef_t load_lef_from_file (const char *filename)
   if (!LEF_VERIFY (lef))
     {
       os_printk ("Wrong LEF file, please check it then re-upload!\n");
-      return NULL;
+      exit (-1);
     }
 
   os_read (fd, lef->ver, 3);
