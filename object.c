@@ -66,41 +66,22 @@ void free_object (object_t obj)
 
 obj_list_t new_obj_list ()
 {
-  obj_list_t ol = (obj_list_t)gc_pool_malloc (gc_obj_list);
-
-  if (!ol)
-    {
-      ol = (obj_list_t)gc_malloc (sizeof (ObjectList));
-      gc_book (gc_obj_list, (void *)ol);
-    }
-
-  return ol;
+  NEW_OBJ (obj_list_t, gc_obj_list, ObjectList);
 }
 
 list_t new_list ()
 {
-  list_t ll = (list_t)gc_pool_malloc (gc_list);
-
-  if (!ll)
-    {
-      ll = (list_t)gc_malloc (sizeof (List));
-      gc_book (gc_list, (void *)ll);
-    }
-
-  return ll;
+  NEW_OBJ (list_t, gc_list, List);
 }
 
 vector_t new_vector ()
 {
-  vector_t v = (vector_t)gc_pool_malloc (gc_vector);
+  NEW_OBJ (vector_t, gc_vector, Vector);
+}
 
-  if (!v)
-    {
-      v = (vector_t)gc_malloc (sizeof (Vector));
-      gc_book (gc_vector, (void *)v);
-    }
-
-  return v;
+pair_t new_pair ()
+{
+  NEW_OBJ (pair_t, gc_pair, Pair);
 }
 
 object_t new_object (u8_t type)

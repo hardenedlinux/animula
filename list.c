@@ -16,3 +16,98 @@
  */
 
 #include "list.h"
+
+object_t car (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case list:
+      {
+        obj_list_head_t head = ((list_t)obj->value)->list;
+        obj_list_t first = SLIST_FIRST (&head);
+        return first->obj;
+      }
+    case pair:
+      {
+        return ((pair_t)obj->value)->car;
+      }
+    default:
+      {
+        os_printk ("car: Invalid object type %d\n", obj->attr.type);
+        panic ("The program is down!\n");
+      }
+    }
+
+  return NULL;
+}
+
+object_t cdr (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case list:
+      {
+        obj_list_head_t head = ((list_t)obj->value)->list;
+        obj_list_t first = SLIST_FIRST (&head);
+        obj_list_t next = SLIST_NEXT (first, next);
+
+        if (next)
+          {
+            return next->obj;
+          }
+        else
+          {
+            return &GLOBAL_REF (null_const);
+          }
+      }
+    case pair:
+      {
+        return ((pair_t)obj->value)->cdr;
+      }
+    default:
+      {
+        os_printk ("cdr: Invalid object type %d\n", obj->attr.type);
+        panic ("The program is down!\n");
+      }
+    }
+
+  return NULL;
+}
+
+object_t cons (object_t a, object_t b)
+{
+  object_t obj = new_object (pair);
+
+  switch (b->attr.type)
+    {
+    case null_obj:
+      {
+        obj->attr.type = list;
+        list_t lst = new_list ();
+        obj_list_t ol = new_obj_list ();
+        SLIST_INSERT_HEAD (&lst->list, ol, next);
+        obj->value = (void *)lst;
+        break;
+      }
+    default:
+      {
+        pair_t p = new_pair ();
+        p->car = a;
+        p->cdr = b;
+      }
+    }
+
+  return obj;
+}
+
+bool is_pair (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case list:
+    case pair:
+      return true;
+    default:
+      return false;
+    }
+}

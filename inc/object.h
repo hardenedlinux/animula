@@ -148,7 +148,8 @@ typedef struct List
 
 typedef struct Pair
 {
-  obj_list_t list;
+  object_t car;
+  object_t cdr;
 } __packed Pair, *pair_t;
 
 typedef struct Vector
@@ -170,6 +171,19 @@ static inline bool is_true (object_t obj)
   return !is_false (obj);
 }
 
+#define NEW_OBJ(t, te, to)                \
+  do                                      \
+    {                                     \
+      t o = (t)gc_pool_malloc (te);       \
+      if (!o)                             \
+        {                                 \
+          o = (t)gc_malloc (sizeof (to)); \
+          gc_book (te, (void *)o);        \
+        }                                 \
+      return o;                           \
+    }                                     \
+  while (0)
+
 extern GLOBAL_DEF (const Object, true_const);
 extern GLOBAL_DEF (const Object, false_const);
 extern GLOBAL_DEF (const Object, null_const);
@@ -181,6 +195,7 @@ void free_object (object_t obj);
 obj_list_t new_obj_list ();
 list_t new_list ();
 vector_t new_vector ();
+pair_t new_pair ();
 object_t new_object (u8_t type);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

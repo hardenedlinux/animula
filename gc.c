@@ -25,6 +25,7 @@ static obj_list_head_t obj_free_list;
 static obj_list_head_t obj_list_free_list;
 static obj_list_head_t list_free_list;
 static obj_list_head_t vector_free_list;
+static obj_list_head_t pair_free_list;
 static obj_list_head_t closure_free_list;
 
 void gc_init (void)
@@ -33,6 +34,7 @@ void gc_init (void)
   SLIST_INIT (&obj_list_free_list);
   SLIST_INIT (&list_free_list);
   SLIST_INIT (&vector_free_list);
+  SLIST_INIT (&pair_free_list);
   SLIST_INIT (&closure_free_list);
 }
 
@@ -78,6 +80,11 @@ void *gc_pool_malloc (gobj_t type)
     case gc_list:
       {
         MALLOC_FROM_POOL (list_free_list);
+        break;
+      }
+    case gc_pair:
+      {
+        MALLOC_FROM_POOL (pair_free_list);
         break;
       }
     case gc_vector:

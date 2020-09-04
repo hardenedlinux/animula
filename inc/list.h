@@ -18,12 +18,11 @@
  */
 
 #include "object.h"
+#include "qlist.h"
 #include "types.h"
 
-typedef void (*for_each_proc_t) (object_t);
-typedef object_t (*map_proc_t) (object_t);
-
-void list_for_each (object_t obj, for_each_proc_t proc);
-void list_map (object_t obj, map_proc_t proc);
+object_t car (object_t obj);
+object_t cdr (object_t obj);
+object_t cons (object_t a, object_t b);
 
 #endif // End of __LAMBDACHIP_LIST_H__
