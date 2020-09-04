@@ -82,8 +82,14 @@ object_t make_continuation ()
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 {
   printf ("create new closure!\n");
-  closure_t closure
-    = (closure_t)gc_malloc (sizeof (Closure) + sizeof (Object) * frame_size);
+  closure_t closure = (closure_t)gc_pool_malloc (gc_closure);
+
+  if (!closure)
+    {
+      closure = (closure_t)gc_malloc (sizeof (Closure)
+                                      + sizeof (Object) * frame_size);
+      gc_book (gc_closure, (void *)closure);
+    }
 
   closure->frame_size = frame_size;
   closure->entry = entry;

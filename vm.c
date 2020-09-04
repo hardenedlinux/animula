@@ -181,9 +181,10 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
-        list_t list = (list_t)gc_malloc (sizeof (List));
-        SLIST_INIT (&list->list);
-        obj->value = (void *)list;
+        list_t l = new_list ();
+        SLIST_INIT (&l->list);
+        obj->attr.type = list;
+        obj->value = (void *)l;
 
         for (u16_t i = 0; i < size; i++)
           {
@@ -192,28 +193,26 @@ static object_t generate_object (vm_t vm, object_t obj)
             POP_OBJ ();
             obj_list_t bl = (obj_list_t)gc_malloc (sizeof (ObjectList));
             bl->obj = new_obj;
-            SLIST_INSERT_HEAD (&list->list, bl, new_obj);
+            SLIST_INSERT_HEAD (&l->list, bl, next);
           }
-        gc_book (list);
         break;
       }
     case vector:
       {
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
-        vector_t vector = (vector_t)gc_malloc (sizeof (Vector));
-        vector->vector = (object_t)gc_malloc (sizeof (Object) * size);
+        vector_t v = new_vector ();
+        v->vec = (object_t *)gc_malloc (sizeof (Object) * size);
         obj->attr.type = vector;
-        obj->value = (void *)vector;
+        obj->value = (void *)v;
 
         for (u16_t i = 0; i < size; i++)
           {
             object_t new_obj = new_object (0);
             memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
             POP_OBJ ();
-            vector->vector[i] = new_obj;
+            v->vec[i] = new_obj;
           }
-        gc_book (vector);
         break;
       }
     default:
@@ -319,9 +318,9 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
     {
     case VEC_REF:
       {
-        vec_t vec = (vec_t)ss_read_u32 (bc.bc2);
+        vector_t vec = (vector_t)ss_read_u32 (bc.bc2);
         VM_DEBUG ("(vec-ref 0x%p %d)\n", vec, bc.bc3);
-        PUSH (vector_ref (vec, bc.bc2));
+        // PUSH (vector_ref (vec, bc.bc2));
         break;
       }
     case CALL_PROC:
@@ -366,10 +365,10 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
     {
     case VEC_SET:
       {
-        vec_t vec = (vec_t)ss_read_u32 (bc.bc1);
+        vector_t vec = (vector_t)ss_read_u32 (bc.bc1);
         object_t obj = (object_t)ss_read_u32 (bc.bc3);
         VM_DEBUG ("(vec-set! 0x%p %d 0x%p)\n", vec, bc.bc2, obj);
-        vector_set (vec, bc.bc2, obj);
+        // vector_set (vec, bc.bc2, obj);
         break;
       }
     case CLOSURE_ON_STACK:

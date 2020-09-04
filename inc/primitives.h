@@ -22,8 +22,10 @@
 #include "memory.h"
 #include "object.h"
 #include "types.h"
+#include "vector.h"
 
-#define PRIM_NAME_SIZE 32
+#define PRIM_NAME_SIZE 16
+#define PRIM_MAX       32
 
 typedef enum prim_num
 {
@@ -47,7 +49,7 @@ typedef enum prim_num
   list_ref = 19,
   list_set = 20,
 
-  do_not_forget_modify_PRIM_NAME_SIZE = 31
+  do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
 
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
@@ -74,8 +76,6 @@ extern GLOBAL_DEF (prim_t, prim_table[]);
   z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);  \
   PUSH_OBJ (z);
 
-#define PRIM_MAX 16
-
 static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 {
   prim_t prim = (prim_t)os_malloc (sizeof (struct Primitive));
@@ -88,10 +88,7 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
   GLOBAL_REF (prim_table)[pn] = prim;
 }
 
-#if defined LAMBDACHIP_DEBUG
 char *prim_name (u16_t pn);
-#endif
-
 void primitives_init (void);
 void primitives_clean (void);
 prim_t get_prim (u16_t pn);

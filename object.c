@@ -64,6 +64,45 @@ void free_object (object_t obj)
   obj = NULL;
 }
 
+obj_list_t new_obj_list ()
+{
+  obj_list_t ol = (obj_list_t)gc_pool_malloc (gc_obj_list);
+
+  if (!ol)
+    {
+      ol = (obj_list_t)gc_malloc (sizeof (ObjectList));
+      gc_book (gc_obj_list, (void *)ol);
+    }
+
+  return ol;
+}
+
+list_t new_list ()
+{
+  list_t ll = (list_t)gc_pool_malloc (gc_list);
+
+  if (!ll)
+    {
+      ll = (list_t)gc_malloc (sizeof (List));
+      gc_book (gc_list, (void *)ll);
+    }
+
+  return ll;
+}
+
+vector_t new_vector ()
+{
+  vector_t v = (vector_t)gc_pool_malloc (gc_vector);
+
+  if (!v)
+    {
+      v = (vector_t)gc_malloc (sizeof (Vector));
+      gc_book (gc_vector, (void *)v);
+    }
+
+  return v;
+}
+
 object_t new_object (u8_t type)
 {
   object_t object = (object_t)gc_malloc (sizeof (Object));

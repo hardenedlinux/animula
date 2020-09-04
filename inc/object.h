@@ -133,16 +133,17 @@ typedef struct Closure
   Object env[];
 } __packed Closure, *closure_t;
 
+typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
 typedef struct ObjectList
 {
-  SLIST_ENTRY (ObjectList) obj_list;
+  SLIST_ENTRY (ObjectList) next;
   object_t obj;
 } __packed ObjectList, *obj_list_t;
 
 typedef struct List
 {
   u16_t size;
-  obj_list_t list;
+  obj_list_head_t list;
 } __packed List, *list_t;
 
 typedef struct Pair
@@ -153,11 +154,8 @@ typedef struct Pair
 typedef struct Vector
 {
   u16_t size;
-  Object vec[];
+  object_t *vec;
 } __packed Vector, *vector_t;
-
-/* define Page List */
-typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
 
 /* NOTE: All objects are stored in stack by copying, so we can't just compared
  *       the head pointer.
@@ -172,23 +170,6 @@ static inline bool is_true (object_t obj)
   return !is_false (obj);
 }
 
-static inline u8_t vector_ref (vec_t vec, u8_t index)
-{
-  /* TODO
-     NOTE:
-     * The return value must be u8_t which is the address in ss, otherwise we
-     can't push it into the dynamic stack.
-     * So the fetched value must be stored into ss.
-     */
-
-  return 0;
-}
-
-static inline void vector_set (vec_t vec, u8_t index, object_t value)
-{
-  // TODO
-}
-
 extern GLOBAL_DEF (const Object, true_const);
 extern GLOBAL_DEF (const Object, false_const);
 extern GLOBAL_DEF (const Object, null_const);
@@ -197,6 +178,9 @@ extern GLOBAL_DEF (const Object, none_const);
 
 void init_predefined_objects (void);
 void free_object (object_t obj);
+obj_list_t new_obj_list ();
+list_t new_list ();
+vector_t new_vector ();
 object_t new_object (u8_t type);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

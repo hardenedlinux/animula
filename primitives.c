@@ -131,9 +131,9 @@ void primitives_init (void)
   def_prim (16, "modulo", 2, (void *)_int_modulo);
 }
 
-#if defined LAMBDACHIP_DEBUG
 char *prim_name (u16_t pn)
 {
+#if defined LAMBDACHIP_DEBUG
   if (pn >= PRIM_MAX)
     {
       VM_DEBUG ("Invalid prim number: %d\n", pn);
@@ -141,8 +141,10 @@ char *prim_name (u16_t pn)
     }
 
   return GLOBAL_REF (prim_table)[pn]->name;
-}
+#else
+  return "";
 #endif
+}
 
 prim_t get_prim (u16_t pn)
 {

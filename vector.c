@@ -1,5 +1,3 @@
-#ifndef __LAMBDACHIP_DEBUG_H__
-#define __LAMBDACHIP_DEBUG_H__
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
@@ -17,23 +15,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "os.h"
-#include "types.h"
+#include "vector.h"
 
-extern GLOBAL_DEF (bool, vm_verbose);
-
-#if defined LAMBDACHIP_DEBUG
-#  ifndef VM_DEBUG
-#    define VM_DEBUG(...) GLOBAL_REF (vm_verbose) ? os_printk (__VA_ARGS__) : 0;
-#  endif
-#else
-#  define VM_DEBUG
-#endif
-
-static inline void panic (const char *reason)
+u8_t vector_ref (vector_t vec, u8_t index)
 {
-  os_printk ("%s", reason);
-  while (1)
-    ;
+  /* TODO
+     NOTE:
+     * The return value must be u8_t which is the address in ss, otherwise we
+     can't push it into the dynamic stack.
+     * So the fetched value must be stored into ss.
+     */
+
+  return 0;
 }
-#endif // End of __LAMBDACHIP_DEBUG_H__
+
+void vector_set (vector_t vec, u8_t index, object_t value)
+{
+  // TODO
+}
