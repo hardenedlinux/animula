@@ -19,7 +19,18 @@
 
 /* The GC in LambdaChip is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
+
+   The meaning of `gc' field in Object:
+   * 1~3 means the generation, 0 means free.
+   * The `gc' will increase by 1 when it survives from GC.
+   * For stack-allocated object, `gc' field is always 0.
+
  */
+
+static RB_HEAD (ActiveRoot, ActiveRootNode)
+  ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
+
+RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, obj, active_root_compare);
 
 static obj_list_head_t obj_free_list;
 static obj_list_head_t obj_list_free_list;
@@ -38,7 +49,69 @@ void gc_init (void)
   SLIST_INIT (&closure_free_list);
 }
 
-bool gc (void)
+static void free_object (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case pair:
+    case list:
+    case symbol:
+    case continuation:
+      {
+        os_free (obj->value);
+        obj->value = NULL;
+        break;
+      }
+    default:
+      break;
+    }
+  /* We should set value to NULL here, since obj is not guarrenteed to be
+   * freed by GC, and it could be recycled by the pool.
+   */
+  os_free (obj);
+  obj = NULL;
+}
+
+static void recycle_object (gobj_t type, object_t obj)
+{
+  obj_list_t node = NULL;
+
+  switch (type)
+    {
+    case gc_object:
+      {
+        RECYCLE_OBJ (obj_free_list);
+        break;
+      }
+    case gc_list:
+      {
+        RECYCLE_OBJ (list_free_list);
+        break;
+      }
+    case gc_pair:
+      {
+        RECYCLE_OBJ (pair_free_list);
+        break;
+      }
+    case gc_vector:
+      {
+        RECYCLE_OBJ (vector_free_list);
+        break;
+      }
+    case gc_closure:
+      {
+        RECYCLE_OBJ (closure_free_list);
+        break;
+      }
+    default:
+      {
+        os_printk ("Invalid object type %d\n", type);
+        panic ("recycle_object is down!");
+      }
+    }
+}
+
+bool gc (vm_t vm)
 {
   /* TODO:
    * 1. Obj pool is empty, goto 3
@@ -51,59 +124,96 @@ bool gc (void)
   return false;
 }
 
-void gc_book (gobj_t type, void *obj) {}
+void gc_book (gobj_t type, object_t obj)
+{
+
+  obj_list_t node = (obj_list_t)gc_malloc (sizeof (ObjectList));
+
+  node->obj = obj;
+
+  switch (type)
+    {
+    case gc_object:
+      {
+        SLIST_INSERT_HEAD (obj_free_list, node, next);
+        break;
+      }
+    case gc_list:
+      {
+        SLIST_INSERT_HEAD (list_free_list, node, next);
+        break;
+      }
+    case gc_pair:
+      {
+        SLIST_INSERT_HEAD (pair_free_list, node, next);
+        break;
+      }
+    case gc_vector:
+      {
+        SLIST_INSERT_HEAD (vector_free_list, node, next);
+        break;
+      }
+    case gc_closure:
+      {
+        SLIST_INSERT_HEAD (closure_free_list, node, next);
+        break;
+      }
+    default:
+      {
+        os_printk ("Invalid object type %d\n", type);
+        panic ("gc_book is down!");
+      }
+    }
+}
 
 void *gc_pool_malloc (gobj_t type)
 {
   /* NOTE:
    * Object pool design is based on the facts:
+   *    0. The first choice is gc_pool_malloc
    *    1. VM only allocates objects with gc_malloc
    *    2. All objects are well defined and fixed sized
    *    3. All objects are recycleable in runtime
-   * That's why pool_malloc is useful here.
+   * That's why gc_pool_malloc is useful here.
    */
 
-  /* TODO:
-   * 1. Find a proper sized object in free_list
-   * 2. If succeed, move it to ref_list
+  /* NOTE: If object was freed, then the internal obj was freed, so we don't
+   *       have to maintain `gc' fields in the internal obj.
    */
-
   void *ret = NULL;
 
   switch (type)
     {
     case gc_object:
       {
-        MALLOC_FROM_POOL (obj_free_list);
+        MALLOC_OBJ_FROM_POOL (obj_free_list);
         break;
       }
     case gc_list:
       {
-        MALLOC_FROM_POOL (list_free_list);
+        MALLOC_OBJ_FROM_POOL (pair_free_list);
         break;
       }
     case gc_pair:
       {
-        MALLOC_FROM_POOL (pair_free_list);
+        MALLOC_OBJ_FROM_POOL (pair_free_list);
         break;
       }
     case gc_vector:
       {
-        MALLOC_FROM_POOL (vector_free_list);
-        break;
-      }
-    case gc_obj_list:
-      {
-        MALLOC_FROM_POOL (obj_list_free_list);
+        MALLOC_OBJ_FROM_POOL (vector_free_list);
         break;
       }
     case gc_closure:
       {
-        MALLOC_FROM_POOL (closure_free_list);
+        MALLOC_OBJ_FROM_POOL (closure_free_list);
         break;
       }
     default:
-      break;
+      {
+        os_printk ("Invalid object type %d\n", type);
+        panic ("gc_pool_malloc is down!");
+      }
     }
 
   return ret;

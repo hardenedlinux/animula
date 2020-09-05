@@ -39,31 +39,6 @@ GLOBAL_DEF (const Object, none_const)
 
 void init_predefined_objects (void) {}
 
-// This should only be called by GC
-void free_object (object_t obj)
-{
-  switch (obj->attr.type)
-    {
-    case imm_int:
-    case pair:
-    case list:
-    case symbol:
-    case continuation:
-      {
-        gc_free (obj->value);
-        obj->value = NULL;
-        break;
-      }
-    default:
-      break;
-    }
-  /* We should set value to NULL here, since obj is not guarrenteed to be
-   * freed by GC, and it could be recycled by the pool.
-   */
-  gc_free (obj);
-  obj = NULL;
-}
-
 obj_list_t new_obj_list ()
 {
   NEW_OBJ (obj_list_t, gc_obj_list, ObjectList);
@@ -88,5 +63,7 @@ object_t new_object (u8_t type)
 {
   object_t object = (object_t)gc_malloc (sizeof (Object));
   object->attr.type = type;
+  object->attr.gc = 1;
+  gc_book (gc_obj, (void *)object);
   return object;
 }

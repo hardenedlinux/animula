@@ -32,16 +32,62 @@ typedef enum gc_obj_type
   gc_obj_list
 } gobj_t;
 
-#define MALLOC_FROM_POOL(lst)               \
-  do                                        \
-    {                                       \
-      obj_list_t node = SLIST_FIRST (&lst); \
-      if (node)                             \
-        {                                   \
-          SLIST_REMOVE_HEAD (&lst, next);   \
-          ret = node->obj;                  \
-        }                                   \
-    }                                       \
+static inline bool active_root_compare (ActiveRootNode_t a, ActiveRootNode b)
+{
+  return a->obj == b->obj;
+}
+
+static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
+{
+  obj_list_t node = NULL;
+  SLIST_FOREACH (node, lst, next)
+  {
+    /* NOTE: when it's free, gc is 0.
+     */
+    if (!node->obj.attr.gc)
+      {
+        node->obj.attr.gc = 1; // allocated, as the 1st generation
+        break;
+      }
+  }
+
+  return node;
+}
+
+static inline obj_list_t get_free_node (obj_list_head_t *lst)
+{
+  obj_list_t node = NULL;
+
+  if (!SLIST_EMPTY (lst))
+    {
+      node = SLIST_FIRST (lst);
+      SLIST_REMOVE (lst, node, obj_list_t, next);
+    }
+
+  return node;
+}
+
+#define MALLOC_OBJ_FROM_POOL(lst)                 \
+  do                                              \
+    {                                             \
+      obj_list_t node = get_free_obj_node (&lst); \
+      if (node)                                   \
+        ret = node->obj;                          \
+    }                                             \
+  while (0)
+
+#define RECYCLE_OBJ(lst)                  \
+  do                                      \
+    {                                     \
+      SLIST_FOREACH (node, lst, next)     \
+      {                                   \
+        if (node->obj == obj)             \
+          {                               \
+            ((object_t)obj)->attr.gc = 0; \
+            return;                       \
+          }                               \
+      }                                   \
+    }                                     \
   while (0)
 
 void gc_init (void);

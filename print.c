@@ -20,13 +20,13 @@
 static inline void list_printer (object_t obj)
 {
   obj_list_head_t head = ((list_t)obj->value)->list;
-  obj_list_t lst = NULL;
+  obj_list_t node = NULL;
 
   os_printk ("(");
-  SLIST_FOREACH (lst, &head, next)
+  SLIST_FOREACH (node, &head, next)
   {
-    object_printer (lst->obj);
-    if (SLIST_NEXT (lst, next))
+    object_printer (node->obj);
+    if (SLIST_NEXT (node, next))
       os_printk (" ");
   }
   os_printk (")");

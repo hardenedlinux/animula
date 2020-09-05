@@ -178,7 +178,6 @@ static inline bool is_true (object_t obj)
       if (!o)                             \
         {                                 \
           o = (t)gc_malloc (sizeof (to)); \
-          gc_book (te, (void *)o);        \
         }                                 \
       return o;                           \
     }                                     \
@@ -191,7 +190,6 @@ extern GLOBAL_DEF (const Object, null_const);
 extern GLOBAL_DEF (const Object, none_const);
 
 void init_predefined_objects (void);
-void free_object (object_t obj);
 obj_list_t new_obj_list ();
 list_t new_list ();
 vector_t new_vector ();
