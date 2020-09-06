@@ -61,7 +61,41 @@ pair_t new_pair ()
 
 object_t new_object (u8_t type)
 {
-  object_t object = (object_t)gc_malloc (sizeof (Object));
+  object_t object = (object_t)gc_pool_malloc (gc_object);
+
+  if (!object)
+    {
+      object = (object_t)gc_malloc (sizeof (Object));
+    }
+
+  switch (type)
+    {
+    case list:
+      {
+        obj->value = (void *)new_list ();
+        break;
+      }
+    case pair:
+      {
+        obj->value = (void *)new_pair ();
+        break;
+      }
+    case closure:
+      {
+        obj->value = (void *)new_closure ();
+        break;
+      }
+    case vector:
+      {
+        obj->value = (void *)new_vector ();
+        break;
+      }
+    case string:
+      {
+        obj->value = (void *)new_string ();
+        break;
+      }
+    }
   object->attr.type = type;
   object->attr.gc = 1;
   gc_book (gc_obj, (void *)object);

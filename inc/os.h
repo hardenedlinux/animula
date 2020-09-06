@@ -34,6 +34,7 @@
 #  define os_getline console_getline
 #  include <device.h>
 #  include <drivers/flash.h>
+#  include <stdlib.h>
 #  include <sys/cdefs.h>
 
 #elif defined LAMBDACHIP_LINUX

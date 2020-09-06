@@ -55,7 +55,9 @@
 
 #include "os.h"
 #include "types.h"
-#define __unused __attribute_used__
+#ifndef __unused
+#  define __unused __attribute_used__
+#endif
 
 /*
  * This file defines data structures for different types of trees:

@@ -54,9 +54,35 @@ static void free_object (object_t obj)
   switch (obj->attr.type)
     {
     case pair:
+      {
+        os_free (obj->car);
+        os_free (obj->cdr);
+        obj->car = NULL;
+        obj->cdr = NULL;
+        break;
+      }
     case list:
+      {
+        obj_list_t node = NULL;
+        obj_list_t prev = NULL;
+        obj_list_head_t head = (obj_list_head_t)obj->value;
+
+        SLIST_FOREACH (node, head, next)
+        {
+          os_free (prev);
+          prev = node;
+          os_free (node->obj);
+          node->obj = NULL;
+        }
+
+        os_free (prev); // free the last node
+        os_free (obj->value);
+        obj->value = NULL;
+        break;
+      }
     case symbol:
     case continuation:
+    case string:
       {
         os_free (obj->value);
         obj->value = NULL;

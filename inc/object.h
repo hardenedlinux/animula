@@ -127,6 +127,7 @@ typedef union Continuation
 
 typedef struct Closure
 {
+  oattr attr;
   u8_t arity;
   u8_t frame_size;
   reg_t entry;
@@ -142,18 +143,21 @@ typedef struct ObjectList
 
 typedef struct List
 {
+  oattr attr;
   u16_t size;
   obj_list_head_t list;
 } __packed List, *list_t;
 
 typedef struct Pair
 {
+  oattr attr;
   object_t car;
   object_t cdr;
 } __packed Pair, *pair_t;
 
 typedef struct Vector
 {
+  oattr attr;
   u16_t size;
   object_t *vec;
 } __packed Vector, *vector_t;
@@ -179,6 +183,7 @@ static inline bool is_true (object_t obj)
         {                                 \
           o = (t)gc_malloc (sizeof (to)); \
         }                                 \
+      o->attr.gc = 1;                     \
       return o;                           \
     }                                     \
   while (0)
