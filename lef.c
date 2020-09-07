@@ -31,6 +31,26 @@ void free_lef (lef_t lef)
   os_free (lef);
 }
 
+#if defined LAMBDACHIP_ZEPHYR
+lef_t load_lef_from_flash (size_t offset)
+{
+  lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
+
+  for (int i = 0; i < 3; i++)
+    os_flash_read (lef->ver, i, 4);
+
+  os_flash_read (&lef->msize, 4, 4);
+  os_flash_read (&lef->psize, 7, 4);
+  os_flash_read (&lef->csize, 11, 4);
+
+  u32_t size = LEF_BODY_SIZE (lef);
+  lef->body = (u8_t *)os_malloc (size);
+
+  os_flash_read (lef->body, 12, size);
+  lef->entry = lef_entry (lef);
+  os_printk ("Done\n");
+}
+
 lef_t load_lef_from_uart ()
 {
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
@@ -67,6 +87,7 @@ lef_t load_lef_from_uart ()
 
   return lef;
 }
+#endif
 
 lef_t load_lef_from_file (const char *filename)
 {

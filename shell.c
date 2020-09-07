@@ -21,6 +21,7 @@ static int show_help (int argc, char **argv, vm_t vm);
 static int serial_load (int argc, char **argv, vm_t vm);
 static int flash_test (int argc, char **argv, vm_t vm);
 static int etest (int argc, char **argv, vm_t vm);
+static int run_program (int argc, char **argv, vm_t vm);
 
 #define KSC_CNT 10
 static const ksc_t kernel_shell_cmd[]
@@ -28,6 +29,7 @@ static const ksc_t kernel_shell_cmd[]
      {"sload", "Load LEF from serial port", serial_load},
      {"ftest", "Flash test", flash_test},
      {"etest", "Endian test", etest},
+     {"run_prog", "Run stored program", run_program},
      KSC_END};
 
 static int show_help (int argc, char **argv, vm_t vm)
@@ -118,6 +120,25 @@ static int flash_test (int argc, char **argv, vm_t vm)
   os_flash_write ("hello", offset, 6);
   os_flash_read (buf, offset, 6);
   os_printk ("flash: %s\n", buf);
+  return 0;
+}
+
+static int run_program (int argc, char **argv, vm_t vm)
+{
+#if defined LAMBDACHIP_LINUX
+  os_printk ("Loading LEF from flash......\n");
+  lef_t lef = load_lef_from_flash (0);
+
+  vm_load_lef (lef);
+  vm_run (vm);
+
+  if (lef)
+    free_lef (lef);
+  os_printk ("Free LEF successfully!]\n");
+#else
+  os_printk ("This command is not for GNU/Linux platform!\n");
+#endif
+
   return 0;
 }
 
