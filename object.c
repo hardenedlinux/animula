@@ -41,7 +41,7 @@ void init_predefined_objects (void) {}
 
 obj_list_t new_obj_list ()
 {
-  NEW_OBJ (obj_list_t, gc_obj_list, ObjectList);
+  return (obj_list_t)gc_malloc (sizeof (ObjectList));
 }
 
 list_t new_list ()
@@ -59,6 +59,16 @@ pair_t new_pair ()
   NEW_OBJ (pair_t, gc_pair, Pair);
 }
 
+/* string_t new_string () */
+/* { */
+
+/* } */
+
+closure_t new_closure ()
+{
+  NEW_OBJ (closure_t, gc_closure, Closure);
+}
+
 object_t new_object (u8_t type)
 {
   object_t object = (object_t)gc_pool_malloc (gc_object);
@@ -72,32 +82,32 @@ object_t new_object (u8_t type)
     {
     case list:
       {
-        obj->value = (void *)new_list ();
+        object->value = (void *)new_list ();
         break;
       }
     case pair:
       {
-        obj->value = (void *)new_pair ();
+        object->value = (void *)new_pair ();
         break;
       }
-    case closure:
+    case closure_on_heap:
       {
-        obj->value = (void *)new_closure ();
+        object->value = (void *)new_closure ();
         break;
       }
     case vector:
       {
-        obj->value = (void *)new_vector ();
+        object->value = (void *)new_vector ();
         break;
       }
-    case string:
-      {
-        obj->value = (void *)new_string ();
-        break;
-      }
+      /* case string: */
+      /*   { */
+      /*     object->value = (void *)new_string (); */
+      /*     break; */
+      /*   } */
     }
   object->attr.type = type;
   object->attr.gc = 1;
-  gc_book (gc_obj, (void *)object);
+  gc_book (gc_object, (void *)object);
   return object;
 }

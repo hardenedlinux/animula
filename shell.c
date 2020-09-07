@@ -15,9 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LAMBDACHIP_LINUX
-
-#  include "shell.h"
+#include "shell.h"
 
 static int show_help (int argc, char **argv, vm_t vm);
 static int serial_load (int argc, char **argv, vm_t vm);
@@ -25,7 +23,7 @@ static int flash_test (int argc, char **argv, vm_t vm);
 static int etest (int argc, char **argv, vm_t vm);
 static int run_program (int argc, char **argv, vm_t vm);
 
-#  define KSC_CNT 10
+#define KSC_CNT 10
 static const ksc_t kernel_shell_cmd[]
   = {{"help", "List all commands", show_help},
      {"sload", "Load LEF from serial port", serial_load},
@@ -65,7 +63,7 @@ static int serial_load (int argc, char **argv, vm_t vm)
   bool run = false;
   bool save = false;
 
-#  define SLOAD_HELP() os_printk ("Usage: sload [save | once | run]\n")
+#define SLOAD_HELP() os_printk ("Usage: sload [save | once | run]\n")
 
   if (argc < 2)
     {
@@ -130,7 +128,7 @@ static int run_program (int argc, char **argv, vm_t vm)
   os_printk ("Loading LEF from flash......\n");
   lef_t lef = load_lef_from_flash (0);
 
-  vm_load_lef (lef);
+  vm_load_lef (vm, lef);
   vm_run (vm);
 
   if (lef)
@@ -210,5 +208,3 @@ void run_shell (vm_t vm)
         }
     }
 }
-
-#endif

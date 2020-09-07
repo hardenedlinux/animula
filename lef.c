@@ -31,9 +31,9 @@ void free_lef (lef_t lef)
   os_free (lef);
 }
 
-#if defined LAMBDACHIP_ZEPHYR
 lef_t load_lef_from_flash (size_t offset)
 {
+#if defined LAMBDACHIP_ZEPHYR
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
   for (int i = 0; i < 3; i++)
@@ -49,10 +49,16 @@ lef_t load_lef_from_flash (size_t offset)
   os_flash_read (lef->body, 12, size);
   lef->entry = lef_entry (lef);
   os_printk ("Done\n");
+  return lef;
+#else
+  os_printk ("load_lef_from_uart doesn't support GNU/Linux platform!\n");
+  return NULL;
+#endif
 }
 
 lef_t load_lef_from_uart ()
 {
+#if defined LAMBDACHIP_ZEPHYR
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
   for (int i = 0; i < 3; i++)
@@ -84,10 +90,12 @@ lef_t load_lef_from_uart ()
 
   lef->entry = lef_entry (lef);
   os_printk ("Done\n");
-
   return lef;
-}
+#else
+  os_printk ("load_lef_from_uart doesn't support GNU/Linux platform!\n");
+  return NULL;
 #endif
+}
 
 lef_t load_lef_from_file (const char *filename)
 {

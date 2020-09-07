@@ -66,17 +66,17 @@ closure_t remove_closure_cache (closure_t closure)
 }
 
 // -------- Continuation
-object_t make_continuation ()
-{
-  object_t obj = (object_t)gc_malloc (sizeof (struct Object));
-  cont_t cont = (cont_t)gc_malloc (sizeof (union Continuation));
+/* object_t make_continuation () */
+/* { */
+/*   object_t obj = (object_t)gc_malloc (sizeof (struct Object)); */
+/*   cont_t cont = (cont_t)gc_malloc (sizeof (union Continuation)); */
 
-  obj->attr.gc = 0;
-  obj->attr.type = (otype_t)continuation;
-  obj->value = (void *)cont;
+/*   obj->attr.gc = 0; */
+/*   obj->attr.type = (otype_t)continuation; */
+/*   obj->value = (void *)cont; */
 
-  return obj;
-}
+/*   return obj; */
+/* } */
 
 // ----------- Closure
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)

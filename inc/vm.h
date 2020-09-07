@@ -352,6 +352,14 @@ typedef u16_t reg_t;
     }                                            \
   while (0)
 
+#define GC()                                                         \
+  do                                                                 \
+    {                                                                \
+      GCInfo gci = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack}; \
+      gc (&gci);                                                     \
+    }                                                                \
+  while (0)
+
 static inline void call_closure_on_stack (vm_t vm, object_t obj)
 {
   uintptr_t data = (uintptr_t) (obj)->value;

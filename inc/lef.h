@@ -75,10 +75,7 @@ static inline bool file_exist (const char *filename)
 void store_lef (lef_t lef, size_t offset);
 void free_lef (lef_t lef);
 lef_t load_lef_from_file (const char *filename);
-
-#if defined LAMBDACHIP_ZEPHYR
 lef_t load_lef_from_uart (void);
 lef_t load_lef_from_flash (size_t offset);
-#endif
 
 #endif // End of __LAMBDACHIP_LEF_H__

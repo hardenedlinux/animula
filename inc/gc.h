@@ -18,7 +18,7 @@
  */
 
 #include "memory.h"
-#include "object.h"
+#include "rbtree.h"
 #include "types.h"
 
 typedef enum gc_obj_type
@@ -32,9 +32,18 @@ typedef enum gc_obj_type
   gc_obj_list
 } gobj_t;
 
-static inline bool active_root_compare (ActiveRootNode_t a, ActiveRootNode b)
+typedef struct ActiveRoot ActiveRoot;
+typedef struct ActiveRootNode ActiveRootNode;
+
+struct ActiveRootNode
 {
-  return a->obj == b->obj;
+  RB_ENTRY (ActiveRootNode) entry;
+  void *value;
+};
+
+static inline bool active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
+{
+  return a->value == b->value;
 }
 
 static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
@@ -44,9 +53,9 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   {
     /* NOTE: when it's free, gc is 0.
      */
-    if (!node->obj.attr.gc)
+    if (!node->obj->attr.gc)
       {
-        node->obj.attr.gc = 1; // allocated, as the 1st generation
+        node->obj->attr.gc = 1; // allocated, as the 1st generation
         break;
       }
   }
@@ -61,7 +70,7 @@ static inline obj_list_t get_free_node (obj_list_head_t *lst)
   if (!SLIST_EMPTY (lst))
     {
       node = SLIST_FIRST (lst);
-      SLIST_REMOVE (lst, node, obj_list_t, next);
+      SLIST_REMOVE (lst, node, ObjectList, next);
     }
 
   return node;
@@ -79,7 +88,7 @@ static inline obj_list_t get_free_node (obj_list_head_t *lst)
 #define RECYCLE_OBJ(lst)                  \
   do                                      \
     {                                     \
-      SLIST_FOREACH (node, lst, next)     \
+      SLIST_FOREACH (node, &lst, next)    \
       {                                   \
         if (node->obj == obj)             \
           {                               \
@@ -90,11 +99,13 @@ static inline obj_list_t get_free_node (obj_list_head_t *lst)
     }                                     \
   while (0)
 
+#define NEXT_FP() (*((u32_t *)(stack + fp + 4)))
+
 void gc_init (void);
-bool gc (void);
+bool gc (const gc_info_t gci);
 void *gc_malloc (size_t size);
 void gc_free (void *ptr);
 void *gc_pool_malloc (gobj_t type);
-void gc_book (gobj_t type, void *obj);
+void gc_book (gobj_t type, object_t obj);
 
 #endif // End of __LAMBDACHIP_GC_H__

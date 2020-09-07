@@ -30,7 +30,7 @@
 static RB_HEAD (ActiveRoot, ActiveRootNode)
   ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
 
-RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, obj, active_root_compare);
+RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
 static obj_list_head_t obj_free_list;
 static obj_list_head_t obj_list_free_list;
@@ -55,37 +55,32 @@ static void free_object (object_t obj)
     {
     case pair:
       {
-        os_free (obj->car);
-        os_free (obj->cdr);
-        obj->car = NULL;
-        obj->cdr = NULL;
+        os_free ((void *)((pair_t)obj->value)->car);
+        os_free ((void *)((pair_t)obj->value)->cdr);
         break;
       }
     case list:
       {
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
-        obj_list_head_t head = (obj_list_head_t)obj->value;
+        obj_list_head_t *head = (obj_list_head_t *)obj->value;
 
         SLIST_FOREACH (node, head, next)
         {
-          os_free (prev);
+          os_free ((void *)prev);
           prev = node;
-          os_free (node->obj);
-          node->obj = NULL;
+          os_free ((void *)node->obj);
         }
 
         os_free (prev); // free the last node
         os_free (obj->value);
-        obj->value = NULL;
         break;
       }
     case symbol:
     case continuation:
     case string:
       {
-        os_free (obj->value);
-        obj->value = NULL;
+        os_free ((void *)obj->value);
         break;
       }
     default:
@@ -94,7 +89,7 @@ static void free_object (object_t obj)
   /* We should set value to NULL here, since obj is not guarrenteed to be
    * freed by GC, and it could be recycled by the pool.
    */
-  os_free (obj);
+  os_free ((void *)obj);
   obj = NULL;
 }
 
@@ -137,7 +132,111 @@ static void recycle_object (gobj_t type, object_t obj)
     }
 }
 
-bool gc (vm_t vm)
+static inline __insert (ActiveRootNode *an)
+{
+  RB_INSERT (ActiveRoot, &ActiveRootHead, an);
+}
+
+static void active_root_insert (object_t obj)
+{
+  ActiveRootNode *an = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
+
+  if (!an)
+    {
+      panic ("GC: We're doomed! There're even no RAMs for GC!\n");
+    }
+
+  an->value = (void *)value;
+
+  switch (obj->type)
+    {
+    case imm_int:
+      {
+        break;
+      }
+    case pair:
+      {
+        pair_t p = (pair_t)obj->value;
+        active_root_insert (p->car);
+        active_root_insert (p->cdr);
+        break;
+      }
+    case list:
+      {
+        obj_list_t node = NULL;
+        obj_list_head_t *head = (obj_list_head_t *)obj->value;
+
+        SLIST_FOREACH (node, head, next)
+        {
+          active_root_insert (node->obj);
+        }
+        break;
+      }
+    case vector:
+      {
+        panic ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+      }
+    default:
+      {
+        ActiveRootNode *van
+          = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
+
+        if (!van)
+          {
+            panic ("GC: We're doomed! There're even no RAMs for GC!\n");
+          }
+
+        van->value = obj->value;
+      }
+    }
+
+  __insert (an);
+}
+
+static void static void active_root_insert_frame (u8_t *stack, u32_t local,
+                                                  u8_t cnt)
+{
+  for (u8_t i = 0; i < cnt; local += sizeof (Object))
+    {
+      object_t obj = (objec_t *)(stack + local);
+
+      if (!obj)
+        panic ("active_root_insert_frame: Invalid object address!");
+
+      active_root_insert (obj);
+    }
+}
+
+static void build_active_root (const gc_info_t gci)
+{
+  // 1. Count frames and get each fp
+  // 2. Generate Active Root Tree
+
+  u8_t *stack = gci->stack;
+
+  for (u32_t fp = gci->fp, u32_t sp = gci->sp; fp; sp = fp, fp = NEXT_FP ())
+    {
+      u32_t local = fp + FPS;
+      u8_t obj_cnt = (sp - local) / sizeof (Object);
+      active_root_insert_frame (stack, local, obj_cnt);
+    }
+}
+
+static void clean_active_root ()
+{
+  ActiveRootNode *node = NULL;
+  ActiveRootNode *prev = NULL;
+
+  RB_FOREACH (node, ActiveRoot, &ActiveRootHead)
+  {
+    os_free ((void *)prev);
+    prev = node;
+  }
+
+  os_free ((void *)prev);
+}
+
+bool gc (const gc_info_t gci)
 {
   /* TODO:
    * 1. Obj pool is empty, goto 3
@@ -147,6 +246,11 @@ bool gc (vm_t vm)
    * 3. Free obj pool
    */
 
+  build_active_root (gci);
+
+  // TODO: gc
+
+  clean_active_root ();
   return false;
 }
 
@@ -161,27 +265,27 @@ void gc_book (gobj_t type, object_t obj)
     {
     case gc_object:
       {
-        SLIST_INSERT_HEAD (obj_free_list, node, next);
+        SLIST_INSERT_HEAD (&obj_free_list, node, next);
         break;
       }
     case gc_list:
       {
-        SLIST_INSERT_HEAD (list_free_list, node, next);
+        SLIST_INSERT_HEAD (&list_free_list, node, next);
         break;
       }
     case gc_pair:
       {
-        SLIST_INSERT_HEAD (pair_free_list, node, next);
+        SLIST_INSERT_HEAD (&pair_free_list, node, next);
         break;
       }
     case gc_vector:
       {
-        SLIST_INSERT_HEAD (vector_free_list, node, next);
+        SLIST_INSERT_HEAD (&vector_free_list, node, next);
         break;
       }
     case gc_closure:
       {
-        SLIST_INSERT_HEAD (closure_free_list, node, next);
+        SLIST_INSERT_HEAD (&closure_free_list, node, next);
         break;
       }
     default:
