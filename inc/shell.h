@@ -17,23 +17,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "__stdio.h"
-#include "lef.h"
-#include "storage.h"
-#include "types.h"
-#include "vm.h"
+#ifndef LAMBDACHIP_LINUX
 
-#define KSC_DESC_LEN   32
-#define KSC_NAME_LEN   8
-#define KSC_MAXARGS    8
-#define KSC_WHITESPACE "\t\r\n "
+#  include "__stdio.h"
+#  include "lef.h"
+#  include "storage.h"
+#  include "types.h"
+#  include "vm.h"
+
+#  define KSC_DESC_LEN   32
+#  define KSC_NAME_LEN   8
+#  define KSC_MAXARGS    8
+#  define KSC_WHITESPACE "\t\r\n "
 
 typedef int (*ksc_run_t) (int, char **, vm_t vm);
 
-#define KSC_END  \
-  {              \
-    {}, {}, NULL \
-  }
+#  define KSC_END  \
+    {              \
+      {}, {}, NULL \
+    }
 
 typedef struct KernelShellCommand
 {
@@ -44,7 +46,7 @@ typedef struct KernelShellCommand
   ksc_run_t run;
 } __packed ksc_t;
 
-#define _E(x) (-(0xE000 + x))
+#  define _E(x) (-(0xE000 + x))
 
 typedef enum return_value
 {
@@ -55,4 +57,7 @@ typedef enum return_value
 } retval_t;
 
 void run_shell (vm_t vm);
+
+#endif
+
 #endif // End of __LAMBDACHIP_SHELL_H__

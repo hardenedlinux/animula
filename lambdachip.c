@@ -49,5 +49,7 @@ void lambdachip_start (void)
   os_printk ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
   os_printk ("Type `help' to get help\n");
 
+#ifndef LAMBDACHIP_LINUX
   run_shell (vm);
+#endif
 }
