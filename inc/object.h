@@ -68,13 +68,13 @@ static inline bool is_true (object_t obj)
   return !is_false (obj);
 }
 
-#define NEW_OBJ(t, te, to)                \
+#define CREATE_NEW_OBJ(t, te, to)         \
   do                                      \
     {                                     \
       t o = (t)gc_pool_malloc (te);       \
       if (!o)                             \
         {                                 \
-          o = (t)gc_malloc (sizeof (to)); \
+          o = (t)os_malloc (sizeof (to)); \
         }                                 \
       o->attr.gc = 1;                     \
       return o;                           \

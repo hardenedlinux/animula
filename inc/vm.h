@@ -127,27 +127,6 @@ static inline void vm_stack_check (vm_t vm)
 #define TOP_CLOSURE()         TOPx (Closure, sizeof (Closure))
 #define TOP_CLOSURE_PTR()     TOPxp (Closure, sizeof (Closure))
 
-#ifndef PC_SIZE
-#  define PC_SIZE 2
-#  if (4 == PC_SIZE)
-#    define PUSH_REG    PUSH_U32
-#    define POP_REG     POP_U32
-#    define NORMAL_JUMP 0xFFFFFFFF
-#    define REG_BIT     32
-typedef u32_t reg_t;
-#  endif
-#  if (2 == PC_SIZE)
-#    define PUSH_REG    PUSH_U16
-#    define POP_REG     POP_U16
-#    define NORMAL_JUMP 0xFFFF
-#    define REG_BIT     16
-typedef u16_t reg_t;
-#  endif
-#endif
-
-// Frame Pre-store Size = sizeof(pc) + sizeof(fp)
-#define FPS 2 * PC_SIZE
-
 /* NOTE:
  * 1. frame[0] is return address, frame[1] is the last fp, so the actual offset
       begins from 2
@@ -359,6 +338,48 @@ typedef u16_t reg_t;
       gc (&gci);                                                     \
     }                                                                \
   while (0)
+
+#define GC_MALLOC(size)                 \
+  ({                                    \
+    void *ret = NULL;                   \
+    do                                  \
+      {                                 \
+        ret = (void *)os_malloc (size); \
+        if (ret)                        \
+          break;                        \
+        GC ();                          \
+      }                                 \
+    while (1);                          \
+    ret;                                \
+  })
+
+#define NEW_OBJ(type)            \
+  ({                             \
+    object_t obj = NULL;         \
+    do                           \
+      {                          \
+        obj = new_object (type); \
+        if (obj)                 \
+          break;                 \
+        GC ();                   \
+      }                          \
+    while (1);                   \
+    obj;                         \
+  })
+
+#define NEW(type)            \
+  ({                         \
+    type##_t obj = NULL;     \
+    do                       \
+      {                      \
+        obj = new_##type (); \
+        if (obj)             \
+          break;             \
+        GC ();               \
+      }                      \
+    while (1);               \
+    obj;                     \
+  })
 
 static inline void call_closure_on_stack (vm_t vm, object_t obj)
 {

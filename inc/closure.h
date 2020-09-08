@@ -39,7 +39,7 @@ static inline closure_t return_closure (ClosureCacheNode *cn)
 static inline int closure_cache_compare (ClosureCacheNode *a,
                                          ClosureCacheNode *b)
 {
-  return a->closure->entry == b->closure->entry;
+  return (b->closure->entry - a->closure->entry);
 }
 
 /* static inline object_t gen_boolean(bool value) */

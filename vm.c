@@ -182,17 +182,17 @@ static object_t generate_object (vm_t vm, object_t obj)
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-list-object %d)\n", size);
-        list_t l = new_list ();
+        list_t l = NEW (list);
         SLIST_INIT (&l->list);
         obj->attr.type = list;
         obj->value = (void *)l;
 
         for (u16_t i = 0; i < size; i++)
           {
-            object_t new_obj = new_object (0);
+            object_t new_obj = NEW_OBJ (0);
             memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
             POP_OBJ ();
-            obj_list_t bl = (obj_list_t)gc_malloc (sizeof (ObjectList));
+            obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
             bl->obj = new_obj;
             SLIST_INSERT_HEAD (&l->list, bl, next);
           }
@@ -203,14 +203,14 @@ static object_t generate_object (vm_t vm, object_t obj)
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-vector-object %d)\n", size);
-        vector_t v = new_vector ();
-        v->vec = (object_t *)gc_malloc (sizeof (Object) * size);
+        vector_t v = NEW (vector);
+        v->vec = (object_t *)os_malloc (sizeof (Object) * size);
         obj->attr.type = vector;
         obj->value = (void *)v;
 
         for (u16_t i = 0; i < size; i++)
           {
-            object_t new_obj = new_object (0);
+            object_t new_obj = NEW_OBJ (0);
             memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
             POP_OBJ ();
             v->vec[i] = new_obj;

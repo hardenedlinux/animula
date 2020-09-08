@@ -51,12 +51,15 @@ void gc_init (void)
 
 static void free_object (object_t obj)
 {
+  /* NOTE: Integers are self-contained object, so we can just release the object
+   */
   switch (obj->attr.type)
     {
     case pair:
       {
-        os_free ((void *)((pair_t)obj->value)->car);
-        os_free ((void *)((pair_t)obj->value)->cdr);
+        free_object ((object_t) ((pair_t)obj->value)->car);
+        free_object ((object_t) ((pair_t)obj->value)->cdr);
+        FREE_OBJECT (&pair_free_list, obj->value);
         break;
       }
     case list:
@@ -69,27 +72,32 @@ static void free_object (object_t obj)
         {
           os_free ((void *)prev);
           prev = node;
-          os_free ((void *)node->obj);
+          free_object ((object_t)node->obj);
         }
 
         os_free (prev); // free the last node
-        os_free (obj->value);
+        FREE_OBJECT (&list_free_list, obj->value);
         break;
       }
     case symbol:
     case continuation:
     case string:
       {
+        panic ("GC: symbol/continuation/string on heap are not supported!\n");
         os_free ((void *)obj->value);
         break;
       }
-    default:
-      break;
+    case closure_on_heap:
+      {
+        remove_closure_cache ((closure_t)obj->value);
+        FREE_OBJECT (&closure_free_list, obj->value);
+        break;
+      }
     }
   /* We should set value to NULL here, since obj is not guarrenteed to be
    * freed by GC, and it could be recycled by the pool.
    */
-  os_free ((void *)obj);
+  FREE_OBJECT (&obj_free_list, obj->value);
   obj = NULL;
 }
 
@@ -121,6 +129,7 @@ static void recycle_object (gobj_t type, object_t obj)
       }
     case gc_closure:
       {
+        remove_closure_cache ((closure_t)obj->value);
         RECYCLE_OBJ (closure_free_list);
         break;
       }
@@ -132,26 +141,30 @@ static void recycle_object (gobj_t type, object_t obj)
     }
 }
 
-static inline __insert (ActiveRootNode *an)
+static inline void insert (ActiveRootNode *an)
 {
   RB_INSERT (ActiveRoot, &ActiveRootHead, an);
 }
 
+static inline bool exist (object_t obj)
+{
+
+  ActiveRootNode node = {.value = (void *)obj};
+  return NULL != RB_FIND (ActiveRoot, &ActiveRootHead, &node);
+}
+
 static void active_root_insert (object_t obj)
 {
-  ActiveRootNode *an = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
+  if (exist (obj))
+    return;
 
-  if (!an)
-    {
-      panic ("GC: We're doomed! There're even no RAMs for GC!\n");
-    }
-
-  an->value = (void *)value;
-
-  switch (obj->type)
+  switch (obj->attr.type)
     {
     case imm_int:
+    case primitive:
+    case procedure:
       {
+        // Self-contain object
         break;
       }
     case pair:
@@ -175,6 +188,13 @@ static void active_root_insert (object_t obj)
     case vector:
       {
         panic ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+        break;
+      }
+    case string:
+      {
+        panic ("GC: Hey, did we support String-on-heap now? If so, please fix "
+               "me!\n");
+        break;
       }
     default:
       {
@@ -190,15 +210,22 @@ static void active_root_insert (object_t obj)
       }
     }
 
-  __insert (an);
+  ActiveRootNode *an = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
+
+  if (!an)
+    {
+      panic ("GC: We're doomed! There're even no RAMs for GC!\n");
+    }
+
+  an->value = (void *)obj;
+  insert (an);
 }
 
-static void static void active_root_insert_frame (u8_t *stack, u32_t local,
-                                                  u8_t cnt)
+static void active_root_insert_frame (u8_t *stack, u32_t local, u8_t cnt)
 {
   for (u8_t i = 0; i < cnt; local += sizeof (Object))
     {
-      object_t obj = (objec_t *)(stack + local);
+      object_t obj = (object_t) (stack + local);
 
       if (!obj)
         panic ("active_root_insert_frame: Invalid object address!");
@@ -213,8 +240,10 @@ static void build_active_root (const gc_info_t gci)
   // 2. Generate Active Root Tree
 
   u8_t *stack = gci->stack;
+  u32_t fp = gci->fp;
+  u32_t sp = gci->sp;
 
-  for (u32_t fp = gci->fp, u32_t sp = gci->sp; fp; sp = fp, fp = NEXT_FP ())
+  for (; fp; sp = fp, fp = NEXT_FP ())
     {
       u32_t local = fp + FPS;
       u8_t obj_cnt = (sp - local) / sizeof (Object);
@@ -236,6 +265,22 @@ static void clean_active_root ()
   os_free ((void *)prev);
 }
 
+static void collect (gobj_t type, obj_list_head_t *head)
+{
+  obj_list_t node = NULL;
+
+  SLIST_FOREACH (node, head, next)
+  {
+    if (exist (node->obj))
+      {
+        node->obj->attr.gc++;
+        continue;
+      }
+
+    recycle_object (type, node->obj);
+  }
+}
+
 bool gc (const gc_info_t gci)
 {
   /* TODO:
@@ -248,16 +293,32 @@ bool gc (const gc_info_t gci)
 
   build_active_root (gci);
 
-  // TODO: gc
+  collect (gc_object, &obj_free_list);
+  collect (gc_list, &list_free_list);
+  collect (gc_vector, &vector_free_list);
+  collect (gc_pair, &pair_free_list);
+  collect (gc_closure, &closure_free_list);
 
   clean_active_root ();
   return false;
 }
 
+void gc_clean_cache ()
+{
+  FREE_OBJECTS (&obj_free_list);
+  FREE_OBJECTS (&list_free_list);
+  FREE_OBJECTS (&vector_free_list);
+  FREE_OBJECTS (&pair_free_list);
+  FREE_OBJECTS (&closure_free_list);
+}
+
 void gc_book (gobj_t type, object_t obj)
 {
 
-  obj_list_t node = (obj_list_t)gc_malloc (sizeof (ObjectList));
+  obj_list_t node = (obj_list_t)os_malloc (sizeof (ObjectList));
+
+  if (!node)
+    panic ("GC: We're doomed! There're even no RAMs for GC!\n");
 
   node->obj = obj;
 
@@ -347,35 +408,4 @@ void *gc_pool_malloc (gobj_t type)
     }
 
   return ret;
-}
-
-void *gc_malloc (size_t size)
-{
-  do
-    {
-      /* NOTE:
-       * 1. gc_malloc will allocate from free_list (obj pool) first
-       * 2. Call malloc if a or b meets:
-       *    a. obj pool is empty
-       *    b. obj pool has no suitable obj
-       * 3. malloc is failed:
-       *    a. collect the whole obj pool
-       *    b. malloc again
-       *    c. malloc is still failed, then waiting and printing error
-       */
-
-      void *ptr = os_malloc (size);
-      if (ptr)
-        return ptr;
-
-      gc ();
-    }
-  while (1);
-}
-
-// gc_free shouldn't be called explicitly, it should be only used by GC
-void gc_free (void *ptr)
-{
-  // TODO: recycle to pool, if pool size exceeds to max, then call low-level
-  // free.
 }

@@ -42,16 +42,21 @@ static void add_to_closure_cache (closure_t closure)
 static closure_t
 find_from_closure_cache (reg_t entry, closure_t (*proc) (ClosureCacheNode *cn))
 {
-  for (ClosureCacheNode *cn
-       = RB_MIN (ClosureCacheLookup, &ClosureCacheLookupHead);
-       cn != NULL;
-       cn = RB_NEXT (ClosureCacheLookup, &ClosureCacheLookupHead, cn))
-    {
-      if (entry == cn->closure->entry)
-        return proc (cn);
-    }
+  /* for (ClosureCacheNode *cn */
+  /*      = RB_MIN (ClosureCacheLookup, &ClosureCacheLookupHead); */
+  /*      cn != NULL; */
+  /*      cn = RB_NEXT (ClosureCacheLookup, &ClosureCacheLookupHead, cn)) */
+  /*   { */
+  /*     if (entry == cn->closure->entry) */
+  /*       return proc (cn); */
+  /*   } */
 
-  return NULL;
+  /* return NULL; */
+  Closure c = {.entry = entry};
+  ClosureCacheNode node = {.closure = &c};
+  ClosureCacheNode *cn = NULL;
+  cn = RB_FIND (ClosureCacheLookup, &ClosureCacheLookupHead, &node);
+  return cn ? proc (cn) : NULL;
 }
 
 closure_t closure_cache_fetch (reg_t entry)
@@ -90,8 +95,10 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 
       if (!closure)
         {
-          closure = (closure_t)gc_malloc (sizeof (Closure)
+          closure = (closure_t)os_malloc (sizeof (Closure)
                                           + sizeof (Object) * frame_size);
+          if (!closure)
+            return NULL;
           gc_book (gc_closure, (void *)closure);
         }
     }

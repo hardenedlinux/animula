@@ -41,22 +41,22 @@ void init_predefined_objects (void) {}
 
 obj_list_t new_obj_list ()
 {
-  return (obj_list_t)gc_malloc (sizeof (ObjectList));
+  return (obj_list_t)os_malloc (sizeof (ObjectList));
 }
 
 list_t new_list ()
 {
-  NEW_OBJ (list_t, gc_list, List);
+  CREATE_NEW_OBJ (list_t, gc_list, List);
 }
 
 vector_t new_vector ()
 {
-  NEW_OBJ (vector_t, gc_vector, Vector);
+  CREATE_NEW_OBJ (vector_t, gc_vector, Vector);
 }
 
 pair_t new_pair ()
 {
-  NEW_OBJ (pair_t, gc_pair, Pair);
+  CREATE_NEW_OBJ (pair_t, gc_pair, Pair);
 }
 
 /* string_t new_string () */
@@ -66,7 +66,7 @@ pair_t new_pair ()
 
 closure_t new_closure ()
 {
-  NEW_OBJ (closure_t, gc_closure, Closure);
+  CREATE_NEW_OBJ (closure_t, gc_closure, Closure);
 }
 
 object_t new_object (u8_t type)
@@ -75,8 +75,13 @@ object_t new_object (u8_t type)
 
   if (!object)
     {
-      object = (object_t)gc_malloc (sizeof (Object));
+      object = (object_t)os_malloc (sizeof (Object));
+
+      if (!object)
+        return NULL;
     }
+
+  object->value = NULL;
 
   switch (type)
     {

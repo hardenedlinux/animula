@@ -17,6 +17,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "closure.h"
+#include "debug.h"
 #include "memory.h"
 #include "rbtree.h"
 #include "types.h"
@@ -43,7 +45,7 @@ struct ActiveRootNode
 
 static inline bool active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
 {
-  return a->value == b->value;
+  return (b->value - a->value);
 }
 
 static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
@@ -63,18 +65,18 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   return node;
 }
 
-static inline obj_list_t get_free_node (obj_list_head_t *lst)
-{
-  obj_list_t node = NULL;
+/* static inline obj_list_t get_free_node (obj_list_head_t *lst) */
+/* { */
+/*   obj_list_t node = NULL; */
 
-  if (!SLIST_EMPTY (lst))
-    {
-      node = SLIST_FIRST (lst);
-      SLIST_REMOVE (lst, node, ObjectList, next);
-    }
+/*   if (!SLIST_EMPTY (lst)) */
+/*     { */
+/*       node = SLIST_FIRST (lst); */
+/*       SLIST_REMOVE (lst, node, ObjectList, next); */
+/*     } */
 
-  return node;
-}
+/*   return node; */
+/* } */
 
 #define MALLOC_OBJ_FROM_POOL(lst)                 \
   do                                              \
@@ -101,10 +103,38 @@ static inline obj_list_t get_free_node (obj_list_head_t *lst)
 
 #define NEXT_FP() (*((u32_t *)(stack + fp + 4)))
 
+#define FREE_OBJECT(head, obj)                           \
+  do                                                     \
+    {                                                    \
+      obj_list_t node = NULL;                            \
+      SLIST_FOREACH (node, head, next)                   \
+      {                                                  \
+        if (node->obj == obj)                            \
+          {                                              \
+            os_free (node->obj);                         \
+            SLIST_REMOVE (head, node, ObjectList, next); \
+          }                                              \
+      }                                                  \
+    }                                                    \
+  while (0)
+
+#define FREE_OBJECTS(head)                               \
+  do                                                     \
+    {                                                    \
+      obj_list_t node = NULL;                            \
+      SLIST_FOREACH (node, head, next)                   \
+      {                                                  \
+        if (0 == node->obj->attr.gc)                     \
+          {                                              \
+            free_object ((object_t)node->obj);           \
+            SLIST_REMOVE (head, node, ObjectList, next); \
+          }                                              \
+      }                                                  \
+    }                                                    \
+  while (0)
+
 void gc_init (void);
 bool gc (const gc_info_t gci);
-void *gc_malloc (size_t size);
-void gc_free (void *ptr);
 void *gc_pool_malloc (gobj_t type);
 void gc_book (gobj_t type, object_t obj);
 

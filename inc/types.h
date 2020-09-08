@@ -178,4 +178,25 @@ typedef struct GCInfo
   u8_t *stack;
 } __packed GCInfo, *gc_info_t;
 
+#ifndef PC_SIZE
+#  define PC_SIZE 2
+#  if (4 == PC_SIZE)
+#    define PUSH_REG    PUSH_U32
+#    define POP_REG     POP_U32
+#    define NORMAL_JUMP 0xFFFFFFFF
+#    define REG_BIT     32
+typedef u32_t reg_t;
+#  endif
+#  if (2 == PC_SIZE)
+#    define PUSH_REG    PUSH_U16
+#    define POP_REG     POP_U16
+#    define NORMAL_JUMP 0xFFFF
+#    define REG_BIT     16
+typedef u16_t reg_t;
+#  endif
+#endif
+
+// Frame Pre-store Size = sizeof(pc) + sizeof(fp)
+#define FPS 2 * PC_SIZE
+
 #endif // End of __LAMBDACHIP_TYPES_H;
