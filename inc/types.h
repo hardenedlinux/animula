@@ -27,7 +27,7 @@
 #  include <stddef.h>
 #  include <zephyr/types.h>
 #  define bool _Bool
-typedef __u16_t reg_t;
+typedef u16_t reg_t;
 
 #elif defined LAMBDACHIP_LINUX
 #  define CONFIG_HEAP_MEM_POOL_SIZE 90000
@@ -42,24 +42,6 @@ typedef __u16_t reg_t;
 #if defined __GNUC__
 #  ifndef __packed
 #    define __packed __attribute__ ((packed))
-#  endif
-#endif
-
-#ifndef PC_SIZE
-#  define PC_SIZE 2
-#  if (4 == PC_SIZE)
-#    define PUSH_REG    PUSH_U32
-#    define POP_REG     POP_U32
-#    define NORMAL_JUMP 0xFFFFFFFF
-#    define REG_BIT     32
-typedef u32_t reg_t;
-#  endif
-#  if (2 == PC_SIZE)
-#    define PUSH_REG    PUSH_U16
-#    define POP_REG     POP_U16
-#    define NORMAL_JUMP 0xFFFF
-#    define REG_BIT     16
-typedef u16_t reg_t;
 #  endif
 #endif
 
