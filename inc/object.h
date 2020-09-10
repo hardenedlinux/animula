@@ -17,7 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "closure.h"
+#include "closure_cache.h"
 #include "gc.h"
 #include "qlist.h"
 #include "types.h"
@@ -26,18 +26,18 @@
  * NOTE:
  * Mostly, LambdaChip supports 32bit MCU, so the object uses 32bit encoding.
 
-  Type:             0                     15                     31
+  Type:             0                     15         23           31
   |                 |                      |                      |
   0.  Imm Int       |              32bit signed int               |
   1.  Arbi Int      |      next cell       |      16bit int       |
   2.  Reserved      |                                             |
-  3.  Pair          |      car             |      cdr             |
+  3.  Pair          |      pair_t address                         |
   4.  Symbol        |      interned head pointer                  |
   5.  Vector        |      length          |      content         |
   6.  Continuation  |      parent          |      closure         |
   7.  List          |      list_t address                         |
   8.  String        |      C-string encoding                      |
-  9.  Procedure     |      codeseg offset                         |
+  9.  Procedure     |      entry           |  arity  |   opt      |
   10. Primitive     |      primitive number                       |
 
   Closure on heap
@@ -55,6 +55,12 @@
 
 #define MAX_STR_LEN 256
 
+extern GLOBAL_DEF (const Object, true_const);
+extern GLOBAL_DEF (const Object, false_const);
+extern GLOBAL_DEF (const Object, null_const);
+// None object, undefined in JS, unspecified in Scheme
+extern GLOBAL_DEF (const Object, none_const);
+
 /* NOTE: All objects are stored in stack by copying, so we can't just compared
  *       the head pointer.
  */
@@ -66,6 +72,11 @@ static inline bool is_false (object_t obj)
 static inline bool is_true (object_t obj)
 {
   return !is_false (obj);
+}
+
+static inline bool is_unspecified (object_t obj)
+{
+  return obj == &GLOBAL_REF (none_const);
 }
 
 #define CREATE_NEW_OBJ(t, te, to)         \
@@ -81,17 +92,24 @@ static inline bool is_true (object_t obj)
     }                                     \
   while (0)
 
-extern GLOBAL_DEF (const Object, true_const);
-extern GLOBAL_DEF (const Object, false_const);
-extern GLOBAL_DEF (const Object, null_const);
-// None object, undefined in JS, unspecified in Scheme
-extern GLOBAL_DEF (const Object, none_const);
+#define VALIDATE(obj, t)                                                       \
+  do                                                                           \
+    {                                                                          \
+      if ((obj)->attr.type != (t))                                             \
+        {                                                                      \
+          os_printk ("%s: Invalid type, expect %d\n", __PRETTY_FUNCTION__, t); \
+          panic ("PANIC!");                                                    \
+        }                                                                      \
+    }                                                                          \
+  while (0)
 
-void init_predefined_objects (void);
-obj_list_t new_obj_list ();
-list_t new_list ();
-vector_t new_vector ();
-pair_t new_pair ();
-object_t new_object (u8_t type);
+#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
+
+closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
+obj_list_t new_obj_list (void);
+list_t lambdachip_new_list (void);
+vector_t lambdachip_new_vector (void);
+pair_t lambdachip_new_pair (void);
+object_t lambdachip_new_object (u8_t type);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

@@ -37,24 +37,47 @@ GLOBAL_DEF (const Object, null_const)
 GLOBAL_DEF (const Object, none_const)
   = {.attr = {.type = none, .gc = 0}, .value = NULL};
 
-void init_predefined_objects (void) {}
+// ----------- Closure
+closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
+{
+  VM_DEBUG ("create new closure!\n");
 
-obj_list_t new_obj_list ()
+  closure_t closure = (closure_t)gc_pool_malloc (gc_closure);
+
+  if (!closure)
+    {
+      closure = (closure_t)os_malloc (sizeof (Closure)
+                                      + sizeof (Object) * frame_size);
+      if (!closure)
+        return NULL;
+      gc_book (gc_closure, (void *)closure);
+    }
+
+  closure->frame_size = frame_size;
+  closure->entry = entry;
+  closure->arity = arity;
+
+  add_to_closure_cache (closure);
+
+  return closure;
+}
+
+obj_list_t new_obj_list (void)
 {
   return (obj_list_t)os_malloc (sizeof (ObjectList));
 }
 
-list_t new_list ()
+list_t lambdachip_new_list (void)
 {
   CREATE_NEW_OBJ (list_t, gc_list, List);
 }
 
-vector_t new_vector ()
+vector_t lambdachip_new_vector (void)
 {
   CREATE_NEW_OBJ (vector_t, gc_vector, Vector);
 }
 
-pair_t new_pair ()
+pair_t lambdachip_new_pair (void)
 {
   CREATE_NEW_OBJ (pair_t, gc_pair, Pair);
 }
@@ -64,12 +87,12 @@ pair_t new_pair ()
 
 /* } */
 
-closure_t new_closure ()
+closure_t lambdachip_new_closure (void)
 {
   CREATE_NEW_OBJ (closure_t, gc_closure, Closure);
 }
 
-object_t new_object (u8_t type)
+object_t lambdachip_new_object (u8_t type)
 {
   object_t object = (object_t)gc_pool_malloc (gc_object);
 
@@ -87,22 +110,22 @@ object_t new_object (u8_t type)
     {
     case list:
       {
-        object->value = (void *)new_list ();
+        object->value = (void *)lambdachip_new_list ();
         break;
       }
     case pair:
       {
-        object->value = (void *)new_pair ();
+        object->value = (void *)lambdachip_new_pair ();
         break;
       }
     case closure_on_heap:
       {
-        object->value = (void *)new_closure ();
+        object->value = (void *)lambdachip_new_closure ();
         break;
       }
     case vector:
       {
-        object->value = (void *)new_vector ();
+        object->value = (void *)lambdachip_new_vector ();
         break;
       }
       /* case string: */

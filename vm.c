@@ -17,6 +17,25 @@
 
 #include "vm.h"
 
+static void handle_optional_args (vm_t vm, object_t proc)
+{
+  u8_t cnt = COUNT_ARGS () - proc->proc.opt;
+  Object varg = {.attr = {.type = list, .gc = 0}, .value = (void *)NEW (list)};
+  obj_list_head_t *head = LIST_OBJECT_HEAD (&varg);
+
+  for (int i = 0; i < cnt; i++)
+    {
+      object_t new_obj = NEW_OBJ (0);
+      *new_obj = POP_OBJ ();
+      new_obj->attr.gc = 1; // don't forget
+      obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
+      bl->obj = new_obj;
+      SLIST_INSERT_HEAD (head, bl, next);
+    }
+
+  PUSH_OBJ (varg);
+}
+
 static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
                                  reg_t entry)
 {
@@ -27,7 +46,7 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
       /* FIXME: Avoid to push redundant env frame to stack, we may add a new
        *        instruction (closure-prefetch entry-label end-label).
        */
-      printf ("use existing closure!\n");
+      VM_DEBUG ("use existing closure!\n");
       // skip env frame
       vm->sp -= frame_size * sizeof (Object);
       return closure;
@@ -54,13 +73,16 @@ static void call_prim (vm_t vm, pn_t pn)
     {
     case ret:
       {
-        //        printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
-        //        vm->pc);
+        break;
+      }
+    case restore:
+      {
+        /* printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc); */
         for (int i = 0; i < 2; i++)
           {
             RESTORE ();
-            //  printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
-            //  vm->pc);
+            /* printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
+             * vm->pc); */
           }
         break;
       }
@@ -114,13 +136,111 @@ static void call_prim (vm_t vm, pn_t pn)
           POP_OBJ ();
         break;
       }
+    case map:
+      {
+        Object lst = POP_OBJ ();
+        Object proc = POP_OBJ ();
+        obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
+        obj_list_t node = NULL;
+        obj_list_t prev = NULL;
+        list_t new_list = NEW (list);
+
+        SLIST_FOREACH (node, head, next)
+        {
+          object_t ret = NEW_OBJ (list);
+          obj_list_t new_node = new_obj_list ();
+          new_node->obj = ret;
+
+          apply_proc (vm, &proc, ret);
+
+          if (prev)
+            {
+              SLIST_INSERT_HEAD (head, node, next);
+            }
+          else
+            {
+              SLIST_INSERT_AFTER (prev, new_node, next);
+            }
+
+          prev = node;
+        }
+
+        Object o = {.attr = {.type = list, .gc = 0}, .value = (void *)new_list};
+        PUSH_OBJ (o);
+        break;
+      }
+    case foreach:
+      {
+        Object lst = POP_OBJ ();
+        Object proc = POP_OBJ ();
+        obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
+        obj_list_t node = NULL;
+
+        SLIST_FOREACH (node, head, next)
+        {
+          apply_proc (vm, &proc, NULL);
+        }
+
+        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        break;
+      }
+    case apply:
+      {
+        VM_DEBUG ("(call apply)\n");
+        Object args = POP_OBJ ();
+        Object proc = POP_OBJ ();
+        Object ret = {0};
+        obj_list_head_t *head = LIST_OBJECT_HEAD (&args);
+        obj_list_t node = NULL;
+
+        SLIST_FOREACH (node, head, next)
+        {
+          PUSH_OBJ (*node->obj);
+        }
+
+        FIX_PC ();
+
+        switch (proc.attr.type)
+          {
+          case procedure:
+            {
+              VM_DEBUG ("apply proc\n");
+              vm->local = vm->fp + FPS;
+              apply_proc (vm, &proc, &ret);
+              PUSH_OBJ (ret);
+              break;
+            }
+          case primitive:
+            {
+              VM_DEBUG ("apply prim %d\n", (pn_t)proc.value);
+              call_prim (vm, (pn_t)proc.value);
+              break;
+            }
+          case closure_on_heap:
+            {
+              if (IS_SHADOW_FRAME ())
+                COPY_SHADOW_FRAME ();
+              panic ("apply closure is not ready yet!\n");
+              break;
+            }
+          default:
+            {
+              os_printk ("apply: not an applicable object, type: %d\n",
+                         proc.attr.type);
+              panic ("apply panic!\n");
+            }
+          }
+        break;
+      }
     default:
       os_printk ("Invalid prim number: %d\n", pn);
     }
 }
 
-static uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
+static uintptr_t vm_get_uintptr (vm_t vm)
 {
+  u8_t buf[sizeof (uintptr_t)] = {0};
+
 #if defined LAMBDACHIP_BIG_ENDIAN
   buf[0] = NEXT_DATA ();
   buf[1] = NEXT_DATA ();
@@ -135,6 +255,20 @@ static uintptr_t vm_get_uintptr (vm_t vm, u8_t *buf)
   return *((uintptr_t *)buf);
 }
 
+static u16_t vm_get_u16 (vm_t vm)
+{
+  u8_t buf[sizeof (u16_t)] = {0};
+
+#if defined LAMBDACHIP_BIG_ENDIAN
+  buf[0] = NEXT_DATA ();
+  buf[1] = NEXT_DATA ();
+#else
+  buf[1] = NEXT_DATA ();
+  buf[0] = NEXT_DATA ();
+#endif
+  return *((u16_t *)buf);
+}
+
 static object_t generate_object (vm_t vm, object_t obj)
 {
   bytecode8_t bc;
@@ -146,8 +280,7 @@ static object_t generate_object (vm_t vm, object_t obj)
     {
     case imm_int:
       {
-        u8_t buf[4] = {0};
-        imm_int_t value = vm_get_uintptr (vm, buf);
+        imm_int_t value = (imm_int_t)vm_get_uintptr (vm);
         VM_DEBUG ("(push-integer-object %d)\n", value);
         obj->value = (void *)value;
         break;
@@ -162,16 +295,18 @@ static object_t generate_object (vm_t vm, object_t obj)
       }
     case procedure:
       {
-        u8_t buf[sizeof (uintptr_t)] = {0};
-        u32_t offset = vm_get_uintptr (vm, buf);
-        VM_DEBUG ("(push-proc-object 0x%x)\n", offset);
-        obj->value = (void *)offset;
+        u16_t offset = vm_get_u16 (vm);
+        u8_t arity = NEXT_DATA ();
+        u8_t opt = NEXT_DATA ();
+        VM_DEBUG ("(push-proc-object 0x%x %d %d)\n", offset, arity, opt);
+        obj->proc.entry = offset;
+        obj->proc.arity = arity;
+        obj->proc.opt = opt;
         break;
       }
     case primitive:
       {
-        u8_t buf[sizeof (uintptr_t)] = {0};
-        uintptr_t prim = vm_get_uintptr (vm, buf);
+        uintptr_t prim = vm_get_uintptr (vm);
         // vm->pc += sizeof (uintptr_t);
         VM_DEBUG ("(push-prim-object %d %s)\n", prim, prim_name (prim));
         obj->value = (void *)prim;
@@ -190,8 +325,8 @@ static object_t generate_object (vm_t vm, object_t obj)
         for (u16_t i = 0; i < size; i++)
           {
             object_t new_obj = NEW_OBJ (0);
-            memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
-            POP_OBJ ();
+            *new_obj = POP_OBJ ();
+            new_obj->attr.gc = 1; // don't forget
             obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
             bl->obj = new_obj;
             SLIST_INSERT_HEAD (&l->list, bl, next);
@@ -211,8 +346,8 @@ static object_t generate_object (vm_t vm, object_t obj)
         for (u16_t i = 0; i < size; i++)
           {
             object_t new_obj = NEW_OBJ (0);
-            memcpy (new_obj, TOP_OBJ_PTR (), sizeof (Object));
-            POP_OBJ ();
+            *new_obj = POP_OBJ ();
+            new_obj->attr.gc = 1; // don't forget
             v->vec[i] = new_obj;
           }
         break;
@@ -251,6 +386,8 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(call-local %d)\n", bc.data);
         object_t obj = (object_t)LOCAL (bc.data);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
         CALL (obj);
         break;
       }
@@ -258,6 +395,8 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(call-local %d)\n", bc.data + 16);
         object_t obj = (object_t)LOCAL (bc.data + 16);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
         CALL (obj);
         break;
       }
@@ -285,6 +424,8 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         u8_t offset = ((bc.data << 2) | ((frame & 0b110000) >> 4));
         VM_DEBUG ("(call-free %x %d)\n", up, offset);
         object_t obj = (object_t)FREE_VAR (up, offset);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
         CALL (obj);
         break;
       }
@@ -329,7 +470,11 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
       {
         u32_t offset = bc.data;
         VM_DEBUG ("(call-proc 0x%x)\n", offset);
+        /* printf ("call-proc before fp: %d\n", ((u32_t *)vm->stack)[vm->fp]);
+         */
+        FIX_PC ();
         PROC_CALL (offset);
+        /* printf ("call-proc after fp: %d\n", ((u32_t *)vm->stack)[vm->fp]); */
         break;
       }
     case F_JMP:
@@ -393,7 +538,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         VM_DEBUG ("(closure-on-heap %d %d 0x%x)\n", arity, size, entry);
         closure_t closure = create_closure (vm, arity, size, entry);
         Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
-                      .value = (void *)closure};
+                      .value = (closure_t)closure};
         PUSH_OBJ (obj);
         break;
       }
@@ -414,14 +559,14 @@ static void interp_special (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(primitive %d %s)\n", bc.data, prim_name (bc.data));
         call_prim (vm, (pn_t)bc.data);
-        VM_DEBUG ("result: %d\n", (s32_t)TOP_OBJ ().value);
+        VM_DEBUG ("result: %p\n", TOP_OBJ ().value);
         break;
       }
     case PRIMITIVE_EXT:
       {
         VM_DEBUG ("(primitive %d %s)\n", bc.data + 16, prim_name (bc.data));
         call_prim (vm, (pn_t)bc.data + 16);
-        VM_DEBUG ("result: %d\n", (s32_t)TOP_OBJ ().value);
+        VM_DEBUG ("result: %p\n", TOP_OBJ ().value);
         break;
       }
     case OBJECT:
@@ -430,21 +575,9 @@ static void interp_special (vm_t vm, bytecode8_t bc)
           {
           case GENERAL_OBJECT:
             {
-              Object obj;
+              Object obj = {0};
               generate_object (vm, &obj);
               PUSH_OBJ (obj);
-              // object_t o = (object_t)LOCAL (0);
-              /* Object b = TOP_OBJ (); */
-              /* object_t o = (object_t)LOCAL (0); */
-              /* printf ("%d === %d === %d\n", obj.attr.type, b.attr.type, */
-              /*         o->attr.type); */
-              /* printf ("vm->stack (%p) + vm->sp (%d) - size (%d)= %p\n", */
-              /*         vm->stack, vm->sp, sizeof (Object), */
-              /*         vm->stack + vm->sp - sizeof (Object)); */
-              /* printf ("vm->stack (%p) + vm->fp (%d) + 2 + offset (%d) = %p\n
-               * ", */
-              /*         vm->stack, vm->fp, 0, LOCAL (0)); */
-
               break;
             }
           case FALSE:
@@ -471,6 +604,8 @@ static void interp_special (vm_t vm, bytecode8_t bc)
           case HALT:
             {
               vm->state = VM_STOP;
+              VM_DEBUG ("GC clean!\n");
+              gc_clean_cache ();
               VM_DEBUG ("Halt here!\n");
               break;
             }
@@ -489,7 +624,7 @@ static void interp_special (vm_t vm, bytecode8_t bc)
 
 static bytecode8_t fetch_next_bytecode (vm_t vm)
 {
-  bytecode8_t bc;
+  bytecode8_t bc = {0};
 
   if (vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
     {
@@ -660,5 +795,37 @@ void vm_run (vm_t vm)
       /*   } */
       /* printf ("------------END-----------\n"); */
       /* getchar (); */
+
+      if (!vm->sp)
+        {
+          VM_DEBUG ("stack is empty, try to recycle once!\n");
+          gc_try_to_recycle ();
+          VM_DEBUG ("done\n");
+        }
+    }
+}
+
+void apply_proc (vm_t vm, object_t proc, object_t ret)
+{
+  // TODO: run proc with a new stack, and the code snippet of
+  u16_t entry = proc->proc.entry;
+  u8_t arity = proc->proc.arity;
+  u16_t end = entry + 1;
+
+  while (VM_RUN == vm->state)
+    {
+      if (end == vm->pc)
+        break;
+
+      dispatch (vm, FETCH_NEXT_BYTECODE ());
+    }
+
+  if (ret)
+    {
+      *ret = POP_OBJ ();
+    }
+  else
+    {
+      POP_OBJ ();
     }
 }

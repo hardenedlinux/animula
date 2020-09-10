@@ -95,11 +95,35 @@ typedef union ObjectAttribute
   u8_t all;
 } __packed oattr;
 
+typedef struct Procedure
+{
+  struct
+  {
+    unsigned arity : 8;
+    unsigned opt : 8;
+    unsigned entry : 16;
+  };
+  u32_t all;
+} __packed Procedure, *procedure_t;
+
 typedef struct Object
 {
   oattr attr;
-  void *value;
+  union
+  {
+    void *value;
+    Procedure proc;
+  };
 } __packed *object_t, Object;
+
+typedef struct Closure
+{
+  oattr attr;
+  u8_t arity;
+  u8_t frame_size;
+  reg_t entry;
+  Object env[];
+} __packed Closure, *closure_t;
 
 typedef union Continuation
 {
@@ -116,15 +140,6 @@ typedef union Continuation
   uintptr_t all;
 } __packed *cont_t;
 
-typedef struct Closure
-{
-  oattr attr;
-  u8_t arity;
-  u8_t frame_size;
-  reg_t entry;
-  Object env[];
-} __packed Closure, *closure_t;
-
 typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
 typedef struct ObjectList
 {
@@ -135,7 +150,6 @@ typedef struct ObjectList
 typedef struct List
 {
   oattr attr;
-  u16_t size;
   obj_list_head_t list;
 } __packed List, *list_t;
 

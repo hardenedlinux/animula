@@ -33,20 +33,20 @@ static RB_HEAD (ActiveRoot, ActiveRootNode)
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
 static obj_list_head_t obj_free_list;
-static obj_list_head_t obj_list_free_list;
 static obj_list_head_t list_free_list;
 static obj_list_head_t vector_free_list;
 static obj_list_head_t pair_free_list;
 static obj_list_head_t closure_free_list;
+static obj_list_head_t procedure_free_list;
 
 void gc_init (void)
 {
   SLIST_INIT (&obj_free_list);
-  SLIST_INIT (&obj_list_free_list);
   SLIST_INIT (&list_free_list);
   SLIST_INIT (&vector_free_list);
   SLIST_INIT (&pair_free_list);
   SLIST_INIT (&closure_free_list);
+  SLIST_INIT (&procedure_free_list);
 }
 
 static void free_object (object_t obj)
@@ -57,6 +57,7 @@ static void free_object (object_t obj)
     {
     case pair:
       {
+        printf ("pair\n");
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
         FREE_OBJECT (&pair_free_list, obj->value);
@@ -64,6 +65,7 @@ static void free_object (object_t obj)
       }
     case list:
       {
+        printf ("list\n");
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
         obj_list_head_t *head = (obj_list_head_t *)obj->value;
@@ -81,9 +83,7 @@ static void free_object (object_t obj)
       }
     case symbol:
     case continuation:
-    case string:
       {
-        panic ("GC: symbol/continuation/string on heap are not supported!\n");
         os_free ((void *)obj->value);
         break;
       }
@@ -94,11 +94,7 @@ static void free_object (object_t obj)
         break;
       }
     }
-  /* We should set value to NULL here, since obj is not guarrenteed to be
-   * freed by GC, and it could be recycled by the pool.
-   */
-  FREE_OBJECT (&obj_free_list, obj->value);
-  obj = NULL;
+  FREE_OBJECT (&obj_free_list, obj);
 }
 
 static void recycle_object (gobj_t type, object_t obj)
@@ -131,6 +127,11 @@ static void recycle_object (gobj_t type, object_t obj)
       {
         remove_closure_cache ((closure_t)obj->value);
         RECYCLE_OBJ (closure_free_list);
+        break;
+      }
+    case gc_procedure:
+      {
+        RECYCLE_OBJ (procedure_free_list);
         break;
       }
     default:
@@ -303,13 +304,13 @@ bool gc (const gc_info_t gci)
   return false;
 }
 
-void gc_clean_cache ()
+void gc_clean_cache (void)
 {
-  FREE_OBJECTS (&obj_free_list);
-  FREE_OBJECTS (&list_free_list);
-  FREE_OBJECTS (&vector_free_list);
-  FREE_OBJECTS (&pair_free_list);
-  FREE_OBJECTS (&closure_free_list);
+  FORCE_FREE_OBJECTS (&obj_free_list);
+  FORCE_FREE_OBJECTS (&list_free_list);
+  FORCE_FREE_OBJECTS (&vector_free_list);
+  FORCE_FREE_OBJECTS (&pair_free_list);
+  FORCE_FREE_OBJECTS (&closure_free_list);
 }
 
 void gc_book (gobj_t type, object_t obj)
@@ -408,4 +409,25 @@ void *gc_pool_malloc (gobj_t type)
     }
 
   return ret;
+}
+
+void simple_collect (obj_list_head_t *head)
+{
+  obj_list_t node = NULL;
+
+  SLIST_FOREACH (node, head, next)
+  {
+    ((object_t)node->obj)->attr.gc = 0;
+  }
+}
+
+void gc_try_to_recycle (void)
+{
+  /* NOTE: Don't collect closures since it's still useful.
+   */
+
+  simple_collect (&obj_free_list);
+  simple_collect (&list_free_list);
+  simple_collect (&vector_free_list);
+  simple_collect (&pair_free_list);
 }

@@ -91,6 +91,8 @@ static bool _not (object_t obj)
 
 void primitives_init (void)
 {
+  /* NOTE: If fn is NULL, then it's inlined to call_prim
+   */
   def_prim (0, "ret", 0, NULL);
   def_prim (1, "pop", 0, NULL);
   def_prim (2, "add", 2, (void *)_int_add);
@@ -98,14 +100,23 @@ void primitives_init (void)
   def_prim (4, "mul", 2, (void *)_int_mul);
   def_prim (5, "div", 2, (void *)_int_div);
   def_prim (6, "object_print", 1, (void *)_object_print);
-  def_prim (7, "not", 1, (void *)_not);
-  def_prim (8, "remainder", 2, (void *)_int_remainder);
+  def_prim (7, "apply", 2, NULL);
+  def_prim (8, "not", 1, (void *)_not);
   def_prim (9, "int_eq", 2, (void *)_int_eq);
   def_prim (10, "int_lt", 2, (void *)_int_lt);
   def_prim (11, "int_gt", 2, (void *)_int_gt);
   def_prim (12, "int_le", 2, (void *)_int_le);
   def_prim (13, "int_ge", 2, (void *)_int_ge);
+  def_prim (14, "restore", 0, NULL);
+  /* def_prim (15, "or", 2, (void *)_or); */
+
+  // extended primitives
   def_prim (16, "modulo", 2, (void *)_int_modulo);
+  def_prim (17, "remainder", 2, (void *)_int_remainder);
+  def_prim (18, "foreach", 2, NULL);
+  def_prim (19, "map", 2, NULL);
+  def_prim (20, "list_ref", 2, (void *)list_ref);
+  def_prim (21, "list_set", 3, (void *)list_set);
 }
 
 char *prim_name (u16_t pn)
@@ -130,9 +141,7 @@ prim_t get_prim (u16_t pn)
 
 void primitives_clean (void)
 {
-  /* Skip 0 (halt), and 1 (ret)
-   */
-  for (int i = int_add; i <= object_print; i++)
+  for (int i = 0; i <= object_print; i++)
     {
       os_free (GLOBAL_REF (prim_table)[i]);
       GLOBAL_REF (prim_table)[i] = NULL;

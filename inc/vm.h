@@ -18,8 +18,9 @@
  */
 
 #include "bytecode.h"
-#include "closure.h"
+#include "closure_cache.h"
 #include "debug.h"
+#include "gc.h"
 #include "lef.h"
 #include "memory.h"
 #include "object.h"
@@ -163,12 +164,6 @@ static inline void vm_stack_check (vm_t vm)
     }                                \
   while (0)
 
-#define HANDLE_ARITY(data)         \
-  for (hov_t i = 0; i < data; i++) \
-    {                              \
-      PUSH (NEXT_DATA ());         \
-    }
-
 #define IS_SHADOW_FRAME() (vm->shadow && vm->sp != vm->local)
 #define COPY_SHADOW_FRAME()                                               \
   do                                                                      \
@@ -190,20 +185,14 @@ static inline void vm_stack_check (vm_t vm)
     }                    \
   while (0)
 
-/* NOTE:
- * If fp is not NORMAL_JUMP, then it's tail-call or tail-recursive.
- * In this situation, we mustn't store pc.
- */
-#define PROC_CALL(offset)                              \
-  do                                                   \
-    {                                                  \
-      if (NORMAL_JUMP == ((u32_t *)vm->stack)[vm->fp]) \
-        ((u32_t *)vm->stack)[vm->fp] = vm->pc;         \
-      else if (IS_SHADOW_FRAME ())                     \
-        COPY_SHADOW_FRAME ();                          \
-      vm->local = vm->fp + FPS;                        \
-      JUMP (offset);                                   \
-    }                                                  \
+#define PROC_CALL(offset)       \
+  do                            \
+    {                           \
+      if (IS_SHADOW_FRAME ())   \
+        COPY_SHADOW_FRAME ();   \
+      vm->local = vm->fp + FPS; \
+      JUMP (offset);            \
+    }                           \
   while (0)
 
 /* Convention:
@@ -264,18 +253,33 @@ static inline void vm_stack_check (vm_t vm)
     }                                          \
   while (0)
 
+#define FIX_PC()                                           \
+  do                                                       \
+    {                                                      \
+      if (NORMAL_JUMP == *((reg_t *)(vm->stack + vm->fp))) \
+        *((reg_t *)(vm->stack + vm->fp)) = (reg_t)vm->pc;  \
+    }                                                      \
+  while (0)
+
+/* NOTE:
+ * If fp is not NORMAL_JUMP, then it's tail-call or tail-recursive.
+ * In this situation, we mustn't store pc.
+ */
 #define CALL(obj)                                                    \
   do                                                                 \
     {                                                                \
+      FIX_PC ();                                                     \
       switch (obj->attr.type)                                        \
         {                                                            \
         case procedure:                                              \
           {                                                          \
+            VM_DEBUG ("call proc!\n");                               \
             CALL_PROCEDURE (obj);                                    \
             break;                                                   \
           }                                                          \
         case primitive:                                              \
           {                                                          \
+            VM_DEBUG ("call prim!\n");                               \
             CALL_PRIMITIVE (obj);                                    \
             break;                                                   \
           }                                                          \
@@ -286,6 +290,7 @@ static inline void vm_stack_check (vm_t vm)
           }                                                          \
         case closure_on_heap:                                        \
           {                                                          \
+            VM_DEBUG ("call closure!\n");                            \
             call_closure_on_heap (vm, obj);                          \
             break;                                                   \
           }                                                          \
@@ -315,12 +320,12 @@ static inline void vm_stack_check (vm_t vm)
     }                           \
   while (0)
 
-#define CALL_PROCEDURE(obj)                \
-  do                                       \
-    {                                      \
-      u32_t offset = (u32_t) (obj)->value; \
-      PROC_CALL (offset);                  \
-    }                                      \
+#define CALL_PROCEDURE(obj)           \
+  do                                  \
+    {                                 \
+      u16_t offset = obj->proc.entry; \
+      PROC_CALL (offset);             \
+    }                                 \
   while (0)
 
 #define CALL_PRIMITIVE(obj)                      \
@@ -353,33 +358,38 @@ static inline void vm_stack_check (vm_t vm)
     ret;                                \
   })
 
-#define NEW_OBJ(type)            \
-  ({                             \
-    object_t obj = NULL;         \
-    do                           \
-      {                          \
-        obj = new_object (type); \
-        if (obj)                 \
-          break;                 \
-        GC ();                   \
-      }                          \
-    while (1);                   \
-    obj;                         \
+#define NEW_OBJ(type)                       \
+  ({                                        \
+    object_t obj = NULL;                    \
+    do                                      \
+      {                                     \
+        obj = lambdachip_new_object (type); \
+        if (obj)                            \
+          break;                            \
+        GC ();                              \
+      }                                     \
+    while (1);                              \
+    obj;                                    \
   })
 
-#define NEW(type)            \
-  ({                         \
-    type##_t obj = NULL;     \
-    do                       \
-      {                      \
-        obj = new_##type (); \
-        if (obj)             \
-          break;             \
-        GC ();               \
-      }                      \
-    while (1);               \
-    obj;                     \
+#define NEW(type)                       \
+  ({                                    \
+    type##_t obj = NULL;                \
+    do                                  \
+      {                                 \
+        obj = lambdachip_new_##type (); \
+        if (obj)                        \
+          break;                        \
+        GC ();                          \
+      }                                 \
+    while (1);                          \
+    obj;                                \
   })
+
+#define NEED_VARGS(p) \
+  ((procedure == (p)->attr.type) && ((p)->proc.arity != (p)->proc.opt))
+
+#define COUNT_ARGS() (vm->sp - vm->fp + FPS) / sizeof (Object)
 
 static inline void call_closure_on_stack (vm_t vm, object_t obj)
 {
@@ -415,4 +425,5 @@ void vm_clean (vm_t vm);
 void vm_restart (vm_t vm);
 void vm_run (vm_t vm);
 void vm_load_lef (vm_t vm, lef_t lef);
+void apply_proc (vm_t vm, object_t proc, object_t ret);
 #endif // End of __LAMBDACHIP_VM_H__

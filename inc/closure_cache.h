@@ -18,7 +18,6 @@
  */
 
 #include "gc.h"
-#include "object.h"
 #include "rbtree.h"
 #include "types.h"
 
@@ -54,6 +53,6 @@ static inline int closure_cache_compare (ClosureCacheNode *a,
 closure_t remove_closure_cache (closure_t closure);
 object_t make_continuation (void);
 closure_t closure_cache_fetch (reg_t entry);
-closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
+void add_to_closure_cache (closure_t closure);
 
 #endif // End of __LAMBDACHIP_VALUES_H__;

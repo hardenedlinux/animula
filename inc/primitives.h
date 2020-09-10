@@ -37,32 +37,36 @@ typedef enum prim_num
   int_mul = 4,
   int_div = 5,
   object_print = 6,
-  not = 7,
-  int_remainder = 8,
+  apply = 7,
+  not = 8,
   int_eq = 9,
   int_lt = 10,
   int_gt = 11,
   int_le = 12,
   int_ge = 13,
+  restore = 14,
+  /* logior = 15, */
   int_modulo = 16,
-  foreach = 17,
-  map = 18,
-  list_ref = 19,
-  list_set = 20,
+  int_remainder = 17,
+  foreach = 18,
+  map = 19,
+  list_ref = 20,
+  list_set = 21,
 
   do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
 
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
-typedef object_t (*logic_not_t) (object_t);
+typedef bool (*logic_not_t) (object_t);
+typedef object_t (*logic_check_t) (object_t, object_t);
 
 typedef struct Primitive
 {
 #if defined LAMBDACHIP_DEBUG
   char name[PRIM_NAME_SIZE];
-#endif
   u8_t arity;
+#endif
   void *fn;
 } __packed *prim_t;
 
@@ -83,8 +87,8 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 #if defined LAMBDACHIP_DEBUG
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
   os_memcpy (prim->name, name, len);
-#endif
   prim->arity = arity;
+#endif
   prim->fn = fn;
   GLOBAL_REF (prim_table)[pn] = prim;
 }

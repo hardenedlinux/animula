@@ -24,5 +24,7 @@
 object_t car (object_t obj);
 object_t cdr (object_t obj);
 object_t cons (object_t a, object_t b);
+object_t list_ref (object_t lst, object_t idx);
+object_t list_set (object_t lst, object_t idx, object_t val);
 
 #endif // End of __LAMBDACHIP_LIST_H__

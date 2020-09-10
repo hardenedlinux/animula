@@ -17,7 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "closure.h"
+#include "closure_cache.h"
 #include "debug.h"
 #include "memory.h"
 #include "rbtree.h"
@@ -31,6 +31,7 @@ typedef enum gc_obj_type
   gc_continuation,
   gc_list,
   gc_closure,
+  gc_procedure,
   gc_obj_list
 } gobj_t;
 
@@ -111,32 +112,44 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
       {                                                  \
         if (node->obj == obj)                            \
           {                                              \
-            os_free (node->obj);                         \
             SLIST_REMOVE (head, node, ObjectList, next); \
+            os_free (node->obj);                         \
+            os_free (node);                              \
+            break;                                       \
           }                                              \
       }                                                  \
     }                                                    \
   while (0)
 
-#define FREE_OBJECTS(head)                               \
+#define __FREE_OBJECTS(head, force)                      \
   do                                                     \
     {                                                    \
       obj_list_t node = NULL;                            \
+      obj_list_t prev = NULL;                            \
       SLIST_FOREACH (node, head, next)                   \
       {                                                  \
-        if (0 == node->obj->attr.gc)                     \
+        if (prev)                                        \
           {                                              \
-            free_object ((object_t)node->obj);           \
-            os_free (node->obj);                         \
-            SLIST_REMOVE (head, node, ObjectList, next); \
+            SLIST_REMOVE (head, prev, ObjectList, next); \
+            os_free (prev);                              \
           }                                              \
+        if (force || (0 == node->obj->attr.gc))          \
+          {                                              \
+            prev = node;                                 \
+            free_object ((object_t)node->obj);           \
+          }                                              \
+        prev = NULL;                                     \
       }                                                  \
     }                                                    \
   while (0)
 
+#define FREE_OBJECTS(head)       __FREE_OBJECTS (head, false)
+#define FORCE_FREE_OBJECTS(head) __FREE_OBJECTS (head, true)
+
 void gc_init (void);
 bool gc (const gc_info_t gci);
+void gc_clean_cache (void);
 void *gc_pool_malloc (gobj_t type);
 void gc_book (gobj_t type, object_t obj);
-
+void gc_try_to_recycle (void);
 #endif // End of __LAMBDACHIP_GC_H__

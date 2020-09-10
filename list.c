@@ -23,8 +23,8 @@ object_t car (object_t obj)
     {
     case list:
       {
-        obj_list_head_t head = ((list_t)obj->value)->list;
-        obj_list_t first = SLIST_FIRST (&head);
+        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        obj_list_t first = SLIST_FIRST (head);
         return first->obj;
       }
     case pair:
@@ -47,8 +47,8 @@ object_t cdr (object_t obj)
     {
     case list:
       {
-        obj_list_head_t head = ((list_t)obj->value)->list;
-        obj_list_t first = SLIST_FIRST (&head);
+        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        obj_list_t first = SLIST_FIRST (head);
         obj_list_t next = SLIST_NEXT (first, next);
 
         if (next)
@@ -76,14 +76,14 @@ object_t cdr (object_t obj)
 
 object_t cons (object_t a, object_t b)
 {
-  object_t obj = new_object (pair);
+  object_t obj = lambdachip_new_object (pair);
 
   switch (b->attr.type)
     {
     case null_obj:
       {
         obj->attr.type = list;
-        list_t lst = new_list ();
+        list_t lst = lambdachip_new_list ();
         obj_list_t ol = new_obj_list ();
         SLIST_INSERT_HEAD (&lst->list, ol, next);
         obj->value = (void *)lst;
@@ -91,7 +91,7 @@ object_t cons (object_t a, object_t b)
       }
     default:
       {
-        pair_t p = new_pair ();
+        pair_t p = lambdachip_new_pair ();
         p->car = a;
         p->cdr = b;
       }
@@ -110,4 +110,65 @@ bool is_pair (object_t obj)
     default:
       return false;
     }
+}
+
+object_t list_ref (object_t lst, object_t idx)
+{
+  VALIDATE (lst, list);
+  VALIDATE (idx, imm_int);
+
+  obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
+  obj_list_t node = NULL;
+  imm_int_t cnt = (imm_int_t)idx->value;
+  object_t ret = &GLOBAL_REF (null_const);
+
+  SLIST_FOREACH (node, head, next)
+  {
+    if (!cnt)
+      ret = node->obj;
+
+    cnt--;
+  }
+
+  if (!ret)
+    {
+      os_printk ("list-ref: Invalid index %d!\n", cnt);
+      panic ("PANIC!");
+      // FIXME: implement throw
+      // throw ();
+    }
+
+  return ret;
+}
+
+object_t list_set (object_t lst, object_t idx, object_t val)
+{
+  VALIDATE (lst, list);
+  VALIDATE (idx, imm_int);
+
+  obj_list_t node = NULL;
+  obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
+  imm_int_t cnt = (imm_int_t)idx->value;
+  object_t ret = val;
+
+  SLIST_FOREACH (node, head, next)
+  {
+    if (!cnt)
+      {
+        node->obj = (void *)val;
+        break;
+      }
+
+    cnt--;
+  }
+
+  if (node->obj != val)
+    {
+      os_printk ("list-set!: Invalid index %d!\n", cnt);
+      panic ("PANIC!");
+      // FIXME: implement throw
+      // throw ();
+    }
+
+  return ret;
 }

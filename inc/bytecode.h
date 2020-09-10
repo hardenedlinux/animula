@@ -44,6 +44,8 @@
       closures either. Do we really care about big RAMs in embedded world?
  * 5. Closure arity is no more than 64
  * 6. Closure frame-size is no more than 64
+ * 7. Procedure entry is no more than 65KB, which means the LEF size is no more
+      than 65KB.
 
  * New idea:
    * Combine all local/free to just one instruction, 0101mmmm, m for mode, make
