@@ -127,6 +127,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
         if (0 == node->obj->attr.gc)                     \
           {                                              \
             free_object ((object_t)node->obj);           \
+            os_free (node->obj);                         \
             SLIST_REMOVE (head, node, ObjectList, next); \
           }                                              \
       }                                                  \
