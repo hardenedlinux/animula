@@ -57,8 +57,6 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   closure->entry = entry;
   closure->arity = arity;
 
-  add_to_closure_cache (closure);
-
   return closure;
 }
 

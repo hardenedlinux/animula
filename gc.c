@@ -89,7 +89,6 @@ static void free_object (object_t obj)
       }
     case closure_on_heap:
       {
-        remove_closure_cache ((closure_t)obj->value);
         FREE_OBJECT (&closure_free_list, obj->value);
         break;
       }
@@ -125,7 +124,6 @@ static void recycle_object (gobj_t type, object_t obj)
       }
     case gc_closure:
       {
-        remove_closure_cache ((closure_t)obj->value);
         RECYCLE_OBJ (closure_free_list);
         break;
       }
@@ -423,11 +421,13 @@ void simple_collect (obj_list_head_t *head)
 
 void gc_try_to_recycle (void)
 {
-  /* NOTE: Don't collect closures since it's still useful.
-   */
-
   simple_collect (&obj_free_list);
   simple_collect (&list_free_list);
   simple_collect (&vector_free_list);
   simple_collect (&pair_free_list);
+
+  /* NOTE:
+   * Closures are not fixed size object, so we have to free it.
+   */
+  FORCE_FREE_OBJECTS (&closure_free_list);
 }

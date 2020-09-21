@@ -18,7 +18,6 @@
  */
 
 #include "bytecode.h"
-#include "closure_cache.h"
 #include "debug.h"
 #include "gc.h"
 #include "lef.h"

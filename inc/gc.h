@@ -17,7 +17,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "closure_cache.h"
 #include "debug.h"
 #include "memory.h"
 #include "rbtree.h"

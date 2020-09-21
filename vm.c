@@ -39,20 +39,7 @@ static void handle_optional_args (vm_t vm, object_t proc)
 static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
                                  reg_t entry)
 {
-  closure_t closure = closure_cache_fetch (entry);
-
-  if (closure)
-    {
-      /* FIXME: Avoid to push redundant env frame to stack, we may add a new
-       *        instruction (closure-prefetch entry-label end-label).
-       */
-      VM_DEBUG ("use existing closure!\n");
-      // skip env frame
-      vm->sp -= frame_size * sizeof (Object);
-      return closure;
-    }
-
-  closure = make_closure (arity, frame_size, entry);
+  closure_t closure = make_closure (arity, frame_size, entry);
 
   for (u8_t i = frame_size; i > 0; i--)
     {
@@ -205,7 +192,7 @@ static void call_prim (vm_t vm, pn_t pn)
           case procedure:
             {
               VM_DEBUG ("apply proc\n");
-              vm->local = vm->fp + FPS;
+              // vm->local = vm->fp + FPS;
               apply_proc (vm, &proc, &ret);
               PUSH_OBJ (ret);
               break;
