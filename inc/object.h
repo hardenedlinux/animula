@@ -17,7 +17,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "closure_cache.h"
 #include "gc.h"
 #include "qlist.h"
 #include "types.h"
@@ -92,15 +91,16 @@ static inline bool is_unspecified (object_t obj)
     }                                     \
   while (0)
 
-#define VALIDATE(obj, t)                                                       \
-  do                                                                           \
-    {                                                                          \
-      if ((obj)->attr.type != (t))                                             \
-        {                                                                      \
-          os_printk ("%s: Invalid type, expect %d\n", __PRETTY_FUNCTION__, t); \
-          panic ("PANIC!");                                                    \
-        }                                                                      \
-    }                                                                          \
+#define VALIDATE(obj, t)                                           \
+  do                                                               \
+    {                                                              \
+      if ((obj)->attr.type != (t))                                 \
+        {                                                          \
+          os_printk ("%s: Invalid type, expect %d, but it's %d\n", \
+                     __PRETTY_FUNCTION__, t, (obj)->attr.type);    \
+          panic ("PANIC!");                                        \
+        }                                                          \
+    }                                                              \
   while (0)
 
 #define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))

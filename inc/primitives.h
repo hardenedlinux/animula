@@ -72,15 +72,6 @@ typedef struct Primitive
 
 extern GLOBAL_DEF (prim_t, prim_table[]);
 
-#define ARITH_PRIM()                                              \
-  arith_prim_t fn = (arith_prim_t)prim->fn;                       \
-  size_t size = sizeof (struct Object);                           \
-  Object x = POP_OBJ ();                                          \
-  Object y = POP_OBJ ();                                          \
-  Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL}; \
-  z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);  \
-  PUSH_OBJ (z);
-
 static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 {
   prim_t prim = (prim_t)os_malloc (sizeof (struct Primitive));

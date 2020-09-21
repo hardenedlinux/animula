@@ -42,16 +42,15 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 {
   VM_DEBUG ("create new closure!\n");
 
-  closure_t closure = (closure_t)gc_pool_malloc (gc_closure);
+  closure_t closure
+    = (closure_t)os_malloc (sizeof (Closure) + sizeof (Object) * frame_size);
 
   if (!closure)
     {
-      closure = (closure_t)os_malloc (sizeof (Closure)
-                                      + sizeof (Object) * frame_size);
-      if (!closure)
-        return NULL;
-      gc_book (gc_closure, (void *)closure);
+      return NULL;
     }
+
+  gc_book (gc_closure, (void *)closure);
 
   closure->frame_size = frame_size;
   closure->entry = entry;

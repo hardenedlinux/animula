@@ -33,7 +33,7 @@ static inline imm_int_t _int_sub (imm_int_t x, imm_int_t y)
 
 static inline imm_int_t _int_mul (imm_int_t x, imm_int_t y)
 {
-  return x + y;
+  return x * y;
 }
 
 static inline imm_int_t _int_div (imm_int_t x, imm_int_t y)

@@ -396,7 +396,7 @@ void *gc_pool_malloc (gobj_t type)
       }
     case gc_closure:
       {
-        MALLOC_OBJ_FROM_POOL (closure_free_list);
+        panic ("BUG: closures are not allocated from pool!\n");
         break;
       }
     default:

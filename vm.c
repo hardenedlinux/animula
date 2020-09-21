@@ -44,7 +44,7 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
   for (u8_t i = frame_size; i > 0; i--)
     {
       closure->env[i - 1] = POP_OBJ ();
-      /* printf ("closure->env[%d]: type = %d, value = %d\n", i - 1, */
+      /* printf ("capture local-%d obj type: %d, %d\n", i - 1, */
       /*         closure->env[i - 1].attr.type, */
       /*         (imm_int_t) (closure->env[i - 1].value)); */
     }
@@ -80,7 +80,15 @@ static void call_prim (vm_t vm, pn_t pn)
     case int_modulo:
     case int_remainder:
       {
-        ARITH_PRIM ();
+        arith_prim_t fn = (arith_prim_t)prim->fn;
+        size_t size = sizeof (struct Object);
+        Object x = POP_OBJ ();
+        Object y = POP_OBJ ();
+        Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        VALIDATE (&x, imm_int);
+        VALIDATE (&y, imm_int);
+        z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);
+        PUSH_OBJ (z);
         break;
       }
     case object_print:
@@ -120,7 +128,9 @@ static void call_prim (vm_t vm, pn_t pn)
     case pop:
       {
         if (vm->sp)
-          POP_OBJ ();
+          {
+            POP_OBJ ();
+          }
         break;
       }
     case map:
@@ -205,9 +215,8 @@ static void call_prim (vm_t vm, pn_t pn)
             }
           case closure_on_heap:
             {
-              if (IS_SHADOW_FRAME ())
-                COPY_SHADOW_FRAME ();
-              panic ("apply closure is not ready yet!\n");
+              VM_DEBUG ("apply closure %x\n", ((closure_t)proc.value)->entry);
+              call_closure_on_heap (vm, &proc);
               break;
             }
           default:
@@ -359,6 +368,20 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         object_t obj = (object_t)LOCAL (bc.data);
         /* printf ("obj: type = %d, value = %d\n", obj->attr.type, */
         /*         (imm_int_t)obj->value); */
+        /* if (vm->closure) */
+        /*   { */
+        /*     for (int i = 0; i < vm->closure->frame_size; i++) */
+        /*       { */
+        /*         printf ("env[%d] type: %d, value: %d\n", i, */
+        /*                 vm->closure->env[i].attr.type, */
+        /*                 (imm_int_t) (vm->closure->env[i].value)); */
+        /*       } */
+        /*     printf ("closure: %p, offset: %d, arity: %d, type: %d, value:
+         * %d\n", */
+        /*             vm->closure, bc.data, vm->closure->arity, obj->attr.type,
+         */
+        /*             (imm_int_t)obj->value); */
+        /*   } */
         PUSH_OBJ (*obj);
         break;
       }
@@ -373,6 +396,10 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(call-local %d)\n", bc.data);
         object_t obj = (object_t)LOCAL (bc.data);
+        /* if (vm->closure) */
+        /*   printf ("closure: %p, offset: %d, arity: %d, type: %d\n",
+         * vm->closure, */
+        /*           bc.data, vm->closure->arity, obj->attr.type); */
         if (NEED_VARGS (obj))
           handle_optional_args (vm, obj);
         CALL (obj);
@@ -390,8 +417,8 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
     case FREE_REF:
       {
         u8_t frame = NEXT_DATA ();
-        u8_t up = (frame & 0b001111);
-        u8_t offset = ((bc.data << 2) | ((frame & 0b110000) >> 4));
+        u8_t up = (frame & 0b00111111);
+        u8_t offset = ((bc.data << 2) | ((frame & 0b11000000) >> 6));
         VM_DEBUG ("(free %x %d)\n", up, offset);
         object_t obj = (object_t)FREE_VAR (up, offset);
         /* printf ("obj: type = %d, value = %d\n", obj->attr.type, */
@@ -407,8 +434,8 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
          *   3. Do we need to create proc-object when store?
          */
         u8_t frame = NEXT_DATA ();
-        u8_t up = (frame & 0b001111);
-        u8_t offset = ((bc.data << 2) | ((frame & 0b110000) >> 4));
+        u8_t up = (frame & 0b00111111);
+        u8_t offset = ((bc.data << 2) | ((frame & 0b11000000) >> 6));
         VM_DEBUG ("(call-free %x %d)\n", up, offset);
         object_t obj = (object_t)FREE_VAR (up, offset);
         if (NEED_VARGS (obj))

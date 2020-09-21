@@ -61,8 +61,8 @@ void object_printer (object_t obj)
       }
     case primitive:
       {
-        os_printk ("<primitive: %s %d>", (char *)prim_name,
-                   ((u16_t)obj->value));
+        u16_t pn = (u16_t)obj->value;
+        os_printk ("<primitive: %s %d>", prim_name (pn), pn);
         break;
       }
     case list:

@@ -132,24 +132,39 @@ static inline void vm_stack_check (vm_t vm)
       begins from 2
  * 2. The type of frame[offset] is void*
  */
-#define LOCAL(offset)                                   \
-  ((vm->closure && (offset >= vm->closure->arity))      \
-     ? (&vm->closure->env[offset - vm->closure->arity]) \
-     : (&((object_t) (vm->stack + vm->local))[offset]))
-
-//#define LOCAL(offset) (&((object_t) (vm->stack + vm->local))[offset])
+#define LOCAL(offset)                                                     \
+  ({                                                                      \
+    object_t ret = NULL;                                                  \
+    if (vm->closure)                                                      \
+      {                                                                   \
+        if (offset >= vm->closure->frame_size)                            \
+          {                                                               \
+            ret = (&((object_t) (                                         \
+              vm->stack + vm->local))[offset - vm->closure->frame_size]); \
+          }                                                               \
+        else                                                              \
+          {                                                               \
+            ret = (&vm->closure->env[offset]);                            \
+          }                                                               \
+      }                                                                   \
+    else                                                                  \
+      {                                                                   \
+        ret = (&((object_t) (vm->stack + vm->local))[offset]);            \
+      }                                                                   \
+    ret;                                                                  \
+  })
 
 // LOCAL_FIX is only for debug since it doesn't print stored REG.
 #define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->fp + FPS))[offset])
 
-#define FREE_VAR(back, offset)                    \
-  ({                                              \
-    reg_t up = vm->fp;                            \
-    for (int i = 0; i < back; i++)                \
-      {                                           \
-        up = ((reg_t *)vm->stack)[up];            \
-      }                                           \
-    (object_t) (&vm->stack[up + (offset) + FPS]); \
+#define FREE_VAR(up, offset)                                        \
+  ({                                                                \
+    reg_t fp = vm->fp;                                              \
+    for (int i = 0; i < up; i++)                                    \
+      {                                                             \
+        fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));         \
+      }                                                             \
+    (object_t) (vm->stack + fp + (offset) * sizeof (Object) + FPS); \
   })
 
 /* #define FREE_VAR(frame, offset) \ */
@@ -163,6 +178,9 @@ static inline void vm_stack_check (vm_t vm)
     }                                \
   while (0)
 
+/* NOTE:
+ * Shadow frame is used for tail-recursive for passing args correctly.
+ */
 #define IS_SHADOW_FRAME() (vm->shadow && vm->sp != vm->local)
 #define COPY_SHADOW_FRAME()                                               \
   do                                                                      \
@@ -412,7 +430,6 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
   u8_t arity = closure->arity;
   reg_t total_size = size * sizeof (Object);
   VM_DEBUG ("(closure-on-heap %d %d %p 0x%x)\n", arity, size, env, entry);
-  // memcpy ((char *)(vm->stack + vm->sp), env, total_size);
   vm->closure = closure;
   vm->local = vm->sp - arity * sizeof (Object);
   vm->sp += total_size;
