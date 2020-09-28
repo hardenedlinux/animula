@@ -82,13 +82,13 @@ static void call_prim (vm_t vm, pn_t pn)
       {
         arith_prim_t fn = (arith_prim_t)prim->fn;
         size_t size = sizeof (struct Object);
-        Object x = POP_OBJ ();
-        Object y = POP_OBJ ();
-        Object z = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
-        VALIDATE (&x, imm_int);
-        VALIDATE (&y, imm_int);
-        z.value = (void *)fn ((imm_int_t)y.value, (imm_int_t)x.value);
-        PUSH_OBJ (z);
+        Object xsor = POP_OBJ ();
+        Object xend = POP_OBJ ();
+        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        VALIDATE (&xsor, imm_int);
+        VALIDATE (&xend, imm_int);
+        ret.value = (void *)fn ((imm_int_t)xend.value, (imm_int_t)xsor.value);
+        PUSH_OBJ (ret);
         break;
       }
     case object_print:
@@ -107,9 +107,9 @@ static void call_prim (vm_t vm, pn_t pn)
       {
         arith_prim_t fn = (arith_prim_t)prim->fn;
         size_t size = sizeof (struct Object);
-        Object x = POP_OBJ ();
-        Object y = POP_OBJ ();
-        if (fn ((imm_int_t)y.value, (imm_int_t)x.value))
+        Object comparee = POP_OBJ ();
+        Object comparand = POP_OBJ ();
+        if (fn ((imm_int_t)comparand.value, (imm_int_t)comparee.value))
           PUSH_OBJ (GLOBAL_REF (true_const));
         else
           PUSH_OBJ (GLOBAL_REF (false_const));
@@ -226,6 +226,15 @@ static void call_prim (vm_t vm, pn_t pn)
               panic ("apply panic!\n");
             }
           }
+        break;
+      }
+    case list_append:
+    case list_ref:
+      {
+        func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
+        Object o2 = POP_OBJ ();
+        Object o1 = POP_OBJ ();
+        PUSH_OBJ (*fn (&o1, &o2));
         break;
       }
     default:
@@ -578,8 +587,10 @@ static void interp_special (vm_t vm, bytecode8_t bc)
       }
     case PRIMITIVE_EXT:
       {
-        VM_DEBUG ("(primitive %d %s)\n", bc.data + 16, prim_name (bc.data));
-        call_prim (vm, (pn_t)bc.data + 16);
+        u8_t pn_low = NEXT_DATA ();
+        u16_t pn = ((bc.data & 0xF) << 8 | pn_low) + 16;
+        VM_DEBUG ("(primitive-ext %d %s)\n", pn, prim_name (pn));
+        call_prim (vm, pn);
         VM_DEBUG ("result: %p\n", TOP_OBJ ().value);
         break;
       }

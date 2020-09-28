@@ -17,7 +17,7 @@
 
 #include "list.h"
 
-object_t car (object_t obj)
+object_t _car (object_t obj)
 {
   switch (obj->attr.type)
     {
@@ -41,7 +41,7 @@ object_t car (object_t obj)
   return NULL;
 }
 
-object_t cdr (object_t obj)
+object_t _cdr (object_t obj)
 {
   switch (obj->attr.type)
     {
@@ -74,7 +74,7 @@ object_t cdr (object_t obj)
   return NULL;
 }
 
-object_t cons (object_t a, object_t b)
+object_t _cons (object_t a, object_t b)
 {
   object_t obj = lambdachip_new_object (pair);
 
@@ -100,7 +100,7 @@ object_t cons (object_t a, object_t b)
   return obj;
 }
 
-bool is_pair (object_t obj)
+bool _is_pair (object_t obj)
 {
   switch (obj->attr.type)
     {
@@ -112,7 +112,7 @@ bool is_pair (object_t obj)
     }
 }
 
-object_t list_ref (object_t lst, object_t idx)
+object_t _list_ref (object_t lst, object_t idx)
 {
   VALIDATE (lst, list);
   VALIDATE (idx, imm_int);
@@ -141,7 +141,7 @@ object_t list_ref (object_t lst, object_t idx)
   return ret;
 }
 
-object_t list_set (object_t lst, object_t idx, object_t val)
+object_t _list_set (object_t lst, object_t idx, object_t val)
 {
   VALIDATE (lst, list);
   VALIDATE (idx, imm_int);
@@ -171,4 +171,31 @@ object_t list_set (object_t lst, object_t idx, object_t val)
     }
 
   return ret;
+}
+
+object_t _list_append (object_t l1, object_t l2)
+{
+  VALIDATE (l1, list);
+  VALIDATE (l2, list);
+
+  if (list == l2->attr.type)
+    {
+      obj_list_head_t *h1 = LIST_OBJECT_HEAD (l1);
+      obj_list_head_t *h2 = LIST_OBJECT_HEAD (l2);
+      obj_list_t node = NULL;
+      obj_list_t tail = NULL;
+
+      SLIST_FOREACH (node, h1, next)
+      {
+        tail = node;
+      }
+
+      SLIST_NEXT (tail, next) = SLIST_FIRST (h2);
+    }
+  else
+    {
+      return _cons (l1, l2);
+    }
+
+  return l1;
 }

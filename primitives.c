@@ -108,15 +108,16 @@ void primitives_init (void)
   def_prim (12, "int_le", 2, (void *)_int_le);
   def_prim (13, "int_ge", 2, (void *)_int_ge);
   def_prim (14, "restore", 0, NULL);
-  /* def_prim (15, "or", 2, (void *)_or); */
+  def_prim (15, "reserved_1", 0, NULL);
 
   // extended primitives
   def_prim (16, "modulo", 2, (void *)_int_modulo);
   def_prim (17, "remainder", 2, (void *)_int_remainder);
   def_prim (18, "foreach", 2, NULL);
   def_prim (19, "map", 2, NULL);
-  def_prim (20, "list_ref", 2, (void *)list_ref);
-  def_prim (21, "list_set", 3, (void *)list_set);
+  def_prim (20, "list_ref", 2, (void *)_list_ref);
+  def_prim (21, "list_set", 3, (void *)_list_set);
+  def_prim (22, "list_append", 2, (void *)_list_append);
 }
 
 char *prim_name (u16_t pn)

@@ -19,6 +19,7 @@
 
 #include "bytecode.h"
 #include "debug.h"
+#include "list.h"
 #include "memory.h"
 #include "object.h"
 #include "print.h"
@@ -45,13 +46,15 @@ typedef enum prim_num
   int_le = 12,
   int_ge = 13,
   restore = 14,
-  /* logior = 15, */
+  reserved_1 = 15,
+
   int_modulo = 16,
   int_remainder = 17,
   foreach = 18,
   map = 19,
   list_ref = 20,
   list_set = 21,
+  list_append = 22,
 
   do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
@@ -60,6 +63,7 @@ typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);
 typedef object_t (*logic_check_t) (object_t, object_t);
+typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
 
 typedef struct Primitive
 {
