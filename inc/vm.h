@@ -25,6 +25,7 @@
 #include "object.h"
 #include "os.h"
 #include "primitives.h"
+#include "symbol.h"
 #include "types.h"
 
 extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
@@ -56,7 +57,8 @@ typedef struct LambdaVM
   u8_t *code;
   u8_t *data;
   u8_t *stack;
-  u8_t shadow;       // shadow frame
+  u8_t shadow; // shadow frame
+  symtab_t symtab;
   closure_t closure; // for closure
 } __packed *vm_t;
 

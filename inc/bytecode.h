@@ -111,6 +111,7 @@
  11100011 cccccccc          Char object: c: 0~256 (no UTF-8)
  11100100                   Empty list, '() in Scheme
  11100101                   None object, undefined in JS, unspecified in Scheme
+ 11100110 oooooooo oooooooo Symbol object, o is the offset in symbol table
 
  1111xxxx xxxxxxxx          Reserved
  11111111                   Halt

@@ -52,7 +52,8 @@ typedef enum obj_encoding
   GENERAL_OBJECT,
   CHAR,
   NULL_LIST,
-  NONE
+  NONE,
+  SYMBOL
 } obje_t;
 
 typedef enum obj_type

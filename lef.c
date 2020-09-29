@@ -88,7 +88,13 @@ lef_t load_lef_from_uart ()
       lef->body[i] = ch;
     }
 
-  lef->entry = lef_entry (lef);
+  u16_t sym_cnt = uart_get_u16 ();
+  u16_t symtab_size = uart_get_u16 ();
+  lef->symtab = {.cnt = sym_cnt, .entry = lef->body};
+  /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
+  u16_t offset = 4 + symtab_size;
+  lef->entry = lef_entry (offset, lef);
+
   os_printk ("Done\n");
   return lef;
 #else
@@ -128,7 +134,14 @@ lef_t load_lef_from_file (const char *filename)
   lef->body = (u8_t *)os_malloc (size);
 
   os_read (fd, lef->body, size);
-  lef->entry = lef_entry (lef);
+
+  u16_t sym_cnt = lef_symtab_size (0, lef);
+  u16_t symtab_size = lef_symtab_size (2, lef);
+  lef->symtab.cnt = sym_cnt;
+  lef->symtab.entry = lef->body + 4;
+  /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
+  u16_t offset = 4 + symtab_size;
+  lef->entry = lef_entry (offset, lef);
 
   VM_DEBUG ("Done\n");
 

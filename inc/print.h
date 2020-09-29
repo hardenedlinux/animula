@@ -19,6 +19,7 @@
 
 #include "object.h"
 #include "primitives.h"
+#include "symbol.h"
 #include "types.h"
 
 void object_printer (object_t obj);

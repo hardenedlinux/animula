@@ -59,6 +59,12 @@ void object_printer (object_t obj)
         os_printk ("%s", (char *)obj->value);
         break;
       }
+    case symbol:
+      {
+        const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
+        os_printk ("#{%s}#", str_buf);
+        break;
+      }
     case primitive:
       {
         u16_t pn = (u16_t)obj->value;

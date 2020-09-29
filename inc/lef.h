@@ -21,6 +21,7 @@
 #include "debug.h"
 #include "memory.h"
 #include "storage.h"
+#include "symbol.h"
 #include "types.h"
 
 typedef struct LEF
@@ -32,6 +33,7 @@ typedef struct LEF
   u32_t csize;
   u32_t entry;
   u8_t *body;
+  symtab symtab;
 } __packed *lef_t;
 
 #define LEF_VERIFY(lef) \
@@ -43,20 +45,34 @@ typedef struct LEF
 #define LEF_BODY_SIZE(lef) ((lef)->msize + (lef)->psize + (lef)->csize)
 #define LEF_SIZE(lef)      (sizeof (struct LEF) + LEF_BODY_SIZE (lef))
 
-static inline u32_t lef_entry (lef_t lef)
+static inline u16_t lef_symtab_size (u16_t offset, lef_t lef)
+{
+  u8_t size[2] = {0};
+
+#if defined LAMBDACHIP_BIG_ENDIAN
+  size[0] = lef->body[offset + 0];
+  size[1] = lef->body[offset + 1];
+#else
+  size[1] = lef->body[offset + 2];
+  size[0] = lef->body[offset + 3];
+#endif
+  return *((u16_t *)size);
+}
+
+static inline u32_t lef_entry (u16_t offset, lef_t lef)
 {
   u8_t entry[4] = {0};
 
 #if defined LAMBDACHIP_BIG_ENDIAN
-  entry[0] = lef->body[0];
-  entry[1] = lef->body[1];
-  entry[2] = lef->body[2];
-  entry[3] = lef->body[3];
+  entry[0] = lef->body[offset + 0];
+  entry[1] = lef->body[offset + 1];
+  entry[2] = lef->body[offset + 2];
+  entry[3] = lef->body[offset + 3];
 #else
-  entry[3] = lef->body[0];
-  entry[2] = lef->body[1];
-  entry[1] = lef->body[2];
-  entry[0] = lef->body[3];
+  entry[3] = lef->body[offset + 0];
+  entry[2] = lef->body[offset + 1];
+  entry[1] = lef->body[offset + 2];
+  entry[0] = lef->body[offset + 3];
 #endif
   return *((u32_t *)entry);
 }
