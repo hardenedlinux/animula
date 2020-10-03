@@ -57,7 +57,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
      */
     if (!node->obj->attr.gc)
       {
-        printf ("pool obj %p gc is %d\n", node->obj, node->obj->attr.gc);
+        // printf ("pool obj %p gc is %d\n", node->obj, node->obj->attr.gc);
         node->obj->attr.gc = 1; // allocated, as the 1st generation
         break;
       }
