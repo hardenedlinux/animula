@@ -851,7 +851,7 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
   // TODO: run proc with a new stack, and the code snippet of
   u16_t entry = proc->proc.entry;
   u8_t arity = proc->proc.arity;
-  u16_t end = entry + 2;
+  u16_t end = vm->pc;
 
   vm->pc = proc->proc.entry;
 
