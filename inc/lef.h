@@ -45,7 +45,7 @@ typedef struct LEF
 #define LEF_BODY_SIZE(lef) ((lef)->msize + (lef)->psize + (lef)->csize)
 #define LEF_SIZE(lef)      (sizeof (struct LEF) + LEF_BODY_SIZE (lef))
 
-static inline u16_t lef_symtab_size (u16_t offset, lef_t lef)
+static inline u16_t lef_get_u16 (u16_t offset, lef_t lef)
 {
   u8_t size[2] = {0};
 
@@ -53,8 +53,8 @@ static inline u16_t lef_symtab_size (u16_t offset, lef_t lef)
   size[0] = lef->body[offset + 0];
   size[1] = lef->body[offset + 1];
 #else
-  size[1] = lef->body[offset + 2];
-  size[0] = lef->body[offset + 3];
+  size[1] = lef->body[offset + 0];
+  size[0] = lef->body[offset + 1];
 #endif
   return *((u16_t *)size);
 }

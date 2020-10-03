@@ -135,14 +135,13 @@ lef_t load_lef_from_file (const char *filename)
 
   os_read (fd, lef->body, size);
 
-  u16_t sym_cnt = lef_symtab_size (0, lef);
-  u16_t symtab_size = lef_symtab_size (2, lef);
+  u16_t sym_cnt = lef_get_u16 (0, lef);
+  u16_t symtab_size = lef_get_u16 (2, lef);
   lef->symtab.cnt = sym_cnt;
   lef->symtab.entry = lef->body + 4;
   /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
   u16_t offset = 4 + symtab_size;
   lef->entry = lef_entry (offset, lef);
-
   VM_DEBUG ("Done\n");
 
 #else
