@@ -328,7 +328,7 @@ static inline void vm_stack_check (vm_t vm)
  * frame.
  */
 #define RESTORE()               \
-  do                            \
+  for (int i = 0; i < 2; i++)   \
     {                           \
       vm->sp = vm->fp + FPS;    \
       vm->fp = POP_REG ();      \

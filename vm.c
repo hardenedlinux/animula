@@ -65,12 +65,7 @@ static void call_prim (vm_t vm, pn_t pn)
     case restore:
       {
         /* printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc); */
-        for (int i = 0; i < 2; i++)
-          {
-            RESTORE ();
-            /* printf ("after sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp,
-             * vm->pc); */
-          }
+        RESTORE ();
         break;
       }
     case int_add:
@@ -173,11 +168,19 @@ static void call_prim (vm_t vm, pn_t pn)
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
         obj_list_t node = NULL;
 
+        PUSH_REG (vm->pc);
+        PUSH_REG (vm->fp);
+        vm->fp = vm->sp - FPS;
+        vm->local = vm->fp + FPS;
         SLIST_FOREACH (node, head, next)
         {
+          // TODO: support for-each in multiple lists
+          vm->sp = vm->local;
+          PUSH_OBJ (*(node->obj));
           apply_proc (vm, &proc, NULL);
         }
 
+        RESTORE ();
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
         break;
       }
@@ -848,7 +851,9 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
   // TODO: run proc with a new stack, and the code snippet of
   u16_t entry = proc->proc.entry;
   u8_t arity = proc->proc.arity;
-  u16_t end = entry + 1;
+  u16_t end = entry + 2;
+
+  vm->pc = proc->proc.entry;
 
   while (VM_RUN == vm->state)
     {
@@ -856,6 +861,20 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
         break;
 
       dispatch (vm, FETCH_NEXT_BYTECODE ());
+      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
+       * vm->sp, */
+      /*         vm->fp); */
+      /* printf ("----------LOCAL------------\n"); */
+      /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
+      /* for (u32_t i = 0; i < bound / 8; i++) */
+      /*   { */
+      /*     object_t obj = (object_t)LOCAL_FIX (i); */
+      /*     printf ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
+       * 8, */
+      /*             obj->attr.type, (imm_int_t)obj->value); */
+      /*   } */
+      /* printf ("------------END-----------\n"); */
+      /* getchar (); */
     }
 
   if (ret)
