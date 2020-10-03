@@ -136,29 +136,38 @@ static void call_prim (vm_t vm, pn_t pn)
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
         list_t new_list = NEW (list);
+        Object new_list_obj
+          = {.attr = {.type = list, .gc = 0}, .value = (void *)new_list};
+        obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_list_obj);
 
+        PUSH_REG (vm->pc);
+        PUSH_REG (vm->fp);
+        vm->fp = vm->sp - FPS;
+        vm->local = vm->fp + FPS;
         SLIST_FOREACH (node, head, next)
         {
-          object_t ret = NEW_OBJ (list);
+          object_t ret = NEW_OBJ (0);
           obj_list_t new_node = new_obj_list ();
           new_node->obj = ret;
-
+          vm->sp = vm->local;
+          PUSH_OBJ (*node->obj);
           apply_proc (vm, &proc, ret);
 
-          if (prev)
+          if (!prev)
             {
-              SLIST_INSERT_HEAD (head, node, next);
+              // when the new list is still empty
+              SLIST_INSERT_HEAD (new_head, new_node, next);
             }
           else
             {
               SLIST_INSERT_AFTER (prev, new_node, next);
             }
 
-          prev = node;
+          prev = new_node;
         }
 
-        Object o = {.attr = {.type = list, .gc = 0}, .value = (void *)new_list};
-        PUSH_OBJ (o);
+        RESTORE ();
+        PUSH_OBJ (new_list_obj);
         break;
       }
     case foreach:
@@ -850,17 +859,17 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
 {
   // TODO: run proc with a new stack, and the code snippet of
   u16_t entry = proc->proc.entry;
-  u8_t arity = proc->proc.arity;
-  u16_t end = vm->pc; // when the proc restore, it'll be back to last pc
 
   vm->pc = proc->proc.entry;
 
   while (VM_RUN == vm->state)
     {
-      if (end == vm->pc)
+      bytecode8_t bc = FETCH_NEXT_BYTECODE ();
+
+      if (IS_PROC_END (bc))
         break;
 
-      dispatch (vm, FETCH_NEXT_BYTECODE ());
+      dispatch (vm, bc);
       /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
        * vm->sp, */
       /*         vm->fp); */
@@ -880,9 +889,14 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
   if (ret)
     {
       *ret = POP_OBJ ();
+      /* NOTE: Since we use the deref tick here for copying,
+       *       we must reset gc to 1 again!!! */
+      ret->attr.gc = 1;
     }
   else
     {
       POP_OBJ ();
     }
+
+  RESTORE ();
 }

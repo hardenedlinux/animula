@@ -358,6 +358,7 @@ static inline void vm_stack_check (vm_t vm)
 #define GC()                                                         \
   do                                                                 \
     {                                                                \
+      printf ("oh GC?!\n");                                          \
       GCInfo gci = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack}; \
       gc (&gci);                                                     \
     }                                                                \
@@ -409,6 +410,9 @@ static inline void vm_stack_check (vm_t vm)
   ((procedure == (p)->attr.type) && ((p)->proc.arity != (p)->proc.opt))
 
 #define COUNT_ARGS() (vm->sp - vm->fp + FPS) / sizeof (Object)
+
+#define IS_PROC_END(bc) \
+  (IS_SPECIAL (bc) && (PRIMITIVE == (bc).type) && (restore == (bc).data))
 
 static inline void call_closure_on_stack (vm_t vm, object_t obj)
 {
