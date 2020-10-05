@@ -86,6 +86,12 @@ typedef s32_t imm_int_t;
 typedef u16_t hov_t;
 #endif
 
+/* NOTE:
+ * Some of the structs below will not be packed. It's because the address of the
+ * field in a packed struct may cause unaligned address, which is undefined
+ * activity according to C11.
+ */
+
 typedef union ObjectAttribute
 {
   struct
