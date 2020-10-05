@@ -115,7 +115,7 @@ typedef struct Object
     void *value;
     Procedure proc;
   };
-} __packed *object_t, Object;
+} Object, *object_t;
 
 typedef struct Closure
 {
@@ -124,7 +124,7 @@ typedef struct Closure
   u8_t frame_size;
   reg_t entry;
   Object env[];
-} __packed Closure, *closure_t;
+} Closure, *closure_t;
 
 typedef union Continuation
 {
@@ -152,7 +152,7 @@ typedef struct List
 {
   oattr attr;
   obj_list_head_t list;
-} __packed List, *list_t;
+} List, *list_t;
 
 typedef struct Pair
 {
