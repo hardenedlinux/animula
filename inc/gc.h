@@ -131,14 +131,15 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
         if (prev)                                        \
           {                                              \
             SLIST_REMOVE (head, prev, ObjectList, next); \
+            free_object ((object_t)prev->obj);           \
+            prev->obj = NULL;                            \
             os_free (prev);                              \
+            prev = NULL;                                 \
           }                                              \
         if (force || (0 == node->obj->attr.gc))          \
           {                                              \
             prev = node;                                 \
-            free_object ((object_t)node->obj);           \
           }                                              \
-        prev = NULL;                                     \
       }                                                  \
     }                                                    \
   while (0)

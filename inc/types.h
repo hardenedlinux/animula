@@ -121,7 +121,7 @@ typedef struct Object
     void *value;
     Procedure proc;
   };
-} Object, *object_t;
+} __packed Object, *object_t;
 
 typedef struct Closure
 {
