@@ -29,6 +29,7 @@
 #define PRIM_NAME_SIZE 16
 #define PRIM_MAX       32
 
+// NOTE: assign is not a primitive
 typedef enum prim_num
 {
   ret = 0,

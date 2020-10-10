@@ -36,40 +36,44 @@
  * ---------------------------------------------------------------
 
  * Limits:
- * 1. The max offset of local is 32
+ * 1. The max offset of local is 32+128=160
  * 2. The offset of free is 256
  * 3. The up frame of free is 16
- * 4. The code size is no more than 2^16, we can extend to around 16MB or even
-      4GB, but it's not a good idea, since we have to tweak conditions and
-      closures either. Do we really care about big RAMs in embedded world?
+ * 4. The code size is no more than 2^16, we can extend to around 16MB
+      or even 4GB, but it's not a good idea, since we have to tweak
+      conditions and closures either. Do we really care about big RAMs
+      in embedded world?
  * 5. Closure arity is no more than 64
  * 6. Closure frame-size is no more than 64
  * 7. Procedure entry is no more than 65KB, which means the LEF size is no more
       than 65KB.
+ * 8. Globals are limited to the first 128 + 65536 bytes RAMs,
+      8208 objects in total
 
  * New idea:
    * Combine all local/free to just one instruction, 0101mmmm, m for mode, make
      sure offset and up-frame is 256.
 
+
  -> single encode
- 0000xxxx                      Ref local [x]
- 0001xxxx                      Ref local [x + 16]
- 0100xxxx                      Call local [x]
- 0101xxxx                      Call local [x + 16]
+ 0000xxxx                       Ref local [x]
+ 0001xxxx                       Ref local [x + 16]
+ 0100xxxx                       Call local [x]
+ 0101xxxx                       Call local [x + 16]
 
  -> special double encoding
  0010 xxxx xxaaaaaa             Ref free up(fp)^a in offset x
  0011 xxxx xxaaaaaa             Call free up(fp)^a in offset x
- 0110 xxxx                      Reserved
- 0111 xxxx                      Reserved
+ 0110 xxxx xxaaaaaa             Assign TOS to up(fp)^a in offset x
+ 0111 xxxx xxxxxxxx             Assign TOS to local[x]
 
  -> double encoding (start from 1010)
  1010 0000 nnnnnnnn             Prelude with n args
- 1010 0001 xxxxxxxx             Reserved
- 1010 0010 xxxxxxxx             Reserved
- 1010 0011 xxxxxxxx             Reserved
- 1010 0100 xxxxxxxx             Reserved
- 1010 0101 xxxxxxxx             Reserved
+ 1010 0001 xxxxxxxx             Ref local [x + 32]
+ 1010 0010 xxxxxxxx             Call local [x + 32]
+ 1010 0011 xxxxxxxx             Assign TOS to global[x]
+ 1010 0100 xxxxxxxx             Ref global[x]
+ 1010 0101 xxxxxxxx             Call global[x]
  1010 0110 xxxxxxxx             Reserved
  1010 0111 xxxxxxxx             Reserved
  1010 1000 xxxxxxxx             Reserved
@@ -82,8 +86,8 @@
  1011 0001 xxxxxxxx xxxxxxxx    Jump to code[x] when TOS is false
  1011 0010 xxxxxxxx xxxxxxxx    Jump to code[x] without condition
  1011 0011 xxxxxxxx iiiiiiii    Vector ss[x] ref i
- 1011 0100 xxxxxxxx xxxxxxxx    Reserved
- 1011 0101 xxxxxxxx xxxxxxxx    Reserved
+ 1011 0100 xxxxxxxx xxxxxxxx    Assign TOS to global[x + 128]
+ 1011 0101 xxxxxxxx xxxxxxxx    Ref global[x + 128]
  1011 0110 xxxxxxxx xxxxxxxx    Reserved
  1011 0111 xxxxxxxx xxxxxxxx    Reserved
  1011 1000 xxxxxxxx xxxxxxxx    Reserved
@@ -130,9 +134,16 @@
 #define CALL_LOCAL        0b0100
 #define CALL_LOCAL_EXTEND 0b0101
 #define CALL_FREE         0b0011
+#define FREE_ASSIGN       0b0110
+#define LOCAL_ASSIGN      0b0111
 
 // double encode
-#define PRELUDE 0b0000
+#define PRELUDE           0b0000
+#define LOCAL_REF_HIGH    0b0001
+#define CALL_LOCAL_HIGH   0b0010
+#define GLOBAL_VAR_ASSIGN 0b0011
+#define GLOBAL_VAR_REF    0b0100
+#define CALL_GLOBAL_VAR   0b0101
 
 // triple encode
 #define CALL_PROC 0b0000

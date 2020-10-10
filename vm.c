@@ -464,6 +464,25 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         CALL (obj);
         break;
       }
+    case LOCAL_ASSIGN:
+      {
+        u8_t offset_0 = NEXT_DATA ();
+        u8_t offset = ((bc.data << 8) | offset_0);
+        VM_DEBUG ("(assign-local %x)\n", offset);
+        object_t obj = (object_t)LOCAL (offset);
+        *obj = POP_OBJ ();
+        break;
+      }
+    case FREE_ASSIGN:
+      {
+        u8_t frame = NEXT_DATA ();
+        u8_t up = (frame & 0b00111111);
+        u8_t offset = ((bc.data << 2) | ((frame & 0b11000000) >> 6));
+        VM_DEBUG ("(assign-free %x %d)\n", up, offset);
+        object_t obj = (object_t)FREE_VAR (up, offset);
+        *obj = POP_OBJ ();
+        break;
+      }
     default:
       {
         os_printk ("Invalid bytecode %X\n", bc.all);
@@ -480,6 +499,53 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
       {
         VM_DEBUG ("(prelude %d %d)\n", PROC_MODE (bc.bc2), PROC_ARITY (bc.bc2));
         SAVE_ENV ();
+        break;
+      }
+    case LOCAL_REF_HIGH:
+      {
+        u8_t offset = NEXT_DATA () + 32;
+        VM_DEBUG ("(local %d)\n", offset);
+        object_t obj = (object_t)LOCAL (offset);
+        PUSH_OBJ (*obj);
+        break;
+      }
+    case CALL_LOCAL_HIGH:
+      {
+        u8_t offset = NEXT_DATA () + 32;
+        VM_DEBUG ("(call-local %d)\n", offset);
+        object_t obj = (object_t)LOCAL (offset);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
+        CALL (obj);
+        break;
+      }
+    case GLOBAL_VAR_REF:
+      {
+        panic ("global hasn't implemented yet!\n");
+        /* u8_t offset = NEXT_DATA (); */
+        /* VM_DEBUG ("(global-assign %d)\n", offset); */
+        /* object_t obj = (object_t)GLOBAL (offset); */
+        /* PUSH_OBJ (*obj); */
+        break;
+      }
+    case GLOBAL_VAR_ASSIGN:
+      {
+        panic ("global-assign hasn't implemented yet!\n");
+        /* u8_t offset = NEXT_DATA (); */
+        /* VM_DEBUG ("(global-assign %d)\n", offset); */
+        /* object_t obj = (object_t)GLOBAL (offset); */
+        /* *obj = POP_OBJ (); */
+        break;
+      }
+    case CALL_GLOBAL_VAR:
+      {
+        panic ("global-call hasn't implemented yet!\n");
+        /* u8_t offset = NEXT_DATA (); */
+        /* VM_DEBUG ("(global-assign %d)\n", offset); */
+        /* object_t obj = (object_t)GLOBAL (offset); */
+        /* if (NEED_VARGS (obj)) */
+        /*   handle_optional_args (vm, obj); */
+        /* CALL (obj); */
         break;
       }
     default:
