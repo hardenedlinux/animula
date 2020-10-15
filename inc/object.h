@@ -18,6 +18,7 @@
  */
 
 #include "gc.h"
+#include "os.h"
 #include "qlist.h"
 #include "types.h"
 
@@ -102,8 +103,6 @@ static inline bool is_unspecified (object_t obj)
         }                                                          \
     }                                                              \
   while (0)
-
-#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
 
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
 obj_list_t new_obj_list (void);

@@ -1,5 +1,5 @@
-#ifndef __LAMBDACHIP_LIST_H__
-#define __LAMBDACHIP_LIST_H__
+#ifndef __LAMBDACHIP_STRING_H__
+#define __LAMBDACHIP_STRING_H__
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
@@ -18,18 +18,9 @@
  */
 
 #include "object.h"
-#include "qlist.h"
+#include "os.h"
 #include "types.h"
 
-#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
+bool str_eq (object_t s1, object_t s2);
 
-#define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
-
-object_t _car (object_t obj);
-object_t _cdr (object_t obj);
-object_t _cons (object_t a, object_t b);
-object_t _list_ref (object_t lst, object_t idx);
-object_t _list_set (object_t lst, object_t idx, object_t val);
-object_t _list_append (object_t l1, object_t l2);
-
-#endif // End of __LAMBDACHIP_LIST_H__
+#endif // End of __LAMBDACHIP_STRING_H__

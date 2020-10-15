@@ -23,6 +23,8 @@
 #include "memory.h"
 #include "object.h"
 #include "print.h"
+#include "str.h"
+#include "symbol.h"
 #include "types.h"
 #include "vector.h"
 
@@ -56,6 +58,9 @@ typedef enum prim_num
   list_ref = 20,
   list_set = 21,
   list_append = 22,
+  eq = 23,
+  eqv = 24,
+  equal = 25,
 
   do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
@@ -63,7 +68,7 @@ typedef enum prim_num
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);
-typedef object_t (*logic_check_t) (object_t, object_t);
+typedef bool (*logic_check_t) (object_t, object_t);
 typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
 
 typedef struct Primitive

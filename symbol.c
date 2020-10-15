@@ -85,3 +85,8 @@ void create_symbol_table (symtab_t st)
       start = strnlen (str, MAX_STR_LEN) + 2; // skip '\0'
     }
 }
+
+bool symbol_eq (object_t a, object_t b)
+{
+  return a->value == b->value;
+}

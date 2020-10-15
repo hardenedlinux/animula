@@ -51,5 +51,6 @@ void make_symbol (const char *str_buf, object_t obj);
 Object string_to_symbol (object_t sym);
 Object symbol_to_string (object_t str);
 void create_symbol_table (symtab_t st);
+bool symbol_eq (object_t a, object_t b);
 
 #endif // End of __LAMBDACHIP_SYMBOL_H__

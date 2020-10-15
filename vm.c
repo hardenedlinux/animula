@@ -99,12 +99,14 @@ static void call_prim (vm_t vm, pn_t pn)
     case int_gt:
     case int_le:
     case int_ge:
+    case eq:
+    case eqv:
+    case equal:
       {
-        arith_prim_t fn = (arith_prim_t)prim->fn;
-        size_t size = sizeof (struct Object);
+        logic_check_t fn = (logic_check_t)prim->fn;
         Object comparee = POP_OBJ ();
         Object comparand = POP_OBJ ();
-        if (fn ((imm_int_t)comparand.value, (imm_int_t)comparee.value))
+        if (fn (&comparand, &comparee))
           PUSH_OBJ (GLOBAL_REF (true_const));
         else
           PUSH_OBJ (GLOBAL_REF (false_const));

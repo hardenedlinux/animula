@@ -81,6 +81,11 @@ void object_printer (object_t obj)
         vector_printer (obj);
         break;
       }
+    case boolean:
+      {
+        os_printk ("#%s", obj->value ? "true" : "false");
+        break;
+      }
     default:
       {
         os_printk ("object_print: Invalid object type %d\n", obj->attr.type);

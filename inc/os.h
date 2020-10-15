@@ -29,6 +29,7 @@
 #  define os_memset  memset
 #  define os_memcpy  memcpy
 #  define os_strnlen strnlen
+#  define os_strncmp strncmp
 #  include <console/console.h>
 #  define os_getchar console_getchar
 #  define os_getline console_getline
@@ -53,6 +54,7 @@
 #  define os_memset  memset
 #  define os_memcpy  memcpy
 #  define os_strnlen strnlen
+#  define os_strncmp strncmp
 #  if defined __x86_64__
 #    define ADDRESS_64
 #  endif

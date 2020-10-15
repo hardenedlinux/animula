@@ -57,36 +57,200 @@ void _object_print (object_t obj)
   object_printer (obj);
 }
 
-static bool _int_eq (imm_int_t x, imm_int_t y)
+static bool _int_eq (object_t x, object_t y)
 {
   // printf ("%d == %d is %d\n", x, y, x == y);
-  return x == y;
+  return (imm_int_t)x->value == (imm_int_t)y->value;
 }
 
-static bool _int_lt (imm_int_t x, imm_int_t y)
+static bool _int_lt (object_t x, object_t y)
 {
-  return x < y;
+  return (imm_int_t)x->value < (imm_int_t)y->value;
 }
 
-static bool _int_gt (imm_int_t x, imm_int_t y)
+static bool _int_gt (object_t x, object_t y)
 {
-  return x > y;
+  return (imm_int_t)x->value > (imm_int_t)y->value;
 }
 
-static bool _int_le (imm_int_t x, imm_int_t y)
+static bool _int_le (object_t x, object_t y)
 {
-  return x <= y;
+  return (imm_int_t)x->value <= (imm_int_t)x->value;
 }
 
-static bool _int_ge (imm_int_t x, imm_int_t y)
+static bool _int_ge (object_t x, object_t y)
 {
-  return x >= y;
+  return (imm_int_t)x->value >= (imm_int_t)x->value;
 }
 // --------------------------------------------------
 
 static bool _not (object_t obj)
 {
   return is_false (obj);
+}
+
+static bool _eq (object_t a, object_t b)
+{
+  otype_t t1 = a->attr.type;
+  otype_t t2 = b->attr.type;
+
+  if (t1 != t2)
+    {
+      return false;
+    }
+  else if (list == t1 && (LIST_IS_EMPTY (a) && LIST_IS_EMPTY (b)))
+    {
+      return true;
+    }
+  else if (procedure == t1)
+    {
+      return (a->proc.entry == b->proc.entry);
+    }
+
+  return (a->value == b->value);
+}
+
+static bool _eqv (object_t a, object_t b)
+{
+  otype_t t1 = a->attr.type;
+  otype_t t2 = b->attr.type;
+  bool ret = false;
+
+  if (t1 != t2)
+    return false;
+
+  switch (t1)
+    {
+      /* case record: */
+      /* case bytevector: */
+      /* case float: */
+    case imm_int:
+      {
+        ret = _int_eq (a, b);
+        break;
+      }
+    case symbol:
+      {
+        ret = symbol_eq (a, b);
+        break;
+      }
+    case boolean:
+      {
+        ret = (a == b);
+        break;
+      }
+    case pair:
+    case string:
+    case vector:
+    case list:
+      {
+        if (list == t1 && (LIST_IS_EMPTY (a) && LIST_IS_EMPTY (b)))
+          {
+            ret = true;
+          }
+        else
+          {
+            /* NOTE:
+             * For collections, eqv? only compare their head pointer.
+             */
+            ret = (a->value == b->value);
+          }
+        break;
+      }
+    case procedure:
+      {
+        /* NOTE:
+         * R7RS demands the procedure that has side-effects for
+         * different behaviour or return values to be the different
+         * object. This is guaranteed by the compiler, not by the VM.
+         */
+        ret = (a->proc.entry == b->proc.entry);
+        break;
+      }
+    default:
+      {
+        os_printk ("eqv?: The type %d hasn't implemented yet\n", t1);
+        panic ("PANIC!\n");
+      }
+      // TODO-1
+      /* case character: */
+      /*   { */
+      /*     ret = character_eq (a, b); */
+      /*     break; */
+      /*   } */
+
+      // TODO-2
+      // Inexact numbers
+    }
+
+  return ret;
+}
+
+static bool _equal (object_t a, object_t b)
+{
+  otype_t t1 = a->attr.type;
+  otype_t t2 = b->attr.type;
+  bool ret = false;
+
+  if (t1 != t2)
+    return false;
+
+  switch (t1)
+    {
+    case pair:
+      {
+        pair_t ap = (pair_t)a->value;
+        pair_t bp = (pair_t)b->value;
+        ret = (_equal (ap->car, bp->car) && _equal (ap->cdr, bp->cdr));
+        break;
+      }
+    case string:
+      {
+        ret = str_eq (a, b);
+        break;
+      }
+    case list:
+      {
+        if (LIST_IS_EMPTY (a) && LIST_IS_EMPTY (b))
+          {
+            ret = true;
+          }
+        else
+          {
+            obj_list_head_t *h1 = LIST_OBJECT_HEAD (a);
+            obj_list_head_t *h2 = LIST_OBJECT_HEAD (b);
+            obj_list_t n1 = NULL;
+            obj_list_t n2 = SLIST_FIRST (h2);
+
+            SLIST_FOREACH (n1, h1, next)
+            {
+              ret = _equal (n1->obj, n2->obj);
+              if (!ret)
+                break;
+              n2 = SLIST_NEXT (n2, next);
+            }
+          }
+        break;
+      }
+    case vector:
+      {
+        panic ("equal?: vector hasn't been implemented yet!\n");
+        /* TODO: iterate each element and call equal? */
+        break;
+      }
+      /* case bytevector: */
+      /*   { */
+      /*     ret = bytevector_eq (a, b); */
+      /*     break; */
+      /*   } */
+    default:
+      {
+        ret = _eqv (a, b);
+        break;
+      }
+    }
+
+  return ret;
 }
 
 void primitives_init (void)
@@ -118,6 +282,9 @@ void primitives_init (void)
   def_prim (20, "list_ref", 2, (void *)list_ref);
   def_prim (21, "list_set", 3, (void *)list_set);
   def_prim (22, "list_append", 2, (void *)list_append);
+  def_prim (23, "eq", 2, (void *)_eq);
+  def_prim (24, "eqv", 2, (void *)_eqv);
+  def_prim (25, "equal", 2, (void *)_equal);
 }
 
 char *prim_name (u16_t pn)
