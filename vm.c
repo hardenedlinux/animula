@@ -891,7 +891,9 @@ void vm_load_compiled_file (const char *filename)
 
 void vm_run (vm_t vm)
 {
+  os_printk ("here\n");
   VM_DEBUG ("VM run!\n");
+  os_printk ("end\n");
 
   while (VM_RUN == vm->state)
     {

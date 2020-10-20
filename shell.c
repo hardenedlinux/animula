@@ -80,7 +80,7 @@ static int serial_load (int argc, char **argv, vm_t vm)
     }
   else if (!strncmp (argv[1], "run", 4))
     {
-      save = true;
+      // save = true;
       run = true;
     }
   else
@@ -92,6 +92,7 @@ static int serial_load (int argc, char **argv, vm_t vm)
   // Load to RAM
   os_printk ("Ready for receiving LEF......\n");
   lef_t lef = load_lef_from_uart ();
+
   if (!lef)
     goto end;
 

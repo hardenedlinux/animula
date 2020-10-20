@@ -39,15 +39,21 @@ lef_t load_lef_from_flash (size_t offset)
   for (int i = 0; i < 3; i++)
     os_flash_read (lef->ver, i, 4);
 
-  os_flash_read (&lef->msize, 4, 4);
-  os_flash_read (&lef->psize, 7, 4);
-  os_flash_read (&lef->csize, 11, 4);
+  os_flash_read ((void *)&lef->msize, 4, 4);
+  os_flash_read ((void *)&lef->psize, 7, 4);
+  os_flash_read ((void *)&lef->csize, 11, 4);
 
   u32_t size = LEF_BODY_SIZE (lef);
   lef->body = (u8_t *)os_malloc (size);
 
-  os_flash_read (lef->body, 12, size);
-  lef->entry = lef_entry (lef);
+  os_flash_read ((void *)lef->body, 12, size);
+  u16_t sym_cnt = lef_get_u16 (0, lef);
+  u16_t symtab_size = lef_get_u16 (2, lef);
+  lef->symtab.cnt = sym_cnt;
+  lef->symtab.entry = lef->body + 4;
+  /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
+  u16_t symtab_offset = 4 + symtab_size;
+  lef->entry = lef_entry (symtab_offset, lef);
   os_printk ("Done\n");
   return lef;
 #else
@@ -87,13 +93,15 @@ lef_t load_lef_from_uart ()
       os_printk ("Upload: %%%d\n", (i * 100) / size);
       lef->body[i] = ch;
     }
+  os_printk ("Parsing LEF......\n");
 
-  u16_t sym_cnt = uart_get_u16 ();
-  u16_t symtab_size = uart_get_u16 ();
-  lef->symtab = {.cnt = sym_cnt, .entry = lef->body};
+  u16_t sym_cnt = lef_get_u16 (0, lef);
+  u16_t symtab_size = lef_get_u16 (2, lef);
+  lef->symtab.cnt = sym_cnt;
+  lef->symtab.entry = lef->body + 4;
   /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
-  u16_t offset = 4 + symtab_size;
-  lef->entry = lef_entry (offset, lef);
+  u16_t symtab_offset = 4 + symtab_size;
+  lef->entry = lef_entry (symtab_offset, lef);
 
   os_printk ("Done\n");
   return lef;
@@ -140,8 +148,11 @@ lef_t load_lef_from_file (const char *filename)
   lef->symtab.cnt = sym_cnt;
   lef->symtab.entry = lef->body + 4;
   /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
-  u16_t offset = 4 + symtab_size;
-  lef->entry = lef_entry (offset, lef);
+  u16_t symtab_offset = 4 + symtab_size;
+  lef->entry = lef_entry (symtab_offset, lef);
+  os_printk ("sym_cnt = %d\n", sym_cnt);
+  os_printk ("symtab_size = %d\n", symtab_size);
+  os_printk ("entry = %d\n", lef->entry);
   VM_DEBUG ("Done\n");
 
 #else

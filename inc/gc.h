@@ -45,7 +45,7 @@ struct ActiveRootNode
 
 static inline bool active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
 {
-  return (b->value - a->value);
+  return ((uintptr_t)b->value - (uintptr_t)a->value);
 }
 
 static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
