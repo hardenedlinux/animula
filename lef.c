@@ -87,10 +87,17 @@ lef_t load_lef_from_uart ()
   u32_t size = LEF_BODY_SIZE (lef);
   lef->body = (u8_t *)os_malloc (size);
 
+  uint32_t last_index = 0;
+  uint32_t one_tenth_of_size = size / 10;
   for (u32_t i = 0; i < size; i++)
     {
       u8_t ch = os_getchar ();
-      os_printk ("Upload: %%%d\n", (i * 100) / size);
+      // print when sending 16 bytes or 10% of content
+      if ((i == size - 1) || (i - last_index >= (MAX (16, one_tenth_of_size))))
+        {
+          os_printk ("Upload: %d%%\n", ((i + 1) * 100) / size);
+          last_index = i;
+        }
       lef->body[i] = ch;
     }
   os_printk ("Parsing LEF......\n");
