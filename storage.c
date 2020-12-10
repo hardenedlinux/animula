@@ -22,11 +22,11 @@ static struct device *flash_device = NULL;
 
 static inline void zephyr_flash_init (void)
 {
-  flash_device = device_get_binding (DT_FLASH_DEV_NAME);
+  flash_device = device_get_binding (DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
 
   if (flash_device)
     {
-      os_printk ("Found flash device %s.\n", DT_FLASH_DEV_NAME);
+      os_printk ("Found flash device %s.\n", DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL);
       os_printk ("Flash I/O commands can be run.\n");
     }
   else
