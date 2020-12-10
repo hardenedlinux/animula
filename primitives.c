@@ -75,12 +75,12 @@ static bool _int_gt (object_t x, object_t y)
 
 static bool _int_le (object_t x, object_t y)
 {
-  return (imm_int_t)x->value <= (imm_int_t)x->value;
+  return (imm_int_t)x->value <= (imm_int_t)y->value;
 }
 
 static bool _int_ge (object_t x, object_t y)
 {
-  return (imm_int_t)x->value >= (imm_int_t)x->value;
+  return (imm_int_t)x->value >= (imm_int_t)y->value;
 }
 // --------------------------------------------------
 
