@@ -135,11 +135,15 @@ lef_t load_lef_from_file (const char *filename)
 
   os_read (fd, lef->ver, 3);
   os_read_u32 (fd, &lef->msize);
+  os_printk ("msize: %d\n", lef->msize);
   os_read_u32 (fd, &lef->psize);
+  os_printk ("psize: %d\n", lef->psize);
   os_read_u32 (fd, &lef->csize);
+  os_printk ("csize: %d\n", lef->csize);
 
   u32_t size = LEF_BODY_SIZE (lef);
   lef->body = (u8_t *)os_malloc (size);
+  os_printk ("body: %p, prog: %p\n", lef->body, LEF_PROG (lef));
 
   os_read (fd, lef->body, size);
 

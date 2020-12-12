@@ -745,7 +745,7 @@ static bytecode8_t fetch_next_bytecode (vm_t vm)
   if (vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
     {
       bc.all = vm->code[vm->pc++];
-      // os_printk("BC type(%x) data(%x)\n", bc.type, bc.data);
+      // os_printk ("BC type(%x) data(%x)\n", bc.type, bc.data);
     }
   else
     {
@@ -791,8 +791,8 @@ void vm_load_lef (vm_t vm, lef_t lef)
 {
   create_symbol_table (&lef->symtab);
   GLOBAL_REF (symtab) = &lef->symtab;
+  // FIXME: Check size boundary
   os_memcpy (vm->code, LEF_PROG (lef), lef->psize);
-  vm->data = (u8_t *)os_malloc (lef->msize);
   // FIXME: not all mem section is data seg
   os_memcpy (vm->data, LEF_MEM (lef), lef->msize);
   vm->pc = lef->entry;

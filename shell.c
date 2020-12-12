@@ -94,7 +94,10 @@ static int serial_load (int argc, char **argv, vm_t vm)
   lef_t lef = load_lef_from_uart ();
 
   if (!lef)
-    goto end;
+    {
+      os_printk ("Invalid LEF file\n");
+      goto end;
+    }
 
   if (save)
     store_lef (lef, 0);
@@ -102,13 +105,13 @@ static int serial_load (int argc, char **argv, vm_t vm)
   if (run)
     {
       vm_load_lef (vm, lef);
+      free_lef (lef);
       vm_run (vm);
     }
 
-end:
-  if (lef)
-    free_lef (lef);
   os_printk ("Free LEF successfully!]\n");
+
+end:
   return 0;
 }
 
