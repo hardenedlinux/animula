@@ -61,6 +61,7 @@ typedef enum prim_num
   eq = 23,
   eqv = 24,
   equal = 25,
+  prim_usleep = 26,
 
   do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
@@ -70,6 +71,9 @@ typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);
 typedef bool (*logic_check_t) (object_t, object_t);
 typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
+
+// FixMe: Shall this change to other type name?
+typedef imm_int_t (*func_1_args_with_ret_t) (object_t);
 
 typedef struct Primitive
 {

@@ -251,6 +251,16 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (*fn (&o1, &o2));
         break;
       }
+    case prim_usleep:
+      {
+        func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
+        Object o1 = POP_OBJ ();
+        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+
+        ret.value = (void *)fn (&o1);
+        PUSH_OBJ (ret);
+        break;
+      }
     default:
       os_printk ("Invalid prim number: %d\n", pn);
     }

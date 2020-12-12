@@ -253,6 +253,17 @@ static bool _equal (object_t a, object_t b)
   return ret;
 }
 
+static imm_int_t _os_usleep(object_t us)
+{
+  // zephyr/include/ kernel.h
+  // 761: * this must be understood before attempting to use k_usleep(). Use with
+  // 769:__syscall int32_t k_usleep(int32_t us);
+
+  // linux
+  // int usleep(useconds_t usec);
+  return os_usleep((int32_t)us->value);
+}
+
 void primitives_init (void)
 {
   /* NOTE: If fn is NULL, then it's inlined to call_prim
@@ -285,6 +296,7 @@ void primitives_init (void)
   def_prim (23, "eq", 2, (void *)_eq);
   def_prim (24, "eqv", 2, (void *)_eqv);
   def_prim (25, "equal", 2, (void *)_equal);
+  def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
 }
 
 char *prim_name (u16_t pn)

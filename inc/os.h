@@ -40,6 +40,7 @@ static inline size_t os_strnlen (const char *s, size_t n)
     return len;
 }
 #  define os_strncmp strncmp
+#  define os_usleep k_usleep
 #  include <console/console.h>
 #  define os_getchar console_getchar
 #  define os_getline console_getline
@@ -66,6 +67,7 @@ static inline size_t os_strnlen (const char *s, size_t n)
 #  define os_memcpy  memcpy
 #  define os_strnlen strnlen
 #  define os_strncmp strncmp
+#  define os_usleep usleep
 #  if defined __x86_64__
 #    define ADDRESS_64
 #  endif
