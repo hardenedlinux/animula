@@ -46,6 +46,12 @@ u32_t __store_offset = 0;
 void init_ram_heap (void)
 {
 #if defined LAMBDACHIP_ZEPHYR
+  /* Workaround:
+   * There's a bug in Zephyr that we must keep at least one allocated block in
+   * the heap pool, other wise it'll halt.
+   * Remove it when Zephyr fix the bug.
+   */
+  // void *work_around_for_zephyr_bug = os_malloc (1);
   os_printk ("MM is managed by zephyr.\n");
 #else
 #  ifndef LAMBDACHIP_LINUX
@@ -94,6 +100,19 @@ void *os_malloc (size_t size)
     {
       os_printk ("Failed to allocate memory!\n");
       panic ("BUG in os_malloc\n");
+    }
+
+  return ptr;
+}
+
+void *os_calloc (size_t n, size_t size)
+{
+  void *ptr = (void *)__calloc (n, size);
+
+  if (NULL == ptr)
+    {
+      os_printk ("Failed to allocate memory!\n");
+      panic ("BUG in os_calloc\n");
     }
 
   return ptr;

@@ -122,5 +122,6 @@ static inline void global_set (u8_t offset, u8_t data)
 
 void init_ram_heap (void);
 void *os_malloc (size_t size);
+void *os_calloc (size_t n, size_t size);
 void os_free (void *ptr);
 #endif // End of __LAMBDACHIP_MEMORY_H__

@@ -23,12 +23,22 @@
 #  define os_printk           printk
 #  define get_platform_info() CONFIG_BOARD
 #  include <kernel.h>
-#  define __malloc k_malloc
-#  define __free   k_free
+#  define __malloc malloc
+#  define __calloc calloc
+#  define __free   free
 #  include <string.h>
-#  define os_memset  memset
-#  define os_memcpy  memcpy
-#  define os_strnlen strnlen
+#  define os_memset memset
+#  define os_memcpy memcpy
+#  define os_strlen strlen
+/* NOTE: The newlib in Zephyr doesn't support strnlen, unfortunately. */
+static inline size_t os_strnlen (const char *s, size_t n)
+{
+  size_t len = os_strlen (s);
+  if (len > n)
+    return n;
+  else
+    return len;
+}
 #  define os_strncmp strncmp
 #  include <console/console.h>
 #  define os_getchar console_getchar
@@ -49,6 +59,7 @@
 #  define get_platform_info() "GNU/Linux"
 #  include <stdlib.h>
 #  define __malloc malloc
+#  define __calloc calloc
 #  define __free   free
 #  include <string.h>
 #  define os_memset  memset
