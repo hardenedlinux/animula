@@ -255,6 +255,7 @@ static void call_prim (vm_t vm, pn_t pn)
       {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o1 = POP_OBJ ();
+        VALIDATE (&o1, imm_int);
         Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
 
         ret.value = (void *)fn (&o1);
