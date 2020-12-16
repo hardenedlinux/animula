@@ -443,6 +443,7 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
 }
 
 void vm_init (vm_t vm);
+void vm_init_environment (vm_t vm);
 void vm_clean (vm_t vm);
 void vm_restart (vm_t vm);
 void vm_run (vm_t vm);

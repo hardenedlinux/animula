@@ -107,6 +107,7 @@ static int serial_load (int argc, char **argv, vm_t vm)
       vm_load_lef (vm, lef);
       free_lef (lef);
       vm_run (vm);
+      vm_init_environment (vm);
     }
 
   os_printk ("Free LEF successfully!]\n");

@@ -814,9 +814,8 @@ static bytecode8_t fetch_next_bytecode (vm_t vm)
   return bc;
 }
 
-void vm_init (vm_t vm)
+void vm_init_environment (vm_t vm)
 {
-  os_memset (vm, 0, sizeof (struct LambdaVM));
   vm->fetch_next_bytecode = fetch_next_bytecode;
   vm->state = VM_RUN;
   vm->sp = 0;
@@ -824,10 +823,16 @@ void vm_init (vm_t vm)
   vm->local = 0;
   vm->shadow = 0;
   vm->cc = NULL;
+  vm->closure = NULL;
+}
+
+void vm_init (vm_t vm)
+{
+  os_memset (vm, 0, sizeof (struct LambdaVM));
+  vm_init_environment (vm);
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
-  vm->closure = NULL;
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;
@@ -862,8 +867,7 @@ void vm_restart (vm_t vm)
    * 1. Free all objects in the heap
    * 2. Clean all global information, include ss
    */
-
-  vm_init (vm);
+  vm_init_environment (vm);
 }
 
 static encode_t pre_fetch (vm_t vm, bytecode8_t bytecode)
