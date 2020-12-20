@@ -382,6 +382,53 @@ static object_t generate_object (vm_t vm, object_t obj)
           }
         break;
       }
+    case real:
+      {
+        real_t r = {.v = vm_get_uintptr (vm)};
+        VM_DEBUG ("(push-real-object %f)\n", r.f);
+        obj->value = (void *)r.v;
+        break;
+      }
+    case rational_pos:
+    case rational_neg:
+      {
+        numerator_t n = (u16_t)vm_get_u16 (vm);
+        denominator_t d = (u16_t)vm_get_u16 (vm);
+        hov_t value = ((n << 0xf) | d);
+        VM_DEBUG ("(push-rational-object %d/%d)\n", n > 0 ? n : -n, d);
+        obj->value = (void *)value;
+        break;
+      }
+    case complex_exact:
+      {
+        real_part_t r = (real_part_t)vm_get_u16 (vm);
+        imag_part_t i = (imag_part_t)vm_get_u16 (vm);
+        hov_t value = ((r << 0xf) | i);
+        VM_DEBUG ("(push-complex-object %d%d)\n", r, i);
+        obj->value = (void *)value;
+        break;
+      }
+    case complex_inexact:
+      {
+        const void *value = (void *)(vm->code + vm->pc);
+        printf ("value: %p\n", value);
+#ifdef LAMBDACHIP_DEBUG
+        real_t r = {.v = vm_get_uintptr (vm)};
+        real_t i = {.v = vm_get_uintptr (vm)};
+        if (i.f >= 0)
+          {
+            VM_DEBUG ("(push-complex-object %.1f+%.1fi)\n", r.f, i.f);
+          }
+        else
+          {
+            VM_DEBUG ("(push-complex-object %.1f%.1fi)\n", r.f, i.f);
+          }
+#else
+        vm->pc += 8;
+#endif
+        obj->value = (void *)value;
+        break;
+      }
     default:
       {
         os_printk ("Oops, invalid object %d %d!\n", bc.type, bc.data);

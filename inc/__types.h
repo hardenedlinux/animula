@@ -39,6 +39,7 @@ typedef __s8_t s8_t;
 typedef __u8_t u8_t;
 typedef __s16_t s16_t;
 typedef __u16_t u16_t;
+typedef __f32_t f32_t;
 #  ifndef __NO_32_T
 typedef __s32_t s32_t;
 typedef __u32_t u32_t;

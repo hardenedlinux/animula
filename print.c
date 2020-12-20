@@ -45,6 +45,46 @@ static inline void vector_printer (object_t obj)
   os_printk (")");
 }
 
+static inline void rational_printer (object_t obj)
+{
+  hov_t value = (hov_t)obj->value;
+  numerator_t n = (numerator_t) (value >> 0xf);
+  denominator_t d = (denominator_t) (value & 0xf);
+
+  os_printk ("%d/%d", n > 0 ? n : -n, d);
+}
+
+static inline void complex_exact_printer (object_t obj)
+{
+  hov_t value = (hov_t)obj->value;
+  real_part_t r = (real_part_t) (value >> 0xf);
+  imag_part_t i = (imag_part_t) (value & 0xf);
+
+  if (i >= 0)
+    {
+      os_printk ("%d+%di", r, i);
+    }
+  else
+    {
+      os_printk ("%d%di", r, i);
+    }
+}
+
+static inline void complex_inexact_printer (object_t obj)
+{
+  real_t r = {.v = read_uintptr_from_ptr ((char *)obj->value)};
+  real_t i = {.v = read_uintptr_from_ptr ((char *)obj->value + 4)};
+
+  if (i.f >= 0)
+    {
+      os_printk ("%.1f+%.1fi", r.f, i.f);
+    }
+  else
+    {
+      os_printk ("%.1f%.1fi", r.f, i.f);
+    }
+}
+
 void object_printer (object_t obj)
 {
   switch (obj->attr.type)
@@ -84,6 +124,28 @@ void object_printer (object_t obj)
     case boolean:
       {
         os_printk ("#%s", obj->value ? "true" : "false");
+        break;
+      }
+    case real:
+      {
+        real_t r = {.v = (uintptr_t)obj->value};
+        os_printk ("float: %f", r.f);
+        break;
+      }
+    case rational_pos:
+    case rational_neg:
+      {
+        rational_printer (obj);
+        break;
+      }
+    case complex_exact:
+      {
+        complex_exact_printer (obj);
+        break;
+      }
+    case complex_inexact:
+      {
+        complex_inexact_printer (obj);
         break;
       }
     default:

@@ -71,6 +71,11 @@ typedef enum obj_type
   primitive = 10,
   closure_on_heap = 11,
   closure_on_stack = 12,
+  real = 13,
+  rational_pos = 14,
+  rational_neg = 15,
+  complex_exact = 16,
+  complex_inexact = 17,
 
   boolean = 61,
   null_obj = 62,
@@ -81,10 +86,21 @@ typedef enum obj_type
 typedef s64_t imm_int_t;
 // hov stands for half-of-value
 typedef u32_t hov_t;
+typedef u32_t denominator_t;
+typedef u32_t numerator_t;
+typedef u32_t real_part_t;
+typedef u32_t imag_part_t;
 #else
 typedef s32_t imm_int_t;
 typedef u16_t hov_t;
+typedef u16_t denominator_t;
+typedef u16_t numerator_t;
+typedef s16_t real_part_t;
+typedef s16_t imag_part_t;
 #endif
+
+typedef f32_t inexact_real_part_t;
+typedef f32_t inexact_imag_part_t;
 
 /* NOTE:
  * Some of the structs below will not be packed. It's because the address of the
@@ -181,6 +197,25 @@ typedef struct GCInfo
   u8_t *stack;
 } __packed GCInfo, *gc_info_t;
 
+typedef union ieee754_float
+{
+  float f;
+  uintptr_t v;
+  /* This is the IEEE 754 single-precision format.  */
+  struct
+  {
+#if defined LAMBDACHIP_BIG_ENDIAN
+    unsigned int negative : 1;
+    unsigned int exponent : 8;
+    unsigned int mantissa : 23;
+#else
+    unsigned int mantissa : 23;
+    unsigned int exponent : 8;
+    unsigned int negative : 1;
+#endif /* Little endian.  */
+  };
+} real_t;
+
 #ifndef PC_SIZE
 #  define PC_SIZE 2
 #  if (4 == PC_SIZE)
@@ -202,4 +237,20 @@ typedef u16_t reg_t;
 // Frame Pre-store Size = sizeof(pc) + sizeof(fp)
 #define FPS 2 * PC_SIZE
 
+static inline uintptr_t read_uintptr_from_ptr (char *ptr)
+{
+  u8_t buf[sizeof (uintptr_t)] = {0};
+#if defined LAMBDACHIP_BIG_ENDIAN
+  buf[0] = *ptr++;
+  buf[1] = *ptr++;
+  buf[2] = *ptr++;
+  buf[3] = *ptr;
+#else
+  buf[3] = *ptr++;
+  buf[2] = *ptr++;
+  buf[1] = *ptr++;
+  buf[0] = *ptr;
+#endif
+  return *((uintptr_t *)buf);
+}
 #endif // End of __LAMBDACHIP_TYPES_H;

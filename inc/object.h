@@ -48,6 +48,16 @@
                     0              9      15                     31
   12. Closure       |      env     | size  |      entry offset    |
 
+  13. Real          |      IEEE 754                               |
+
+  NOTE: The rational number is canonical-form handled by the compiler
+  NOTE: We seperate +/- rational number to save RAMs
+  14. +Rational     |      16bit uint      |       16bit uint     |
+  15. -Rational     |      16bit uint      |       16bit uint     |
+
+  16. Complex       |      16bit sint      |       16bit sint     |
+  17. Complex       |      inexact complex address                |
+
   61. Boolean       |      false: 0,     true: 1                  |
   62. null_object   |                                             |
   63. None          |      const encoding                         |

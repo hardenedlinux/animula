@@ -41,6 +41,7 @@ typedef signed int __s32_t;
 typedef unsigned int __u32_t;
 typedef signed long long __s64_t;
 typedef unsigned long long __u64_t;
+typedef float __f32_t;
 
 // CPU word long ,pc32 is 32bit
 typedef __u32_t __longword;

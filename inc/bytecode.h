@@ -26,8 +26,8 @@
  * Authors: Vincent St-Amour and Marc Feeley
 
  * I've redesigned it for better extensibility. The object encoding was
- redesigned
- * as well, and it's expected NOT ONLY SUPPORT Scheme. -- by NalaGinrut
+ * redesigned as well, and it's expected NOT ONLY SUPPORT Scheme.
+ * -- by NalaGinrut
 
  * Terms:
  * ---------------------------------------------------------------
