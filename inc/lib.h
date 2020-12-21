@@ -19,7 +19,18 @@
 
 #include "debug.h"
 #include "object.h"
+#include "os.h"
 #include "primitives.h"
 #include "types.h"
 
+static inline imm_int_t gcd (imm_int_t u, imm_int_t v)
+{
+
+  imm_int_t uu = abs (u);
+  imm_int_t vv = abs (v);
+
+  while ((u %= v) && (v %= u))
+    ;
+  return (u + v);
+}
 #endif // End of __LAMBDACHIP_LIB_H__

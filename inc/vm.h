@@ -21,6 +21,7 @@
 #include "debug.h"
 #include "gc.h"
 #include "lef.h"
+#include "lib.h"
 #include "memory.h"
 #include "object.h"
 #include "os.h"

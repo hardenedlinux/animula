@@ -39,7 +39,7 @@ typedef enum prim_num
   int_add = 2,
   int_sub = 3,
   int_mul = 4,
-  int_div = 5,
+  fract_div = 5,
   object_print = 6,
   apply = 7,
   not = 8,

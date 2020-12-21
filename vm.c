@@ -68,10 +68,23 @@ static void call_prim (vm_t vm, pn_t pn)
         RESTORE ();
         break;
       }
+    case fract_div:
+      {
+        Object d = POP_OBJ ();
+        Object n = POP_OBJ ();
+        // TODO: rationalize the result
+        imm_int_t g = gcd ((imm_int_t)d.value, (imm_int_t)n.value);
+        imm_int_t dd = (imm_int_t)d.value / g;
+        imm_int_t nn = (imm_int_t)n.value / g;
+        uintptr_t v = ((nn << 0xf) | dd);
+        int t = (dd ^ nn) < 0 ? rational_neg : rational_pos;
+        Object ret = {.attr = {.type = t, .gc = 0}, .value = (void *)v};
+        PUSH_OBJ (ret);
+        break;
+      }
     case int_add:
     case int_sub:
     case int_mul:
-    case int_div:
     case int_modulo:
     case int_remainder:
       {

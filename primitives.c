@@ -36,11 +36,6 @@ static inline imm_int_t _int_mul (imm_int_t x, imm_int_t y)
   return x * y;
 }
 
-static inline imm_int_t _int_div (imm_int_t x, imm_int_t y)
-{
-  return x / y;
-}
-
 imm_int_t _int_modulo (imm_int_t x, imm_int_t y)
 {
   imm_int_t m = x % y;
@@ -253,15 +248,15 @@ static bool _equal (object_t a, object_t b)
   return ret;
 }
 
-static imm_int_t _os_usleep(object_t us)
+static imm_int_t _os_usleep (object_t us)
 {
   // zephyr/include/ kernel.h
-  // 761: * this must be understood before attempting to use k_usleep(). Use with
-  // 769:__syscall int32_t k_usleep(int32_t us);
+  // 761: * this must be understood before attempting to use k_usleep(). Use
+  // with 769:__syscall int32_t k_usleep(int32_t us);
 
   // linux
   // int usleep(useconds_t usec);
-  return os_usleep((int32_t)us->value);
+  return os_usleep ((int32_t)us->value);
 }
 
 void primitives_init (void)
@@ -273,7 +268,7 @@ void primitives_init (void)
   def_prim (2, "add", 2, (void *)_int_add);
   def_prim (3, "sub", 2, (void *)_int_sub);
   def_prim (4, "mul", 2, (void *)_int_mul);
-  def_prim (5, "div", 2, (void *)_int_div);
+  def_prim (5, "fract_div", 2, NULL);
   def_prim (6, "object_print", 1, (void *)_object_print);
   def_prim (7, "apply", 2, NULL);
   def_prim (8, "not", 1, (void *)_not);
