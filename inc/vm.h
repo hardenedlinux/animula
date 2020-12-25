@@ -328,18 +328,17 @@ static inline void vm_stack_check (vm_t vm)
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()                 \
-  do                              \
-    {                             \
-      {                           \
-        vm->sp = vm->fp + FPS;    \
-        vm->fp = POP_REG ();      \
-        vm->pc = POP_REG ();      \
-        vm->local = vm->fp + FPS; \
-        if (vm->closure)          \
-          vm->closure = NULL;     \
-      }                           \
-      while (0)
+#define RESTORE()               \
+  do                            \
+    {                           \
+      vm->sp = vm->fp + FPS;    \
+      vm->fp = POP_REG ();      \
+      vm->pc = POP_REG ();      \
+      vm->local = vm->fp + FPS; \
+      if (vm->closure)          \
+        vm->closure = NULL;     \
+    }                           \
+  while (0)
 
 #define CALL_PROCEDURE(obj)           \
   do                                  \
