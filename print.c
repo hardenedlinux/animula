@@ -111,6 +111,12 @@ void object_printer (object_t obj)
         os_printk ("<primitive: %s %d>", prim_name (pn), pn);
         break;
       }
+    case closure_on_heap:
+    case closure_on_stack:
+      {
+        os_printk ("<closure: %p>", obj->value);
+        break;
+      }
     case list:
       {
         list_printer (obj);
