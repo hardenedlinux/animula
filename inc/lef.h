@@ -23,6 +23,10 @@
 #include "storage.h"
 #include "symbol.h"
 #include "types.h"
+#ifdef LAMBDACHIP_ZEPHYR
+#  include <fs/fs.h>
+#  include <kernel.h>
+#endif
 
 typedef struct LEF
 {
@@ -77,16 +81,20 @@ static inline u32_t lef_entry (u16_t offset, lef_t lef)
   return *((u32_t *)entry);
 }
 
-#if defined LAMBDACHIP_LINUX
+#if defined(LAMBDACHIP_LINUX) || defined(LAMBDACHIP_ZEPHYR)
 #  include <sys/stat.h>
 #  include <sys/types.h>
 #  include <unistd.h>
+#endif
 static inline bool file_exist (const char *filename)
 {
   struct stat st;
+#if defined LAMBDACHIP_LINUX
   return (stat (filename, &st) == 0);
-}
+#elif defined LAMBDACHIP_ZEPHYR
+  return (fs_stat (filename, &st) == 0);
 #endif
+}
 
 void store_lef (lef_t lef, size_t offset);
 void free_lef (lef_t lef);

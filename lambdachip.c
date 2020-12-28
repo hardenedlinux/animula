@@ -50,6 +50,24 @@ void lambdachip_start (void)
   os_printk ("Type `help' to get help\n");
 
 #ifndef LAMBDACHIP_LINUX
-  run_shell (vm);
+  // #ifdef LAMBDACHIP_LINUX
+  //       struct fs_file_t file;
+  mount_disk ();
+  static const char fname[] = "/SD:/program.lef";
+  //   load_lef_from_file_system
+  // #endif
+
+  lef_t lef = load_lef_from_file (fname);
+  if (lef)
+    {
+      vm_load_lef (vm, lef);
+      vm_run (vm);
+      lambdachip_clean (vm);
+    }
+  else
+    {
+      run_shell (vm);
+    }
+
 #endif
 }

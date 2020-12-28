@@ -122,7 +122,7 @@ lef_t load_lef_from_file (const char *filename)
 {
   lef_t lef = NULL;
 
-#if defined LAMBDACHIP_LINUX
+#if defined(LAMBDACHIP_LINUX) || defined(LAMBDACHIP_ZEPHYR)
   if (!file_exist (filename))
     {
       os_printk ("File \"%s\" doesn't exist!\n", filename);
@@ -165,6 +165,13 @@ lef_t load_lef_from_file (const char *filename)
   os_printk ("symtab_size = %d\n", symtab_size);
   os_printk ("entry = %d\n", lef->entry);
   VM_DEBUG ("Done\n");
+
+  // #elif defined LAMBDACHIP_ZEPHYR
+  //   if (!file_exist (filename))
+  //     {
+  //       os_printk ("File \"%s\" doesn't exist!\n", filename);
+  //       return 0;
+  //     }
 
 #else
   os_printk ("The current platform %s doesn't support filesystem!\n",

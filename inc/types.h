@@ -99,6 +99,7 @@ typedef s16_t real_part_t;
 typedef s16_t imag_part_t;
 #endif
 
+typedef float f32_t;
 typedef f32_t inexact_real_part_t;
 typedef f32_t inexact_imag_part_t;
 
