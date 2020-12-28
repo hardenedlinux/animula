@@ -143,6 +143,23 @@ ssize_t read (int fd, void *buf, size_t count)
   return size;
 }
 
+/**
+ * \par Function
+ *   function
+ * \par Description
+ *   Description
+ * \par Output
+ *   None
+ * \par return
+ *   ret
+ * \par Others
+ *    multi-thread unsafe
+ */
+int stat (const char *path, struct fs_dirent *entry)
+{
+  return fs_stat (path, entry);
+}
+
 #  endif /* CONFIG_MAXIMUM_NUMBER_OPEN_FILE_DESCRIPTOR */
 #endif   /* LAMBDACHIP_ZEPHYR */
 /************************ (C) COPYRIGHT ************************END OF FILE****/
