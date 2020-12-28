@@ -42,7 +42,6 @@ static inline size_t os_strnlen (const char *s, size_t n)
 }
 #  define os_strncmp strncmp
 #  define os_usleep  k_usleep
-// #  define os_open fs_open
 #  include <console/console.h>
 #  define os_getchar console_getchar
 #  define os_getline console_getline

@@ -166,13 +166,6 @@ lef_t load_lef_from_file (const char *filename)
   os_printk ("entry = %d\n", lef->entry);
   VM_DEBUG ("Done\n");
 
-  // #elif defined LAMBDACHIP_ZEPHYR
-  //   if (!file_exist (filename))
-  //     {
-  //       os_printk ("File \"%s\" doesn't exist!\n", filename);
-  //       return 0;
-  //     }
-
 #else
   os_printk ("The current platform %s doesn't support filesystem!\n",
              get_platform_info ());
