@@ -23,6 +23,7 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 static inline imm_int_t _int_add (imm_int_t x, imm_int_t y)
 {
+  printf ("%d + %d = %d\n", x, y, x + y);
   return x + y;
 }
 

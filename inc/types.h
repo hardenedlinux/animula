@@ -145,6 +145,7 @@ typedef struct Closure
   u8_t arity;
   u8_t frame_size;
   reg_t entry;
+  reg_t local;
   Object env[];
 } Closure, *closure_t;
 

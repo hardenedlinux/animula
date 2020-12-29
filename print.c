@@ -117,6 +117,11 @@ void object_printer (object_t obj)
         os_printk ("<closure: %p>", obj->value);
         break;
       }
+    case procedure:
+      {
+        os_printk ("<procedure: %p>", obj->value);
+        break;
+      }
     case list:
       {
         list_printer (obj);
@@ -154,10 +159,15 @@ void object_printer (object_t obj)
         complex_inexact_printer (obj);
         break;
       }
+    case 63:
+      {
+        printf ("whever\n");
+        break;
+      }
     default:
       {
         os_printk ("object_print: Invalid object type %d\n", obj->attr.type);
-        panic ("PANIC!\n");
+        // panic ("PANIC!\n");
       }
     }
 }

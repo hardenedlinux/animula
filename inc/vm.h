@@ -99,17 +99,17 @@ static inline void vm_stack_check (vm_t vm)
 
 #define POPx(t, size)             \
   ({                              \
-    vm->sp -= size;               \
+    vm->sp -= (size);             \
     *((t *)(vm->stack + vm->sp)); \
   })
 
-#define PUSHx(t, size, data)                    \
-  do                                            \
-    {                                           \
-      *((t *)(vm->stack + vm->sp)) = ((t)data); \
-      vm->sp += size;                           \
-      vm_stack_check (vm);                      \
-    }                                           \
+#define PUSHx(t, size, data)                       \
+  do                                               \
+    {                                              \
+      *((t *)(vm->stack + vm->sp)) = ((t) (data)); \
+      vm->sp += (size);                            \
+      vm_stack_check (vm);                         \
+    }                                              \
   while (0)
 
 #define PUSH_OBJ(obj) PUSHx (Object, sizeof (Object), obj)
@@ -160,18 +160,47 @@ static inline void vm_stack_check (vm_t vm)
 // LOCAL_FIX is only for debug since it doesn't print stored REG.
 #define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->fp + FPS))[offset])
 
-#define FREE_VAR(up, offset)                                        \
-  ({                                                                \
-    reg_t fp = vm->fp;                                              \
-    for (int i = 0; i < up; i++)                                    \
-      {                                                             \
-        fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));         \
-      }                                                             \
-    (object_t) (vm->stack + fp + (offset) * sizeof (Object) + FPS); \
+/* NOTE:
+ * Because vm->local is activate iff the actual calling occurs, so (free 0 n)
+ * will refer the current frame. And because the offset of free-var doesn't
+ * require fix, so we're not going to call LOCAL, but use the raw reference from
+ * vm->local.
+ */
+#define FREE_VAR(up, offset)                                                   \
+  ({                                                                           \
+    reg_t fp = vm->fp;                                                         \
+    object_t ret = NULL;                                                       \
+    closure_t closure = NULL;                                                  \
+    if (0 == up)                                                               \
+      {                                                                        \
+        ret = LOCAL (offset);                                                  \
+      }                                                                        \
+    else                                                                       \
+      {                                                                        \
+        for (int i = 0; i <= up; i++)                                          \
+          {                                                                    \
+            fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
+          }                                                                    \
+        closure = fp_to_closure (fp);                                          \
+        if (closure)                                                           \
+          {                                                                    \
+            if (offset >= closure->frame_size)                                 \
+              {                                                                \
+                ret = (&((object_t) (                                          \
+                  vm->stack + closure->local))[offset - closure->frame_size]); \
+              }                                                                \
+            else                                                               \
+              {                                                                \
+                ret = (&closure->env[offset]);                                 \
+              }                                                                \
+          }                                                                    \
+        else                                                                   \
+          {                                                                    \
+            ret = (&((object_t) (vm->stack + fp + FPS))[offset]);              \
+          }                                                                    \
+      }                                                                        \
+    ret;                                                                       \
   })
-
-/* #define FREE_VAR(frame, offset) \ */
-/*   (&((object_t) (vm->stack + vm->stack[vm->fp + 1] + FPS))[offset]) */
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \
@@ -205,14 +234,19 @@ static inline void vm_stack_check (vm_t vm)
     }                    \
   while (0)
 
-#define PROC_CALL(offset)       \
-  do                            \
-    {                           \
-      if (IS_SHADOW_FRAME ())   \
-        COPY_SHADOW_FRAME ();   \
-      vm->local = vm->fp + FPS; \
-      JUMP (offset);            \
-    }                           \
+#define PROC_CALL(offset)                     \
+  do                                          \
+    {                                         \
+      if (IS_SHADOW_FRAME ())                 \
+        COPY_SHADOW_FRAME ();                 \
+      vm->local = vm->fp + FPS;               \
+      if (vm->closure)                        \
+        {                                     \
+          save_closure (vm->fp, vm->closure); \
+          vm->closure = NULL;                 \
+        }                                     \
+      JUMP (offset);                          \
+    }                                         \
   while (0)
 
 /* Convention:
@@ -323,21 +357,75 @@ static inline void vm_stack_check (vm_t vm)
     }                                                                \
   while (0)
 
+typedef struct ClosureStack
+{
+  SLIST_ENTRY (ClosureStack) next;
+  reg_t fp;
+  closure_t closure;
+} __packed ClosureStack, *closure_stack_t;
+
+typedef SLIST_HEAD (ClosureStackHead, ClosureStack) closure_stack_head_t;
+
+static closure_stack_head_t closure_stack;
+
+static inline closure_t fp_to_closure (reg_t fp)
+{
+  closure_stack_t cs = NULL;
+  closure_t closure = NULL;
+
+  SLIST_FOREACH (cs, &closure_stack, next)
+  {
+    if (fp == cs->fp)
+      {
+        closure = cs->closure;
+        break;
+      }
+  }
+
+  return closure;
+}
+
+static inline closure_t pop_closure (vm_t vm)
+{
+  closure_stack_t cs = SLIST_FIRST (&closure_stack);
+  closure_t closure = NULL;
+
+  reg_t last_fp = *((reg_t *)(vm->stack + vm->fp + sizeof (reg_t)));
+
+  if (cs && last_fp == cs->fp)
+    {
+      closure = cs->closure;
+      SLIST_REMOVE_HEAD (&closure_stack, next);
+      os_free (cs);
+    }
+
+  return closure;
+}
+
+static inline void save_closure (reg_t fp, closure_t closure)
+{
+  closure_stack_t cs
+    = (closure_stack_t)os_malloc (sizeof (struct ClosureStack));
+
+  cs->closure = closure;
+  cs->fp = fp;
+  SLIST_INSERT_HEAD (&closure_stack, cs, next);
+}
+
 /* NOTE:
  * ret is a special primitive that implies it's the tail call.
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()               \
-  do                            \
-    {                           \
-      vm->sp = vm->fp + FPS;    \
-      vm->fp = POP_REG ();      \
-      vm->pc = POP_REG ();      \
-      vm->local = vm->fp + FPS; \
-      if (vm->closure)          \
-        vm->closure = NULL;     \
-    }                           \
+#define RESTORE()                     \
+  do                                  \
+    {                                 \
+      vm->sp = vm->fp + FPS;          \
+      vm->fp = POP_REG ();            \
+      vm->pc = POP_REG ();            \
+      vm->local = vm->fp + FPS;       \
+      vm->closure = pop_closure (vm); \
+    }                                 \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \
@@ -437,9 +525,22 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
   u8_t arity = closure->arity;
   reg_t total_size = size * sizeof (Object);
   VM_DEBUG ("(closure-on-heap %d %d %p 0x%x)\n", arity, size, env, entry);
-  vm->closure = closure;
+  /* NOTE:
+   * If we call a closure inside a closure, we have to save the current
+   * closure, otherwise we lose the information to reference free vars of
+   * the closure.
+   */
+  /* if (vm->closure) */
+  /*   { */
+  /*     reg_t last_fp = *((reg_t *)(vm->stack + vm->fp + sizeof (reg_t))); */
+  /*     save_closure (last_fp, vm->closure); */
+  /*   } */
+  // vm->local = vm->sp - arity * sizeof (Object);
   vm->local = vm->sp - arity * sizeof (Object);
+  closure->local = vm->local;
   vm->sp += total_size;
+  save_closure (vm->fp, closure);
+  vm->closure = closure;
   JUMP (entry);
 }
 

@@ -44,10 +44,18 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
   for (u8_t i = frame_size; i > 0; i--)
     {
       closure->env[i - 1] = POP_OBJ ();
-      /* printf ("capture local-%d obj type: %d, %d\n", i - 1, */
-      /*         closure->env[i - 1].attr.type, */
-      /*         (imm_int_t) (closure->env[i - 1].value)); */
+      /* printf ("capture local-%d ", i - 1); */
+      /* object_printer (&closure->env[i - 1]); */
+      /* printf ("\n"); */
     }
+
+  /* for (u8_t i = 0; i < frame_size; i++) */
+  /*   { */
+  /*     closure->env[i] = POP_OBJ (); */
+  /*     printf ("capture local-%d ", i); */
+  /*     object_printer (&closure->env[i]); */
+  /*     printf ("\n"); */
+  /*   } */
 
   return closure;
 }
@@ -460,8 +468,9 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(local %d)\n", bc.data);
         object_t obj = (object_t)LOCAL (bc.data);
-        /* printf ("obj: type = %d, value = %d\n", obj->attr.type, */
-        /*         (imm_int_t)obj->value); */
+        /* printf ("\nobj: "); */
+        /* object_printer (obj); */
+        /* printf ("\n"); */
         /* if (vm->closure) */
         /*   { */
         /*     for (int i = 0; i < vm->closure->frame_size; i++) */
@@ -470,11 +479,6 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         /*                 vm->closure->env[i].attr.type, */
         /*                 (imm_int_t) (vm->closure->env[i].value)); */
         /*       } */
-        /*     printf ("closure: %p, offset: %d, arity: %d, type: %d, value:
-         * %d\n", */
-        /*             vm->closure, bc.data, vm->closure->arity, obj->attr.type,
-         */
-        /*             (imm_int_t)obj->value); */
         /*   } */
         PUSH_OBJ (*obj);
         break;
@@ -849,6 +853,7 @@ void vm_init (vm_t vm)
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;
+  SLIST_INIT (&closure_stack);
 }
 
 void vm_clean (vm_t vm)

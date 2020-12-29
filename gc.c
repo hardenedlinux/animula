@@ -57,7 +57,6 @@ static void free_object (object_t obj)
     {
     case pair:
       {
-        printf ("pair\n");
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
         FREE_OBJECT (&pair_free_list, obj->value);
@@ -65,7 +64,6 @@ static void free_object (object_t obj)
       }
     case list:
       {
-        printf ("list\n");
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
         obj_list_head_t *head = (obj_list_head_t *)obj->value;
