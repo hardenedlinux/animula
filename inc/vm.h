@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_VM_H__
 #define __LAMBDACHIP_VM_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020,2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -166,40 +166,33 @@ static inline void vm_stack_check (vm_t vm)
  * require fix, so we're not going to call LOCAL, but use the raw reference from
  * vm->local.
  */
-#define FREE_VAR(up, offset)                                                   \
-  ({                                                                           \
-    reg_t fp = vm->fp;                                                         \
-    object_t ret = NULL;                                                       \
-    closure_t closure = NULL;                                                  \
-    if (0 == up)                                                               \
-      {                                                                        \
-        ret = LOCAL (offset);                                                  \
-      }                                                                        \
-    else                                                                       \
-      {                                                                        \
-        for (int i = 0; i <= up; i++)                                          \
-          {                                                                    \
-            fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
-          }                                                                    \
-        closure = fp_to_closure (fp);                                          \
-        if (closure)                                                           \
-          {                                                                    \
-            if (offset >= closure->frame_size)                                 \
-              {                                                                \
-                ret = (&((object_t) (                                          \
-                  vm->stack + closure->local))[offset - closure->frame_size]); \
-              }                                                                \
-            else                                                               \
-              {                                                                \
-                ret = (&closure->env[offset]);                                 \
-              }                                                                \
-          }                                                                    \
-        else                                                                   \
-          {                                                                    \
-            ret = (&((object_t) (vm->stack + fp + FPS))[offset]);              \
-          }                                                                    \
-      }                                                                        \
-    ret;                                                                       \
+#define FREE_VAR(up, offset)                                               \
+  ({                                                                       \
+    reg_t fp = vm->fp;                                                     \
+    object_t ret = NULL;                                                   \
+    closure_t closure = NULL;                                              \
+    for (int i = 0; i <= up; i++)                                          \
+      {                                                                    \
+        fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
+      }                                                                    \
+    closure = up ? fp_to_closure (fp) : vm->closure;                       \
+    if (closure)                                                           \
+      {                                                                    \
+        if (offset >= closure->frame_size)                                 \
+          {                                                                \
+            ret = (&((object_t) (                                          \
+              vm->stack + closure->local))[offset - closure->frame_size]); \
+          }                                                                \
+        else                                                               \
+          {                                                                \
+            ret = (&closure->env[offset]);                                 \
+          }                                                                \
+      }                                                                    \
+    else                                                                   \
+      {                                                                    \
+        ret = (&((object_t) (vm->stack + fp + FPS))[offset]);              \
+      }                                                                    \
+    ret;                                                                   \
   })
 
 #define PUSH_FROM_SS(bc)             \
