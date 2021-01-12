@@ -62,6 +62,9 @@ typedef enum prim_num
   eqv = 24,
   equal = 25,
   prim_usleep = 26,
+  prim_gpio_pin_configure = 27,
+  prim_gpio_pin_set = 28,
+  prim_gpio_pin_toggle = 29,
 
   do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
@@ -71,9 +74,10 @@ typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);
 typedef bool (*logic_check_t) (object_t, object_t);
 typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
+typedef object_t (*func_3_args_with_ret_t) (object_t, object_t, object_t);
 
 // FixMe: Shall this change to other type name?
-typedef imm_int_t (*func_1_args_with_ret_t) (object_t);
+typedef object_t (*func_1_args_with_ret_t) (object_t);
 
 typedef struct Primitive
 {

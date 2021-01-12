@@ -16,6 +16,9 @@
  */
 
 #include "primitives.h"
+#ifdef LAMBDACHIP_ZEPHYR
+#  include <drivers/gpio.h>
+#endif /* LAMBDACHIP_ZEPHYR */
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
@@ -271,6 +274,59 @@ static imm_int_t _os_usleep (object_t us)
   return os_usleep ((int32_t)us->value);
 }
 
+#ifdef LAMBDACHIP_ZEPHYR
+struct device *translate_dev_from_string (char *dev)
+{
+  extern const struct device *dev_led0;
+  extern const struct device *dev_led1;
+  extern const struct device *dev_led2;
+  extern const struct device *dev_led3;
+  static const char char_dev_led0[] = "dev_led0";
+  static const char char_dev_led1[] = "dev_led1";
+  static const char char_dev_led2[] = "dev_led2";
+  static const char char_dev_led3[] = "dev_led3";
+#  define len_char_dev_led0 sizeof (char_dev_led0)
+#  define len_char_dev_led1 sizeof (char_dev_led1)
+#  define len_char_dev_led2 sizeof (char_dev_led2)
+#  define len_char_dev_led3 sizeof (char_dev_led3)
+
+  int len = strlen (dev);
+  if (0 == strncmp (dev, char_dev_led0, len))
+    {
+      return dev_led0;
+    }
+  else if (0 == strncmp (dev, char_dev_led1, len))
+    {
+      return dev_led1;
+    }
+  else if (0 == strncmp (dev, char_dev_led2, len))
+    {
+      return dev_led2;
+    }
+  else if (0 == strncmp (dev, char_dev_led3, len))
+    {
+      return dev_led3;
+    }
+  else
+    {
+      return NULL;
+    }
+}
+
+static int _os_gpio_pin_set (object_t dev, object_t pin, object_t v)
+{
+  const struct device *port = translate_dev_from_string (dev->value);
+  return gpio_pin_set (port, pin->value, v->value);
+}
+
+#endif /* LAMBDACHIP_ZEPHYR */
+
+// static void _os_gpio_pin_toggle (char* dev, )
+// {
+//   static inline int gpio_pin_toggle(const struct device *port, gpio_pin_t
+//   pin)
+// }
+
 void primitives_init (void)
 {
   /* NOTE: If fn is NULL, then it's inlined to call_prim
@@ -304,6 +360,13 @@ void primitives_init (void)
   def_prim (24, "eqv", 2, (void *)_eqv);
   def_prim (25, "equal", 2, (void *)_equal);
   def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
+  // #ifdef LAMBDACHIP_ZEPHYR
+  // def_prim (27, "gpio_pin_configure", 3, (void *)gpio_pin_configure);
+  def_prim (28, "gpio_pin_set", 3, (void *)_os_gpio_pin_set);
+  // def_prim (29, "gpio_pin_toggle", 2, (void *)gpio_pin_toggle);
+  // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
+
+  // #endif /* LAMBDACHIP_ZEPHYR */
 }
 
 char *prim_name (u16_t pn)
