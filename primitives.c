@@ -313,7 +313,7 @@ struct device *translate_dev_from_string (char *dev)
     }
 }
 
-static int _os_gpio_pin_set (object_t dev, object_t pin, object_t v)
+static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
 {
   const struct device *port = translate_dev_from_string (dev->value);
   return gpio_pin_set (port, pin->value, v->value);
@@ -362,7 +362,7 @@ void primitives_init (void)
   def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
   // #ifdef LAMBDACHIP_ZEPHYR
   // def_prim (27, "gpio_pin_configure", 3, (void *)gpio_pin_configure);
-  def_prim (28, "gpio_pin_set", 3, (void *)_os_gpio_pin_set);
+  def_prim (28, "gpio_set", 3, (void *)_os_gpio_set);
   // def_prim (29, "gpio_pin_toggle", 2, (void *)gpio_pin_toggle);
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 

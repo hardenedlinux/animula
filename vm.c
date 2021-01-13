@@ -275,11 +275,11 @@ static void call_prim (vm_t vm, pn_t pn)
         break;
       }
 
-    case prim_gpio_pin_configure:
+    case prim_gpio_config:
       {
         break;
       }
-    case prim_gpio_pin_set:
+    case prim_gpio_set:
       {
         func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
         Object o3 = POP_OBJ ();
@@ -294,7 +294,7 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-    case prim_gpio_pin_toggle:
+    case prim_gpio_toggle:
       {
         break;
       }
