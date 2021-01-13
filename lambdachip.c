@@ -166,7 +166,7 @@ void lambdachip_start (void)
       lef = load_lef_from_file (fname);
     }
   while (0);
-  if (!strncmp (*lef->sig, "LEF", 3))
+  if (!strncmp (lef->sig, "LEF", 3))
     {
       vm_load_lef (vm, lef);
       vm_run (vm);
