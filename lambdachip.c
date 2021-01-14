@@ -90,10 +90,10 @@ void lambdachip_start (void)
       return;
     }
 
-  gpio_pin_set (dev_led0, LED0_PIN, 0);
-  gpio_pin_set (dev_led1, LED1_PIN, 0);
-  gpio_pin_set (dev_led2, LED2_PIN, 0);
-  gpio_pin_set (dev_led3, LED3_PIN, 0);
+  gpio_pin_set (dev_led0, LED0_PIN, 1);
+  gpio_pin_set (dev_led1, LED1_PIN, 1);
+  gpio_pin_set (dev_led2, LED2_PIN, 1);
+  gpio_pin_set (dev_led3, LED3_PIN, 1);
 
   // #ifdef LAMBDACHIP_LINUX
   //       struct fs_file_t file;
