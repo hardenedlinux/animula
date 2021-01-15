@@ -16,7 +16,10 @@
  */
 
 #include "lambdachip.h"
-#include "dts_bindings.h"
+#include "vos/drivers/gpio.h"
+#ifdef LAMBDACHIP_ZEPHYR
+// #include "file_operation.h"
+#endif /* LAMBDACHIP_ZEPHYR */
 
 vm_t lambdachip_init (void)
 {

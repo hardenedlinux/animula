@@ -1,5 +1,5 @@
-#ifndef __DTS_BINDING_H__
-#define __DTS_BINDING_H__
+#ifndef __LAMBDACHIP_GPIO_H__
+#define __LAMBDACHIP_GPIO_H__
 
 /*  Copyright (C) 2019,2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
@@ -61,4 +61,4 @@
 #  endif /* DT_NODE_HAS_STATUS */
 #endif   /* LAMBDACHIP_ZEPHYR */
 
-#endif /* __DTS_BINDING_H__ */
+#endif /* __LAMBDACHIP_GPIO_H__ */
