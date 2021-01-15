@@ -25,21 +25,19 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
-#include <disk/disk_access.h>
-#include <ff.h> // FATFS
-#include <fs/fs.h>
-#include <kernel.h>
 #include <stdio.h>
-#include <sys/printk.h>
-#include <zephyr.h>
-
-#include "vos/drivers/file_operation.h"
+#ifdef LAMBDACHIP_ZEPHYR
+#  include "vos/drivers/file_operation.h"
+#  include <disk/disk_access.h>
+#  include <kernel.h>
+#  include <sys/printk.h>
+#  include <zephyr.h>
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define MAX_PATH_LEN 128
+#  define MAX_PATH_LEN 128
 
 // TODO: erase sector 1 to 7, then write to sector 5
-#define FLASH_BLOCK_START_ADDRESS 0x20000
+#  define FLASH_BLOCK_START_ADDRESS 0x20000
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -142,4 +140,15 @@ bool fs_exist (struct fs_file_t file, const char *filename)
   fs_close (&file);
   return true;
 }
+
+#endif /* LAMBDACHIP_ZEPHYR */
+
+#ifdef LAMBDACHIP_LINUX
+int mount_disk (void)
+{
+  printf ("int mount_disk (void)\n");
+  return 0;
+}
+#endif /* LAMBDACHIP_LINUX */
+
 /************************ (C) COPYRIGHT ************************END OF FILE****/

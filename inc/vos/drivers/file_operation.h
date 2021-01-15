@@ -31,6 +31,8 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 
 /* Includes ------------------------------------------------------------------*/
+#  include <ff.h> // FATFS
+#  include <fs/fs.h>
 
 /* Exported types ------------------------------------------------------------*/
 typedef struct flash_sector
