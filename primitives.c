@@ -321,6 +321,15 @@ static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
 
 #endif /* LAMBDACHIP_ZEPHYR */
 
+#ifdef LAMBDACHIP_LINUX
+static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
+{
+  printf ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
+          (int)pin->value, (int)v->value);
+  return (imm_int_t)0;
+}
+#endif /* LAMBDACHIP_LINUX */
+
 // static void _os_gpio_pin_toggle (char* dev, )
 // {
 //   static inline int gpio_pin_toggle(const struct device *port, gpio_pin_t
