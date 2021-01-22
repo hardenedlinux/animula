@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020,2021
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -49,14 +49,6 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
       /* printf ("\n"); */
     }
 
-  /* for (u8_t i = 0; i < frame_size; i++) */
-  /*   { */
-  /*     closure->env[i] = POP_OBJ (); */
-  /*     printf ("capture local-%d ", i); */
-  /*     object_printer (&closure->env[i]); */
-  /*     printf ("\n"); */
-  /*   } */
-
   return closure;
 }
 
@@ -72,7 +64,6 @@ static void call_prim (vm_t vm, pn_t pn)
       }
     case restore:
       {
-        /* printf ("ret sp: %d, fp: %d, pc: %d\n", vm->sp, vm->fp, vm->pc); */
         RESTORE ();
         break;
       }
@@ -737,7 +728,10 @@ static void interp_special (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(primitive %d %s)\n", bc.data, prim_name (bc.data));
         call_prim (vm, (pn_t)bc.data);
-        VM_DEBUG ("result: %p\n", TOP_OBJ ().value);
+        /* printf ("result: "); */
+        /* object_printer (TOP_OBJ_PTR ()); */
+        /* printf ("\n"); */
+
         break;
       }
     case PRIMITIVE_EXT:
@@ -746,7 +740,9 @@ static void interp_special (vm_t vm, bytecode8_t bc)
         u16_t pn = ((bc.data & 0xF) << 8 | pn_low) + 16;
         VM_DEBUG ("(primitive-ext %d %s)\n", pn, prim_name (pn));
         call_prim (vm, pn);
-        VM_DEBUG ("result: %p\n", TOP_OBJ ().value);
+        /* printf ("result: "); */
+        /* object_printer (TOP_OBJ_PTR ()); */
+        /* printf ("\n"); */
         break;
       }
     case OBJECT:
@@ -841,6 +837,7 @@ void vm_init_environment (vm_t vm)
   vm->shadow = 0;
   vm->cc = NULL;
   vm->closure = NULL;
+  vm->tail_rec = false;
 }
 
 void vm_init (vm_t vm)
@@ -971,9 +968,7 @@ void vm_load_compiled_file (const char *filename)
 
 void vm_run (vm_t vm)
 {
-  os_printk ("here\n");
   VM_DEBUG ("VM run!\n");
-  os_printk ("end\n");
 
   while (VM_RUN == vm->state)
     {

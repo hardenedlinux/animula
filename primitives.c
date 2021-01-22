@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -23,12 +23,13 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 static inline imm_int_t _int_add (imm_int_t x, imm_int_t y)
 {
-  printf ("%d + %d = %d\n", x, y, x + y);
+  /* printf ("%d + %d = %d\n", x, y, x + y); */
   return x + y;
 }
 
 static inline imm_int_t _int_sub (imm_int_t x, imm_int_t y)
 {
+  /* printf ("%d - %d = %d\n", x, y, x - y); */
   return x - y;
 }
 
@@ -55,27 +56,37 @@ void _object_print (object_t obj)
 
 static bool _int_eq (object_t x, object_t y)
 {
-  // printf ("%d == %d is %d\n", x, y, x == y);
+  VALIDATE (x, imm_int);
+  VALIDATE (y, imm_int);
+  // printf ("%p == %p is %d\n", x->value, y->value, x->value == y->value);
   return (imm_int_t)x->value == (imm_int_t)y->value;
 }
 
 static bool _int_lt (object_t x, object_t y)
 {
+  VALIDATE (x, imm_int);
+  VALIDATE (y, imm_int);
   return (imm_int_t)x->value < (imm_int_t)y->value;
 }
 
 static bool _int_gt (object_t x, object_t y)
 {
+  VALIDATE (x, imm_int);
+  VALIDATE (y, imm_int);
   return (imm_int_t)x->value > (imm_int_t)y->value;
 }
 
 static bool _int_le (object_t x, object_t y)
 {
+  VALIDATE (x, imm_int);
+  VALIDATE (y, imm_int);
   return (imm_int_t)x->value <= (imm_int_t)y->value;
 }
 
 static bool _int_ge (object_t x, object_t y)
 {
+  VALIDATE (x, imm_int);
+  VALIDATE (y, imm_int);
   return (imm_int_t)x->value >= (imm_int_t)y->value;
 }
 // --------------------------------------------------

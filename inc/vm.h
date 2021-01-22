@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_VM_H__
 #define __LAMBDACHIP_VM_H__
-/*  Copyright (C) 2020,2021
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -61,6 +61,7 @@ typedef struct LambdaVM
   u8_t shadow; // shadow frame
   symtab_t symtab;
   closure_t closure; // for closure
+  bool tail_rec;
 } __packed *vm_t;
 
 #define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
@@ -173,9 +174,12 @@ static inline void vm_stack_check (vm_t vm)
     closure_t closure = NULL;                                              \
     for (int i = 0; i <= up; i++)                                          \
       {                                                                    \
+        printf ("fp: %d\n", fp);                                           \
         fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
       }                                                                    \
-    closure = up ? fp_to_closure (fp) : vm->closure;                       \
+    if (!vm->tail_rec)                                                     \
+      closure = up ? fp_to_closure (fp) : vm->closure;                     \
+    printf ("closure %d %d %p\n", vm->fp, fp, closure);                    \
     if (closure)                                                           \
       {                                                                    \
         if (offset >= closure->frame_size)                                 \
@@ -206,13 +210,12 @@ static inline void vm_stack_check (vm_t vm)
 /* NOTE:
  * Shadow frame is used for tail-recursive for passing args correctly.
  */
-#define IS_SHADOW_FRAME() (vm->shadow && vm->sp != vm->local)
+#define IS_SHADOW_FRAME() (vm->shadow && (vm->sp != vm->local))
 #define COPY_SHADOW_FRAME()                                               \
   do                                                                      \
     {                                                                     \
       size_t size = sizeof (Object) * vm->shadow;                         \
       os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - size, size); \
-      vm->shadow = 0;                                                     \
       vm->sp = vm->local + size;                                          \
     }                                                                     \
   while (0)
@@ -227,19 +230,22 @@ static inline void vm_stack_check (vm_t vm)
     }                    \
   while (0)
 
-#define PROC_CALL(offset)                     \
-  do                                          \
-    {                                         \
-      if (IS_SHADOW_FRAME ())                 \
-        COPY_SHADOW_FRAME ();                 \
-      vm->local = vm->fp + FPS;               \
-      if (vm->closure)                        \
-        {                                     \
-          save_closure (vm->fp, vm->closure); \
-          vm->closure = NULL;                 \
-        }                                     \
-      JUMP (offset);                          \
-    }                                         \
+#define PROC_CALL(offset)                              \
+  do                                                   \
+    {                                                  \
+      if (IS_SHADOW_FRAME ())                          \
+        {                                              \
+          COPY_SHADOW_FRAME ();                        \
+        }                                              \
+      else if (vm->closure && (false == vm->tail_rec)) \
+        {                                              \
+          save_closure (vm->fp, vm->closure);          \
+        }                                              \
+      vm->closure = NULL;                              \
+      vm->local = vm->fp + FPS;                        \
+      vm->shadow = 0;                                  \
+      JUMP (offset);                                   \
+    }                                                  \
   while (0)
 
 /* Convention:
@@ -263,8 +269,6 @@ static inline void vm_stack_check (vm_t vm)
 
 /* 1. The pc should be stored before jump, here we just fill it with a
  *    placeholder.
- * 2. If bc.bc2 is 0, then it's tail call.
-      If bc.bc2 is 1, then it's tail recursive.
  */
 #define TAIL_CALL     0
 #define TAIL_REC      1
@@ -286,6 +290,7 @@ static inline void vm_stack_check (vm_t vm)
           {                                    \
             vm->shadow = arity;                \
             vm->sp += sizeof (Object) * arity; \
+            vm->tail_rec = true;               \
             break;                             \
           }                                    \
         default:                               \
@@ -307,6 +312,9 @@ static inline void vm_stack_check (vm_t vm)
         *((reg_t *)(vm->stack + vm->fp)) = (reg_t)vm->pc;  \
     }                                                      \
   while (0)
+
+#define IS_PRIM(obj, prim) \
+  ((primitive == (obj)->attr.type) && prim == (uintptr_t) (obj)->value)
 
 /* NOTE:
  * If fp is not NORMAL_JUMP, then it's tail-call or tail-recursive.
@@ -410,15 +418,18 @@ static inline void save_closure (reg_t fp, closure_t closure)
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()                     \
-  do                                  \
-    {                                 \
-      vm->sp = vm->fp + FPS;          \
-      vm->fp = POP_REG ();            \
-      vm->pc = POP_REG ();            \
-      vm->local = vm->fp + FPS;       \
-      vm->closure = pop_closure (vm); \
-    }                                 \
+#define RESTORE()                                           \
+  do                                                        \
+    {                                                       \
+      Object ret = POP_OBJ ();                              \
+      vm->sp = vm->fp + FPS;                                \
+      vm->fp = POP_REG ();                                  \
+      vm->pc = POP_REG ();                                  \
+      PUSH_OBJ (ret);                                       \
+      vm->local = vm->fp + FPS;                             \
+      vm->closure = vm->tail_rec ? NULL : pop_closure (vm); \
+      vm->tail_rec = false;                                 \
+    }                                                       \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \
@@ -498,15 +509,18 @@ static inline void save_closure (reg_t fp, closure_t closure)
 
 static inline void call_closure_on_stack (vm_t vm, object_t obj)
 {
-  uintptr_t data = (uintptr_t) (obj)->value;
-  reg_t env = (0x3FF & data);
-  u8_t size = (0xFC00 & data);
-  reg_t entry = ((0xFFFF0000 & data) >> 16);
-  reg_t total_size = size * sizeof (Object);
-  VM_DEBUG ("(closure-on-stack %d %d 0x%x)\n", size, env, entry);
-  memcpy ((char *)(vm->stack + vm->sp), (char *)(vm->stack + env), total_size);
-  vm->sp += total_size;
-  JUMP (entry);
+  /* uintptr_t data = (uintptr_t) (obj)->value; */
+  /* reg_t env = (0x3FF & data); */
+  /* u8_t size = (0xFC00 & data); */
+  /* reg_t entry = ((0xFFFF0000 & data) >> 16); */
+  /* reg_t total_size = size * sizeof (Object); */
+  /* VM_DEBUG ("(closure-on-stack %d %d 0x%x)\n", size, env, entry); */
+  /* memcpy ((char *)(vm->stack + vm->sp), (char *)(vm->stack + env),
+   * total_size); */
+  /* vm->sp += total_size; */
+  /* JUMP (entry); */
+
+  panic ("closure_on_stack hasn't been implemented yet!\n");
 }
 
 static inline void call_closure_on_heap (vm_t vm, object_t obj)
@@ -516,23 +530,19 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
   object_t env = closure->env;
   reg_t entry = closure->entry;
   u8_t arity = closure->arity;
-  reg_t total_size = size * sizeof (Object);
   VM_DEBUG ("(closure-on-heap %d %d %p 0x%x)\n", arity, size, env, entry);
   /* NOTE:
    * If we call a closure inside a closure, we have to save the current
    * closure, otherwise we lose the information to reference free vars of
    * the closure.
    */
-  /* if (vm->closure) */
-  /*   { */
-  /*     reg_t last_fp = *((reg_t *)(vm->stack + vm->fp + sizeof (reg_t))); */
-  /*     save_closure (last_fp, vm->closure); */
-  /*   } */
-  // vm->local = vm->sp - arity * sizeof (Object);
   vm->local = vm->sp - arity * sizeof (Object);
   closure->local = vm->local;
-  vm->sp += total_size;
-  save_closure (vm->fp, closure);
+  printf ("call-closure %d %p\n", vm->fp, closure);
+  if (false == vm->tail_rec)
+    {
+      save_closure (vm->fp, closure);
+    }
   vm->closure = closure;
   JUMP (entry);
 }
