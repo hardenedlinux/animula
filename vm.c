@@ -149,6 +149,8 @@ static void call_prim (vm_t vm, pn_t pn)
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
+        /* We always set k as return */
+        Object k = {.attr = {.type = primitive, .gc = 0}, .value = 0};
         list_t new_list = NEW (list);
         Object new_list_obj
           = {.attr = {.type = list, .gc = 0}, .value = (void *)new_list};
@@ -157,13 +159,14 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_REG (vm->pc);
         PUSH_REG (vm->fp);
         vm->fp = vm->sp - FPS;
-        vm->local = vm->fp + FPS;
+        vm->local = vm->sp;
         SLIST_FOREACH (node, head, next)
         {
           object_t ret = NEW_OBJ (0);
           obj_list_t new_node = new_obj_list ();
           new_node->obj = ret;
           vm->sp = vm->local;
+          PUSH_OBJ (k);
           PUSH_OBJ (*node->obj);
           apply_proc (vm, &proc, ret);
 
@@ -178,6 +181,13 @@ static void call_prim (vm_t vm, pn_t pn)
             }
 
           prev = new_node;
+          /* NOTE:
+           * We're not going to create frame for each proc call in order
+           * to make it faster. So we have to drop the dirty frame by resetting
+           * sp to local each round.
+           * So does for-each
+           */
+          vm->sp = vm->local;
         }
 
         RESTORE ();
@@ -186,6 +196,8 @@ static void call_prim (vm_t vm, pn_t pn)
       }
     case foreach:
       {
+        /* We always set k as return */
+        Object k = {.attr = {.type = primitive, .gc = 0}, .value = 0};
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
@@ -199,8 +211,10 @@ static void call_prim (vm_t vm, pn_t pn)
         {
           // TODO: support for-each in multiple lists
           vm->sp = vm->local;
+          PUSH_OBJ (k);
           PUSH_OBJ (*(node->obj));
           apply_proc (vm, &proc, NULL);
+          vm->sp = vm->local;
         }
 
         RESTORE ();
@@ -274,31 +288,6 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-
-    case prim_gpio_config:
-      {
-        break;
-      }
-    case prim_gpio_set:
-      {
-        func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
-        Object o3 = POP_OBJ ();
-        Object o2 = POP_OBJ ();
-        Object o1 = POP_OBJ ();
-        VALIDATE (&o3, imm_int);
-        VALIDATE (&o2, imm_int);
-        VALIDATE (&o1, string);
-        // VALIDATE (&o1, symbol);
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
-        ret.value = (void *)fn (&o1, &o2, &o3);
-        PUSH_OBJ (ret);
-        break;
-      }
-    case prim_gpio_toggle:
-      {
-        break;
-      }
-
     default:
       os_printk ("Invalid prim number: %d\n", pn);
     }
@@ -1067,6 +1056,4 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
     {
       POP_OBJ ();
     }
-
-  RESTORE ();
 }
