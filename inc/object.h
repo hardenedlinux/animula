@@ -58,6 +58,8 @@
   16. Complex       |      16bit sint      |       16bit sint     |
   17. Complex       |      inexact complex address                |
 
+  18. Mut string    |      malloced C-string header               |
+
   61. Boolean       |      false: 0,     true: 1                  |
   62. null_object   |                                             |
   63. None          |      const encoding                         |
@@ -105,7 +107,7 @@ static inline bool is_unspecified (object_t obj)
 #define VALIDATE(obj, t)                                           \
   do                                                               \
     {                                                              \
-      if ((obj)->attr.type != (t))                                 \
+      if ((t) != (obj)->attr.type)                                 \
         {                                                          \
           os_printk ("%s: Invalid type, expect %d, but it's %d\n", \
                      __PRETTY_FUNCTION__, t, (obj)->attr.type);    \
@@ -114,11 +116,24 @@ static inline bool is_unspecified (object_t obj)
     }                                                              \
   while (0)
 
+#define VALIDATE_STRING(obj)                                                \
+  do                                                                        \
+    {                                                                       \
+      if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type)) \
+        {                                                                   \
+          os_printk ("%s: Invalid type, expect string, but it's %d\n",      \
+                     __PRETTY_FUNCTION__, t, (obj)->attr.type);             \
+          panic ("PANIC!");                                                 \
+        }                                                                   \
+    }                                                                       \
+  while (0)
+
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
 obj_list_t new_obj_list (void);
 list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);
 object_t lambdachip_new_object (u8_t type);
+object_t create_new_string (const char *str);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

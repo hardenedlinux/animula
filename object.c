@@ -79,11 +79,6 @@ pair_t lambdachip_new_pair (void)
   CREATE_NEW_OBJ (pair_t, gc_pair, Pair);
 }
 
-/* string_t new_string () */
-/* { */
-
-/* } */
-
 closure_t lambdachip_new_closure (void)
 {
   CREATE_NEW_OBJ (closure_t, gc_closure, Closure);
@@ -125,14 +120,21 @@ object_t lambdachip_new_object (u8_t type)
         object->value = (void *)lambdachip_new_vector ();
         break;
       }
-      /* case string: */
-      /*   { */
-      /*     object->value = (void *)new_string (); */
-      /*     break; */
-      /*   } */
     }
+
   object->attr.type = type;
   object->attr.gc = 1;
   gc_book (gc_object, (void *)object);
   return object;
+}
+
+object_t create_new_string (const char *str)
+{
+  object_t o = lambdachip_new_object (mut_string);
+  size_t size = strnlen (str, MAX_STR_LEN);
+
+  o->value = os_malloc (size);
+  strncpy (o->value, str, MAX_STR_LEN);
+
+  return o;
 }
