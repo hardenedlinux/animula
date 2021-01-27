@@ -120,6 +120,15 @@ object_t lambdachip_new_object (u8_t type)
         object->value = (void *)lambdachip_new_vector ();
         break;
       }
+      /* case string: */
+      /*   { */
+      /*     object->value = (void *)new_string (); */
+      /*     break; */
+      /*   } */
+
+      // gc_malloc
+      // gc_free
+      // mutable string, mutable string->value = malloc()
     }
 
   object->attr.type = type;

@@ -17,6 +17,7 @@
 
 #include "primitives.h"
 #ifdef LAMBDACHIP_ZEPHYR
+// #  include <string.h> // memncpy
 #  include <drivers/gpio.h>
 #endif /* LAMBDACHIP_ZEPHYR */
 
@@ -275,6 +276,19 @@ static imm_int_t _os_usleep (object_t us)
 }
 
 #ifdef LAMBDACHIP_ZEPHYR
+static object_t _os_get_board_id (void)
+{
+  static uint32_t g_board_uid[3] = {0, 0, 0};
+  if (0 == g_board_uid[0])
+    {
+      os_memcpy (g_board_uid, UID_BASE, 24);
+    }
+  char uid[25] = "";
+  snprintf (uid, 24, "%08X%08X%08X", g_board_uid);
+  return create_new_string (uid);
+  // return g_board_uid;
+}
+
 struct device *translate_dev_from_string (char *dev)
 {
   extern const struct device *dev_led0;
@@ -313,33 +327,49 @@ struct device *translate_dev_from_string (char *dev)
     }
 }
 
-static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
+static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
+                              object_t v)
 {
   const struct device *port = translate_dev_from_string (dev->value);
-  return gpio_pin_set (port, pin->value, v->value);
+  ret->value = gpio_pin_set (port, pin->value, v->value);
+  return ret;
 }
 
-static imm_int_t _os_gpio_toggle (object_t dev, object_t pin)
+static object_t _os_gpio_toggle (object_t ret, object_t dev, object_t pin)
 {
   const struct device *port = translate_dev_from_string (dev->value);
-  return gpio_pin_toggle (port, pin->value);
+  ret->value = gpio_pin_toggle (port, pin->value);
+  return ret;
 }
 
-#endif /* LAMBDACHIP_ZEPHYR */
+/* LAMBDACHIP_ZEPHYR */
+#elif defined LAMBDACHIP_LINUX
+static object_t _os_get_board_id (void)
+{
+  // static char[] board_id = "GNU/Linux";
+  // return board_id;
+  // object_t obj;
+  // Object obj = {.attr = {.type = mut_string, .gc = 0}, .value = 0};
+  // obj = {.attr = {.type = } };
+  // FIXME: return create a mut_string and return
+  return (object_t)NULL;
+}
 
-#ifdef LAMBDACHIP_LINUX
-static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
+static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
+                              object_t v)
 {
   os_printk ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
              (int)pin->value, (int)v->value);
-  return (imm_int_t)0;
+  ret->value = (void *)0;
+  return ret;
 }
 
-static imm_int_t _os_gpio_toggle (object_t dev, object_t pin)
+static object_t _os_gpio_toggle (object_t ret, object_t dev, object_t pin)
 {
   os_printk ("imm_int_t _os_gpio_toggle (%s, %d)\n", (char *)dev->value,
              (int)pin->value);
-  return (imm_int_t)0;
+  ret->value = (void *)0;
+  return ret;
 }
 #endif /* LAMBDACHIP_LINUX */
 
@@ -380,6 +410,7 @@ void primitives_init (void)
   // def_prim (27, "gpio_pin_configure", 3, (void *)gpio_pin_configure);
   def_prim (28, "gpio_set", 3, (void *)_os_gpio_set);
   def_prim (29, "gpio_toggle", 2, (void *)_os_gpio_toggle);
+  def_prim (30, "get_board_id", 2, (void *)_os_get_board_id);
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
   // #endif /* LAMBDACHIP_ZEPHYR */

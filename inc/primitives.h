@@ -29,7 +29,7 @@
 #include "vector.h"
 
 #define PRIM_NAME_SIZE 16
-#define PRIM_MAX       32
+#define PRIM_MAX       64
 
 // NOTE: assign is not a primitive
 typedef enum prim_num
@@ -65,8 +65,9 @@ typedef enum prim_num
   prim_gpio_config = 27,
   prim_gpio_set = 28,
   prim_gpio_toggle = 29,
+  prim_get_board_id = 30,
 
-  do_not_forget_modify_PRIM_MAX = 31
+  do_not_forget_modify_PRIM_MAX = 63
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \
@@ -80,6 +81,7 @@ typedef bool (*logic_not_t) (object_t);
 typedef bool (*logic_check_t) (object_t, object_t);
 typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
 typedef object_t (*func_3_args_with_ret_t) (object_t, object_t, object_t);
+typedef object_t (*func_4_args_with_ret_t) (object_t, object_t, object_t, object_t);
 
 // FIXME: Shall this change to other type name?
 typedef object_t (*func_1_args_with_ret_t) (object_t);
