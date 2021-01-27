@@ -69,6 +69,11 @@ typedef enum prim_num
   do_not_forget_modify_PRIM_MAX = 31
 } pn_t;
 
+#define GEN_PRIM(t)                                                  \
+  {                                                                  \
+    .attr = {.type = primitive, .gc = 0}, .value = (void *)((pn_t)t) \
+  }
+
 typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);

@@ -150,7 +150,7 @@ static void call_prim (vm_t vm, pn_t pn)
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
         /* We always set k as return */
-        Object k = {.attr = {.type = primitive, .gc = 0}, .value = 0};
+        Object k = GEN_PRIM (ret);
         list_t new_list = NEW (list);
         Object new_list_obj
           = {.attr = {.type = list, .gc = 0}, .value = (void *)new_list};
@@ -197,7 +197,7 @@ static void call_prim (vm_t vm, pn_t pn)
     case foreach:
       {
         /* We always set k as return */
-        Object k = {.attr = {.type = primitive, .gc = 0}, .value = 0};
+        Object k = GEN_PRIM (ret);
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
