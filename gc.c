@@ -81,6 +81,7 @@ static void free_object (object_t obj)
       }
     case symbol:
     case continuation:
+    case mut_string:
       {
         os_free ((void *)obj->value);
         break;
@@ -89,6 +90,11 @@ static void free_object (object_t obj)
       {
         FREE_OBJECT (&closure_free_list, obj->value);
         break;
+      }
+    default:
+      {
+        os_printk ("free_object: Invalid type %d!", obj->attr.type);
+        panic ("PANIC!");
       }
     }
   FREE_OBJECT (&obj_free_list, obj);
@@ -160,6 +166,7 @@ static void active_root_insert (object_t obj)
     case imm_int:
     case primitive:
     case procedure:
+    case mut_string:
       {
         // Self-contain object
         break;
@@ -189,7 +196,7 @@ static void active_root_insert (object_t obj)
       }
     case string:
       {
-        panic ("GC: Hey, did we support String-on-heap now? If so, please fix "
+        panic ("GC: You can only create mutable string, please use mut_string\n"
                "me!\n");
         break;
       }
@@ -419,6 +426,7 @@ void simple_collect (obj_list_head_t *head)
 
 void gc_try_to_recycle (void)
 {
+  /* FIXME: The runtime created globals shouldn't be recycled */
   simple_collect (&obj_free_list);
   simple_collect (&list_free_list);
   simple_collect (&vector_free_list);
