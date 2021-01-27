@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -95,6 +95,7 @@ void object_printer (object_t obj)
         break;
       }
     case string:
+    case mut_string:
       {
         os_printk ("%s", (char *)obj->value);
         break;
