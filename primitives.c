@@ -319,22 +319,29 @@ static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
   return gpio_pin_set (port, pin->value, v->value);
 }
 
+static imm_int_t _os_gpio_toggle (object_t dev, object_t pin)
+{
+  const struct device *port = translate_dev_from_string (dev->value);
+  return gpio_pin_toggle (port, pin->value);
+}
+
 #endif /* LAMBDACHIP_ZEPHYR */
 
 #ifdef LAMBDACHIP_LINUX
 static imm_int_t _os_gpio_set (object_t dev, object_t pin, object_t v)
 {
-  printf ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
-          (int)pin->value, (int)v->value);
+  os_printk ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
+             (int)pin->value, (int)v->value);
+  return (imm_int_t)0;
+}
+
+static imm_int_t _os_gpio_toggle (object_t dev, object_t pin)
+{
+  os_printk ("imm_int_t _os_gpio_toggle (%s, %d)\n", (char *)dev->value,
+             (int)pin->value);
   return (imm_int_t)0;
 }
 #endif /* LAMBDACHIP_LINUX */
-
-// static void _os_gpio_pin_toggle (char* dev, )
-// {
-//   static inline int gpio_pin_toggle(const struct device *port, gpio_pin_t
-//   pin)
-// }
 
 void primitives_init (void)
 {
@@ -372,7 +379,7 @@ void primitives_init (void)
   // #ifdef LAMBDACHIP_ZEPHYR
   // def_prim (27, "gpio_pin_configure", 3, (void *)gpio_pin_configure);
   def_prim (28, "gpio_set", 3, (void *)_os_gpio_set);
-  // def_prim (29, "gpio_pin_toggle", 2, (void *)gpio_pin_toggle);
+  def_prim (29, "gpio_toggle", 2, (void *)_os_gpio_toggle);
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
   // #endif /* LAMBDACHIP_ZEPHYR */

@@ -309,6 +309,15 @@ static void call_prim (vm_t vm, pn_t pn)
       }
     case prim_gpio_toggle:
       {
+        func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
+        Object o2 = POP_OBJ ();
+        Object o1 = POP_OBJ ();
+        VALIDATE (&o2, imm_int);
+        VALIDATE (&o1, string);
+        // VALIDATE (&o1, symbol);
+        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        ret.value = (void *)fn (&o1, &o2);
+        PUSH_OBJ (ret);
         break;
       }
     default:
