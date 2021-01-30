@@ -174,12 +174,10 @@ static inline void vm_stack_check (vm_t vm)
     closure_t closure = NULL;                                              \
     for (int i = 0; i <= up; i++)                                          \
       {                                                                    \
-        printf ("fp: %d\n", fp);                                           \
         fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
       }                                                                    \
     if (!vm->tail_rec)                                                     \
       closure = up ? fp_to_closure (fp) : vm->closure;                     \
-    printf ("closure %d %d %p\n", vm->fp, fp, closure);                    \
     if (closure)                                                           \
       {                                                                    \
         if (offset >= closure->frame_size)                                 \
@@ -538,7 +536,6 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
    */
   vm->local = vm->sp - arity * sizeof (Object);
   closure->local = vm->local;
-  printf ("call-closure %d %p\n", vm->fp, closure);
   if (false == vm->tail_rec)
     {
       save_closure (vm->fp, closure);
