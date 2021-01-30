@@ -81,7 +81,7 @@ typedef bool (*logic_check_t) (object_t, object_t);
 typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
 typedef object_t (*func_3_args_with_ret_t) (object_t, object_t, object_t);
 
-// FixMe: Shall this change to other type name?
+// FIXME: Shall this change to other type name?
 typedef object_t (*func_1_args_with_ret_t) (object_t);
 
 typedef struct Primitive
