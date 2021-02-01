@@ -322,6 +322,14 @@ static void call_prim (vm_t vm, pn_t pn)
       }
     case prim_get_board_id:
       {
+        func_0_args_with_ret_t fn = (func_0_args_with_ret_t)prim->fn;
+        Object ret = {.attr = {.type = mut_string, .gc = 0}, .value = NULL};
+        ret = *(fn ());
+        if (ret.attr.type != mut_string)
+          {
+            os_printk ("primitive: get-board-id type wrong");
+          }
+        PUSH_OBJ (ret);
         break;
       }
 

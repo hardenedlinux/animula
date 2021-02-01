@@ -279,12 +279,16 @@ static imm_int_t _os_usleep (object_t us)
 static object_t _os_get_board_id (void)
 {
   static uint32_t g_board_uid[3] = {0, 0, 0};
+  // copy 96 bit UID as 3 uint32_t integer
+  // then convert to 24 bytes of string
   if (0 == g_board_uid[0])
     {
-      os_memcpy (g_board_uid, UID_BASE, 24);
+      os_memcpy (g_board_uid, UID_BASE, sizeof (g_board_uid));
     }
   char uid[25] = "";
-  snprintf (uid, 24, "%08X%08X%08X", g_board_uid);
+  // snprintf, last is \0, shall be included
+  snprintf (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
+            g_board_uid[2]);
   return create_new_string (uid);
   // return g_board_uid;
 }
