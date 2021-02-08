@@ -285,7 +285,7 @@ static object_t _os_get_board_id (void)
     {
       os_memcpy (g_board_uid, UID_BASE, sizeof (g_board_uid));
     }
-  char uid[25] = "";
+  char uid[25] = {0};
   // snprintf, last is \0, shall be included
   snprintf (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
             g_board_uid[2]);
@@ -363,7 +363,7 @@ static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
                               object_t v)
 {
   os_printk ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
-             (int)pin->value, (int)v->value);
+             (imm_int_t)pin->value, (imm_int_t)v->value);
   ret->value = (void *)0;
   return ret;
 }
@@ -371,7 +371,7 @@ static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
 static object_t _os_gpio_toggle (object_t ret, object_t dev, object_t pin)
 {
   os_printk ("imm_int_t _os_gpio_toggle (%s, %d)\n", (char *)dev->value,
-             (int)pin->value);
+             (imm_int_t)pin->value);
   ret->value = (void *)0;
   return ret;
 }

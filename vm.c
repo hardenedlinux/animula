@@ -300,7 +300,7 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o1 = POP_OBJ ();
         VALIDATE (&o3, imm_int);
         VALIDATE (&o2, imm_int);
-        VALIDATE (&o1, string);
+        VALIDATE_STRING (&o1);
         // VALIDATE (&o1, symbol);
         Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
         ret = *(fn (&ret, &o1, &o2, &o3));
@@ -327,7 +327,7 @@ static void call_prim (vm_t vm, pn_t pn)
         ret = *(fn ());
         if (ret.attr.type != mut_string)
           {
-            os_printk ("primitive: get-board-id type wrong");
+            os_printk ("primitive: get-board-id type wrong\n");
           }
         PUSH_OBJ (ret);
         break;
