@@ -122,7 +122,7 @@ static inline bool is_unspecified (object_t obj)
       if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type)) \
         {                                                                   \
           os_printk ("%s: Invalid type, expect string, but it's %d\n",      \
-                     __PRETTY_FUNCTION__, t, (obj)->attr.type);             \
+                     __PRETTY_FUNCTION__, (obj)->attr.type);                \
           panic ("PANIC!");                                                 \
         }                                                                   \
     }                                                                       \
