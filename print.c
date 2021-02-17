@@ -160,15 +160,10 @@ void object_printer (object_t obj)
         complex_inexact_printer (obj);
         break;
       }
-    case 63:
-      {
-        printf ("whever\n");
-        break;
-      }
     default:
       {
         os_printk ("object_print: Invalid object type %d\n", obj->attr.type);
-        // panic ("PANIC!\n");
+        panic ("PANIC!\n");
       }
     }
 }
