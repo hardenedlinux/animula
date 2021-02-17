@@ -26,11 +26,18 @@ extern GLOBAL_DEF (bool, vm_verbose);
 #  ifndef VM_DEBUG
 #    define VM_DEBUG(...) GLOBAL_REF (vm_verbose) ? os_printk (__VA_ARGS__) : 0;
 #  endif
+#  ifndef LAMBDACHIP_LINUX
+#    define __assert(e, file, line)
+#    define assert(e) ((void)((e) ? 0 : __assert (#    e, __FILE__, __LINE__)))
+#  endif
 #else
 #  define VM_DEBUG
+#  define assert
 #endif
 
-static inline void panic (const char *reason)
+((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e), abort ())
+
+  static inline void panic (const char *reason)
 {
   os_printk ("%s", reason);
   while (1)

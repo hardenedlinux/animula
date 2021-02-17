@@ -40,9 +40,6 @@ static inline size_t os_strnlen (const char *s, size_t n)
   else
     return len;
 }
-#  ifdef CONFIG_ASSERT
-#    define assert __ASSERT
-#  endif
 #  define os_strncmp strncmp
 #  define os_usleep  k_usleep
 #  include <console/console.h>
