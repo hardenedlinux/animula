@@ -22,12 +22,21 @@
 
 extern GLOBAL_DEF (bool, vm_verbose);
 
+static inline void panic (const char *reason)
+{
+  os_printk ("%s", reason);
+  while (1)
+    ;
+}
+
 #if defined LAMBDACHIP_DEBUG
 #  ifndef VM_DEBUG
 #    define VM_DEBUG(...) GLOBAL_REF (vm_verbose) ? os_printk (__VA_ARGS__) : 0;
 #  endif
 #  ifndef LAMBDACHIP_LINUX
-#    define __assert(e, file, line)
+#    define __assert(e, file, line)                                       \
+      ((void)os_printk ("%s:%u: failed assertion `%s'\n", file, line, e), \
+       panic ("panic!\n"))
 #    define assert(e) ((void)((e) ? 0 : __assert (#    e, __FILE__, __LINE__)))
 #  endif
 #else
@@ -35,12 +44,4 @@ extern GLOBAL_DEF (bool, vm_verbose);
 #  define assert
 #endif
 
-((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e), abort ())
-
-  static inline void panic (const char *reason)
-{
-  os_printk ("%s", reason);
-  while (1)
-    ;
-}
 #endif // End of __LAMBDACHIP_DEBUG_H__
