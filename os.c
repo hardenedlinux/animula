@@ -98,7 +98,9 @@ int open (const char *pathname, int flags)
     }
   else // ret > 0
     {
+#    ifdef LAMBDACHIP_DEBUG
       assert (0 && "Error, zephyr fs_open shall not return a positive value");
+#    endif
       return ret;
     }
 
