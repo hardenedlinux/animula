@@ -55,10 +55,10 @@
  *    multi-thread unsafe
  *    side effect global variable file_descriptors is modified
  */
-// int open(const char *pathname, int flags);
-// int open()
+#include "os.h"
+#include "debug.h"
+
 #ifdef LAMBDACHIP_ZEPHYR
-#  include "os.h"
 #  include <fs/fs.h>           // fs_open
 #  include <fs/fs_interface.h> // fs_file_t
 GLOBAL_DEF (struct fs_file_t,
@@ -98,9 +98,7 @@ int open (const char *pathname, int flags)
     }
   else // ret > 0
     {
-#    ifdef LAMBDACHIP_DEBUG
       assert (0 && "Error, zephyr fs_open shall not return a positive value");
-#    endif
       return ret;
     }
 
