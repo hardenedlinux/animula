@@ -22,9 +22,7 @@
 #include "debug.h"
 
 #if defined LAMBDACHIP_LINUX
-#  define linux_open    open
-#  define linux_read    read
-#  define linux_closure close
+//
 #elif defined LAMBDACHIP_ZEPHYR
 #  include <fs/fs.h>           // fs_open
 #  include <fs/fs_interface.h> // fs_file_t

@@ -80,6 +80,9 @@ int zephyr_stat (const char *path);
 #  if defined __x86_64__
 #    define ADDRESS_64
 #  endif
+#  define linux_open    open
+#  define linux_read    read
+#  define linux_closure close
 #else
 #  error "Please specify a platform!"
 #endif
