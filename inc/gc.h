@@ -43,7 +43,7 @@ struct ActiveRootNode
   void *value;
 };
 
-static inline bool active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
+static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
 {
   return ((uintptr_t)b->value - (uintptr_t)a->value);
 }

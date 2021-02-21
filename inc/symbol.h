@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_SYMBOL_H__
 #define __LAMBDACHIP_SYMBOL_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -42,9 +42,9 @@ struct SymbolNode
   const char *str_buf;
 };
 
-static inline bool intern_symbol_compare (SymbolNode *a, SymbolNode *b)
+static inline int intern_symbol_compare (SymbolNode *a, SymbolNode *b)
 {
-  return strncmp (a->str_buf, b->str_buf, MAX_STR_LEN);
+  return os_strncmp (a->str_buf, b->str_buf, MAX_STR_LEN);
 }
 
 void make_symbol (const char *str_buf, object_t obj);
