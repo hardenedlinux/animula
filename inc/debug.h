@@ -33,7 +33,7 @@ static inline void panic (const char *reason)
 #  ifndef VM_DEBUG
 #    define VM_DEBUG(...) GLOBAL_REF (vm_verbose) ? os_printk (__VA_ARGS__) : 0;
 #  endif
-#  ifndef LAMBDACHIP_LINUX
+#  ifndef assert
 #    define __assert(e, file, line)                                       \
       ((void)os_printk ("%s:%u: failed assertion `%s'\n", file, line, e), \
        panic ("panic!\n"))
