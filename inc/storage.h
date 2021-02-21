@@ -23,7 +23,7 @@
 #include "types.h"
 
 #if defined LAMBDACHIP_ZEPHYR
-// lds magic
+// FIXME: use GLOBAL_REF
 extern char _flash_used[];
 #  define LAMBDACHIP_FLASH_AVAILABLE_OFFSET (u32_t) _flash_used
 #else
