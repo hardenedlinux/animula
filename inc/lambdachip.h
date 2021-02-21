@@ -27,7 +27,9 @@
 #include "types.h"
 #include "vm.h"
 
+typedef lef_t (*lef_loader_t) (void);
+
 vm_t lambdachip_init (void);
 void lambdachip_clean (vm_t vm);
-void lambdachip_start (void);
+void lambdachip_start (lef_loader_t lef_loader);
 #endif // End of __LAMBDACHIP_H__

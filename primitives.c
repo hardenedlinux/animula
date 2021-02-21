@@ -283,22 +283,29 @@ static object_t _os_get_board_id (void)
   // then convert to 24 bytes of string
   if (0 == g_board_uid[0])
     {
-      os_memcpy (g_board_uid, UID_BASE, sizeof (g_board_uid));
+      os_memcpy (g_board_uid, (char *)UID_BASE, sizeof (g_board_uid));
     }
   char uid[25] = {0};
   // snprintf, last is \0, shall be included
-  snprintf (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
-            g_board_uid[2]);
+  os_snprintf (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
+               g_board_uid[2]);
   return create_new_string (uid);
-  // return g_board_uid;
 }
 
-struct device *translate_dev_from_string (char *dev)
+#  ifndef LAMBDACHIP_LINUX
+extern const struct device *GLOBAL_REF (dev_led0);
+extern const struct device *GLOBAL_REF (dev_led1);
+extern const struct device *GLOBAL_REF (dev_led2);
+extern const struct device *GLOBAL_REF (dev_led3);
+#  endif
+
+static const struct device *translate_dev_from_string (const char *dev)
 {
-  extern const struct device *dev_led0;
-  extern const struct device *dev_led1;
-  extern const struct device *dev_led2;
-  extern const struct device *dev_led3;
+  struct device *ret = NULL;
+  const struct device *dev_led0 = GLOBAL_REF (dev_led0);
+  const struct device *dev_led1 = GLOBAL_REF (dev_led1);
+  const struct device *dev_led2 = GLOBAL_REF (dev_led2);
+  const struct device *dev_led3 = GLOBAL_REF (dev_led3);
   static const char char_dev_led0[] = "dev_led0";
   static const char char_dev_led1[] = "dev_led1";
   static const char char_dev_led2[] = "dev_led2";
@@ -308,41 +315,44 @@ struct device *translate_dev_from_string (char *dev)
 #  define len_char_dev_led2 sizeof (char_dev_led2)
 #  define len_char_dev_led3 sizeof (char_dev_led3)
 
-  int len = strlen (dev);
-  if (0 == strncmp (dev, char_dev_led0, len))
+  int len = os_strnlen (dev, MAX_STR_LEN);
+  if (0 == os_strncmp (dev, char_dev_led0, len))
     {
-      return dev_led0;
+      ret = dev_led0;
     }
-  else if (0 == strncmp (dev, char_dev_led1, len))
+  else if (0 == os_strncmp (dev, char_dev_led1, len))
     {
-      return dev_led1;
+      ret = dev_led1;
     }
-  else if (0 == strncmp (dev, char_dev_led2, len))
+  else if (0 == os_strncmp (dev, char_dev_led2, len))
     {
-      return dev_led2;
+      ret = dev_led2;
     }
-  else if (0 == strncmp (dev, char_dev_led3, len))
+  else if (0 == os_strncmp (dev, char_dev_led3, len))
     {
-      return dev_led3;
+      ret = dev_led3;
     }
   else
     {
-      return NULL;
+      os_printk ("BUG: Invalid dev_led name %s!\n", dev);
+      panic ("PANIC");
     }
+
+  return ret;
 }
 
 static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
                               object_t v)
 {
   const struct device *port = translate_dev_from_string (dev->value);
-  ret->value = gpio_pin_set (port, pin->value, v->value);
+  ret->value = (void *)gpio_pin_set (port, (int)pin->value, (int)v->value);
   return ret;
 }
 
 static object_t _os_gpio_toggle (object_t ret, object_t dev, object_t pin)
 {
   const struct device *port = translate_dev_from_string (dev->value);
-  ret->value = gpio_pin_toggle (port, pin->value);
+  ret->value = (void *)gpio_pin_toggle (port, (int)pin->value);
   return ret;
 }
 

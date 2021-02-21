@@ -44,14 +44,7 @@ void lambdachip_clean (vm_t vm)
   stdio_clean ();
 }
 
-#ifdef LAMBDACHIP_ZEPHYR
-const struct device *dev_led0;
-const struct device *dev_led1;
-const struct device *dev_led2;
-const struct device *dev_led3;
-#endif /* LAMBDACHIP_ZEPHYR */
-
-void lambdachip_start (void)
+void lambdachip_start (lef_loader_t lef_loader)
 {
   vm_t vm = lambdachip_init ();
 
@@ -60,73 +53,8 @@ void lambdachip_start (void)
   os_printk ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
   os_printk ("Type `help' to get help\n");
 
-#ifndef LAMBDACHIP_LINUX
-  dev_led0 = device_get_binding (LED0);
-  dev_led1 = device_get_binding (LED1);
-  dev_led2 = device_get_binding (LED2);
-  dev_led3 = device_get_binding (LED3);
+  lef_t lef = lef_loader ();
 
-  int ret = 0;
-  /* Set LED pin as output */
-  ret
-    = gpio_pin_configure (dev_led0, LED0_PIN, GPIO_OUTPUT_ACTIVE | LED0_FLAGS);
-  if (ret < 0)
-    {
-      return;
-    }
-  ret
-    = gpio_pin_configure (dev_led1, LED1_PIN, GPIO_OUTPUT_ACTIVE | LED1_FLAGS);
-  if (ret < 0)
-    {
-      return;
-    }
-  ret
-    = gpio_pin_configure (dev_led2, LED2_PIN, GPIO_OUTPUT_ACTIVE | LED2_FLAGS);
-  if (ret < 0)
-    {
-      return;
-    }
-  ret
-    = gpio_pin_configure (dev_led3, LED3_PIN, GPIO_OUTPUT_ACTIVE | LED3_FLAGS);
-  if (ret < 0)
-    {
-      return;
-    }
-
-  gpio_pin_set (dev_led0, LED0_PIN, 1);
-  gpio_pin_set (dev_led1, LED1_PIN, 1);
-  gpio_pin_set (dev_led2, LED2_PIN, 1);
-  gpio_pin_set (dev_led3, LED3_PIN, 1);
-
-  // #ifdef LAMBDACHIP_LINUX
-  //       struct fs_file_t file;
-  lef_t lef;
-  do
-    {
-      if (0 != mount_disk ())
-        {
-          break;
-        }
-      static const char fname[] = "/SD:/program.lef";
-      //   load_lef_from_file_system
-      // #endif
-
-      u8_t buf[512];
-      // struct fs_file_t file;
-      int fd = open ("/SD:/calendar.txt", FS_O_READ);
-      if (fd < 0)
-        {
-          break;
-        }
-
-      read (fd, buf, 512);
-      os_printk ("/SD:/calendar.txt =\n");
-      os_printk ("%s", buf);
-      close (fd);
-
-      lef = load_lef_from_file (fname);
-    }
-  while (0);
   if (!strncmp (lef->sig, "LEF", 3))
     {
       vm_load_lef (vm, lef);
@@ -135,8 +63,7 @@ void lambdachip_start (void)
     }
   else
     {
+      os_printk ("No LEF loaded, run kernel shell!\n");
       run_shell (vm);
     }
-
-#endif /* LAMBDACHIP_LINUX */
 }
