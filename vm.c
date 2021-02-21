@@ -409,7 +409,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         uintptr_t prim = vm_get_uintptr (vm);
         // vm->pc += sizeof (uintptr_t);
-        VM_DEBUG ("(push-prim-object %ld %s)\n", prim, prim_name (prim));
+        VM_DEBUG ("(push-prim-object %u %s)\n", prim, prim_name (prim));
         obj->value = (void *)prim;
         break;
       }
