@@ -20,8 +20,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ff.h> // FATFS
-#include <fs/fs.h>
+#if defined LAMBDACHIP_ZEPHYR
+#  include <ff.h> // FATFS
+#  include <fs/fs.h>
 
 typedef struct flash_sector
 {
@@ -40,5 +41,6 @@ static const char *disk_mount_pt = "/SD:";
 
 int mount_disk (void);
 bool __file_exist (const char *filename);
+#endif /* LAMBDACHIP_ZEPHYR */
 
 #endif /* __FILE_OPERATION_H__ */
