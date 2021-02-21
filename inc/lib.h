@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_LIB_H__
 #define __LAMBDACHIP_LIB_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -29,8 +29,8 @@ static inline imm_int_t gcd (imm_int_t u, imm_int_t v)
   imm_int_t uu = abs (u);
   imm_int_t vv = abs (v);
 
-  while ((u %= v) && (v %= u))
+  while ((uu %= vv) && (vv %= uu))
     ;
-  return (u + v);
+  return (uu + vv);
 }
 #endif // End of __LAMBDACHIP_LIB_H__

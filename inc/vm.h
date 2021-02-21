@@ -449,7 +449,7 @@ static inline void save_closure (reg_t fp, closure_t closure)
 #define GC()                                                         \
   do                                                                 \
     {                                                                \
-      printf ("oh GC?!\n");                                          \
+      os_printk ("oh GC?!\n");                                       \
       GCInfo gci = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack}; \
       gc (&gci);                                                     \
     }                                                                \

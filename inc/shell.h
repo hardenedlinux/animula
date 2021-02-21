@@ -48,9 +48,10 @@ typedef struct KernelShellCommand
 
 typedef enum return_value
 {
-  /* EINVSZ = _E(1), */
-  /* ENOMEM = _E(2), */
-  /* EINVAL = _E(2), */
+  /* EINVSZ = _E (1), */
+  /* ENOMEM = _E (2), */
+  /* EINVAL = _E (2), */
+  ERR = -1,
   OK = 0
 } retval_t;
 

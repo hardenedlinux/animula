@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -82,7 +82,7 @@ void create_symbol_table (symtab_t st)
       const char *str = str_buf + start;
       // printf ("intern: %s\n", str_buf + start);
       intern (str);
-      start = strnlen (str, MAX_STR_LEN) + 2; // skip '\0'
+      start = os_strnlen (str, MAX_STR_LEN) + 2; // skip '\0'
     }
 }
 

@@ -389,7 +389,7 @@ static object_t generate_object (vm_t vm, object_t obj)
     case string:
       {
         const char *str = (char *)(vm->code + vm->pc);
-        vm->pc += strnlen (str, MAX_STR_LEN) + 1;
+        vm->pc += os_strnlen (str, MAX_STR_LEN) + 1;
         VM_DEBUG ("(push-string-object \"%s\")\n", str);
         obj->value = (void *)str;
         break;
@@ -409,7 +409,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         uintptr_t prim = vm_get_uintptr (vm);
         // vm->pc += sizeof (uintptr_t);
-        VM_DEBUG ("(push-prim-object %d %s)\n", prim, prim_name (prim));
+        VM_DEBUG ("(push-prim-object %ld %s)\n", prim, prim_name (prim));
         obj->value = (void *)prim;
         break;
       }
@@ -482,7 +482,6 @@ static object_t generate_object (vm_t vm, object_t obj)
     case complex_inexact:
       {
         const void *value = (void *)(vm->code + vm->pc);
-        printf ("value: %p\n", value);
 #ifdef LAMBDACHIP_DEBUG
         real_t r = {.v = vm_get_uintptr (vm)};
         real_t i = {.v = vm_get_uintptr (vm)};

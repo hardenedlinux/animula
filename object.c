@@ -140,14 +140,15 @@ object_t lambdachip_new_object (u8_t type)
 object_t create_new_string (const char *str)
 {
   object_t o = lambdachip_new_object (mut_string);
-  size_t size = strnlen (str, MAX_STR_LEN);
+  size_t size = os_strnlen (str, MAX_STR_LEN);
+
   if (size > MAX_STR_LEN)
     {
       size = MAX_STR_LEN;
     }
-  // \0 is not included in size
+
   o->value = os_malloc (size + 1);
-  // do not use MAX_STR_LEN to replace size
-  strncpy (o->value, str, size + 1);
+  os_memcpy (o->value, str, size + 1);
+
   return o;
 }
