@@ -53,12 +53,13 @@ void lambdachip_start (lef_loader_t lef_loader)
   os_printk ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
   os_printk ("Type `help' to get help\n");
 
-  lef_t lef = lef_loader ();
+  lef_t lef = LEF_LOAD (lef_loader);
 
   if (!strncmp (lef->sig, "LEF", 3))
     {
       vm_load_lef (vm, lef);
       vm_run (vm);
+      free_lef (lef);
       lambdachip_clean (vm);
     }
   else

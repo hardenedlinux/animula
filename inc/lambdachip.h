@@ -27,7 +27,15 @@
 #include "types.h"
 #include "vm.h"
 
-typedef lef_t (*lef_loader_t) (void);
+typedef lef_t (*lef_loader_func_t) (const char *);
+
+typedef struct LEF_Loader
+{
+  const char *filename;
+  lef_loader_func_t loader;
+} * lef_loader_t;
+
+#define LEF_LOAD(ll) ((ll)->loader ((ll)->filename))
 
 vm_t lambdachip_init (void);
 void lambdachip_clean (vm_t vm);
