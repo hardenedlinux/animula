@@ -1,4 +1,4 @@
-/**
+/*
  *  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
@@ -14,17 +14,8 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this program.
  *  If not, see <http://www.gnu.org/licenses/>.
-
- ******************************************************************************
- * @file
- * @author
- * @version v0.0.1
- * @date
- * @brief   file_operation.c module
- ******************************************************************************
  */
 
-/* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #ifdef LAMBDACHIP_ZEPHYR
 #  include "vos/drivers/file_operation.h"
@@ -32,75 +23,42 @@
 #  include <kernel.h>
 #  include <sys/printk.h>
 #  include <zephyr.h>
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
+
 #  define MAX_PATH_LEN 128
+#  define DISK_PDRV    "SD"
 
 // TODO: erase sector 1 to 7, then write to sector 5
 #  define FLASH_BLOCK_START_ADDRESS 0x20000
 
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-
-/* Private functions ---------------------------------------------------------*/
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief
- * @param  None
- * @retval None
- */
-/* ---------------------------------------------------------------------------*/
-
-/**
- * \par Function
- *   function
- * \par Description
- *   description
- * \par Output
- *   None
- * \par return
- *   ret
- * \par Others
- *
- */
 int mount_disk (void)
 {
   /* raw disk i/o */
-  do
+  uint64_t memory_size_mb;
+  uint32_t block_count;
+  uint32_t block_size;
+
+  if (disk_access_init (DISK_PDRV) != 0)
     {
-      static const char *disk_pdrv = "SD";
-      uint64_t memory_size_mb;
-      uint32_t block_count;
-      uint32_t block_size;
-
-      if (disk_access_init (disk_pdrv) != 0)
-        {
-          printk ("ERROR: Storage init ERROR!");
-          return -EFAULT;
-        }
-
-      if (disk_access_ioctl (disk_pdrv, DISK_IOCTL_GET_SECTOR_COUNT,
-                             &block_count))
-        {
-          printk ("ERROR: Unable to get sector count; ");
-          return -EFAULT;
-        }
-      printk ("Block count %u; ", block_count);
-
-      if (disk_access_ioctl (disk_pdrv, DISK_IOCTL_GET_SECTOR_SIZE,
-                             &block_size))
-        {
-          printk ("ERROR: Unable to get sector size; ");
-          return -EFAULT;
-        }
-      printk ("Sector size %u\n", block_size);
-
-      memory_size_mb = (uint64_t)block_count * block_size;
-      printk ("Memory Size(MB) %u; ", (uint32_t) (memory_size_mb >> 20));
+      printk ("ERROR: Storage init ERROR!");
+      return -EFAULT;
     }
-  while (0);
+
+  if (disk_access_ioctl (DISK_PDRV, DISK_IOCTL_GET_SECTOR_COUNT, &block_count))
+    {
+      printk ("ERROR: Unable to get sector count; ");
+      return -EFAULT;
+    }
+  printk ("Block count %u; ", block_count);
+
+  if (disk_access_ioctl (DISK_PDRV, DISK_IOCTL_GET_SECTOR_SIZE, &block_size))
+    {
+      printk ("ERROR: Unable to get sector size; ");
+      return -EFAULT;
+    }
+  printk ("Sector size %u\n", block_size);
+
+  memory_size_mb = (uint64_t)block_count * block_size;
+  printk ("Memory Size(MB) %u; ", (uint32_t) (memory_size_mb >> 20));
 
   mp.mnt_point = disk_mount_pt;
 
@@ -118,20 +76,9 @@ int mount_disk (void)
     }
 }
 
-/**
- * \par Function
- *   function
- * \par Description
- *   description
- * \par Output
- *   None
- * \par return
- *   ret
- * \par Others
- *
- */
-bool fs_exist (struct fs_file_t file, const char *filename)
+bool __file_exist (const char *filename)
 {
+  struct fs_file_t file = {0};
   int rc = fs_open (&file, filename, FS_O_READ);
   if (rc < 0)
     {
@@ -140,7 +87,6 @@ bool fs_exist (struct fs_file_t file, const char *filename)
   fs_close (&file);
   return true;
 }
-
 #endif /* LAMBDACHIP_ZEPHYR */
 
 #ifdef LAMBDACHIP_LINUX
@@ -150,5 +96,3 @@ int mount_disk (void)
   return 0;
 }
 #endif /* LAMBDACHIP_LINUX */
-
-/************************ (C) COPYRIGHT ************************END OF FILE****/

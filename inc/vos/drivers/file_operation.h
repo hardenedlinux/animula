@@ -1,9 +1,10 @@
 #ifndef __FILE_OPERATION_H__
-#  define __FILE_OPERATION_H__
+#define __FILE_OPERATION_H__
 
 /*
  *  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+ *        Rafael Lee <rafaellee.img@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -17,24 +18,11 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this program.
  *  If not, see <http://www.gnu.org/licenses/>.
-
- *
- ******************************************************************************
- * @file
- * @author  Rafael Lee
- * @version v0.0.1
- * @date
- * @brief   Header for xxx.c module
- ******************************************************************************
  */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
+#include <ff.h> // FATFS
+#include <fs/fs.h>
 
-/* Includes ------------------------------------------------------------------*/
-#  include <ff.h> // FATFS
-#  include <fs/fs.h>
-
-/* Exported types ------------------------------------------------------------*/
 typedef struct flash_sector
 {
   uint32_t offset;
@@ -47,14 +35,10 @@ static struct fs_mount_t mp = {
   .type = FS_FATFS,
   .fs_data = &fat_fs,
 };
-/* Exported constants --------------------------------------------------------*/
+
 static const char *disk_mount_pt = "/SD:";
 
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
 int mount_disk (void);
-bool fs_exist (struct fs_file_t file, const char *filename);
+bool __file_exist (const char *filename);
 
 #endif /* __FILE_OPERATION_H__ */
-
-/************************ (C) COPYRIGHT ************************END OF FILE****/
