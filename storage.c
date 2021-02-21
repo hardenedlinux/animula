@@ -160,36 +160,43 @@ int os_flash_read (char *buf, size_t offset, size_t size)
 int os_open_input_file (const char *filename)
 {
   int fd = -1;
+
 #if defined(LAMBDACHIP_LINUX)
-  if ((fd = open (filename, O_RDONLY)) < 0)
+  if ((fd = linux_open (filename, O_RDONLY)) < 0)
 #elif defined(LAMBDACHIP_ZEPHYR)
-  if ((fd = open (filename, FS_O_READ)) < 0)
-#endif
-#if defined(LAMBDACHIP_LINUX) || defined(LAMBDACHIP_ZEPHYR)
-    {
-      os_printk ("Open file \"%s\" failed!\n", filename);
-      exit (-1);
-    }
+  if ((fd = zephyr_open (filename, FS_O_READ)) < 0)
 #else
-    os_printk ("The current platform %s doesn't support open()!\n",
-               get_platform_info ());
+  os_printk ("The current platform %s doesn't support open()!\n",
+             get_platform_info ());
 #endif
+
+    if (fd < 0)
+      {
+        os_printk ("Open file \"%s\" failed!\n", filename);
+        exit (-1);
+      }
+
   return fd;
 }
 
 int os_read (int fd, void *buf, size_t count)
 {
   int ret = -1;
-#if defined(LAMBDACHIP_LINUX) || defined(LAMBDACHIP_ZEPHYR)
-  if ((ret = read (fd, buf, count)) < 0)
-    {
-      os_printk ("Read file \"%d\" failed!\n", fd);
-      exit (-1);
-    }
+#if defined LAMBDACHIP_LINUX
+  ret = linux_read (fd, buf, count);
+#elif defined LAMBDACHIP_ZEPHYR
+  ret = zephyr_read (fd, buf, count);
 #else
   os_printk ("The current platform %s doesn't support read()!\n",
              get_platform_info ());
 #endif
+
+  if (ret < 0)
+    {
+      os_printk ("Read file \"%d\" failed!\n", fd);
+      exit (-1);
+    }
+
   return ret;
 }
 

@@ -47,18 +47,24 @@ static inline size_t os_strnlen (const char *s, size_t n)
 #  define os_getline console_getline
 #  include <device.h>
 #  include <drivers/flash.h>
+#  include <stdio.h>
 #  include <stdlib.h>
 #  include <sys/cdefs.h>
+#  define os_snprintf snprintf
+int zephyr_open (const char *pathname, int flags);
+int zephyr_close (int fd);
+ssize_t zephyr_read (int fd, void *buf, size_t count);
+int zephyr_stat (const char *path);
 
 #elif defined LAMBDACHIP_LINUX
 #  include <assert.h>
 #  include <stdio.h>
 #  include <sys/cdefs.h>
 #  include <unistd.h>
+#  define os_snprintf         snprintf
 #  define os_printk           printf
 #  define os_getchar          getchar
 #  define os_getline          getline
-#  define os_open             open
 #  define get_platform_info() "GNU/Linux"
 #  include <stdlib.h>
 #  define __malloc malloc
