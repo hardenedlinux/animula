@@ -302,10 +302,6 @@ extern const struct device *GLOBAL_REF (dev_led3);
 static const struct device *translate_dev_from_string (const char *dev)
 {
   struct device *ret = NULL;
-  const struct device *dev_led0 = GLOBAL_REF (dev_led0);
-  const struct device *dev_led1 = GLOBAL_REF (dev_led1);
-  const struct device *dev_led2 = GLOBAL_REF (dev_led2);
-  const struct device *dev_led3 = GLOBAL_REF (dev_led3);
   static const char char_dev_led0[] = "dev_led0";
   static const char char_dev_led1[] = "dev_led1";
   static const char char_dev_led2[] = "dev_led2";
@@ -318,19 +314,19 @@ static const struct device *translate_dev_from_string (const char *dev)
   int len = os_strnlen (dev, MAX_STR_LEN);
   if (0 == os_strncmp (dev, char_dev_led0, len))
     {
-      ret = dev_led0;
+      ret = GLOBAL_REF (dev_led0);
     }
   else if (0 == os_strncmp (dev, char_dev_led1, len))
     {
-      ret = dev_led1;
+      ret = GLOBAL_REF (dev_led1);
     }
   else if (0 == os_strncmp (dev, char_dev_led2, len))
     {
-      ret = dev_led2;
+      ret = GLOBAL_REF (dev_led2);
     }
   else if (0 == os_strncmp (dev, char_dev_led3, len))
     {
-      ret = dev_led3;
+      ret = GLOBAL_REF (dev_led3);
     }
   else
     {
