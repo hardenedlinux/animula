@@ -20,6 +20,7 @@
 #include "__stdio.h"
 #include "debug.h"
 #include "memory.h"
+#include "os.h"
 #include "storage.h"
 #include "symbol.h"
 #include "types.h"
@@ -91,10 +92,11 @@ static inline u32_t lef_entry (u16_t offset, lef_t lef)
 static inline bool file_exist (const char *filename)
 {
 #if defined LAMBDACHIP_LINUX
-  struct stat st;
-  return (stat (filename, &st) == 0);
+  struct stat st = {0};
+  return (linux_stat (filename, &st) == 0);
 #elif defined LAMBDACHIP_ZEPHYR
-  return __file_exist (filename);
+  struct fs_dirent entry = {0};
+  return (zephyr_stat (filename, &entry) == 0);
 #endif
 }
 

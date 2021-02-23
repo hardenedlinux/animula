@@ -47,6 +47,8 @@ static inline size_t os_strnlen (const char *s, size_t n)
 #  define os_getline console_getline
 #  include <device.h>
 #  include <drivers/flash.h>
+#  include <fs/fs.h>
+#  include <kernel.h>
 #  include <stdio.h>
 #  include <stdlib.h>
 #  include <sys/cdefs.h>
@@ -54,7 +56,7 @@ static inline size_t os_strnlen (const char *s, size_t n)
 int zephyr_open (const char *pathname, int flags);
 int zephyr_close (int fd);
 ssize_t zephyr_read (int fd, void *buf, size_t count);
-int zephyr_stat (const char *path);
+int zephyr_stat (const char *path, struct fs_dirent *entry);
 
 #elif defined LAMBDACHIP_LINUX
 #  include <assert.h>
@@ -80,9 +82,10 @@ int zephyr_stat (const char *path);
 #  if defined __x86_64__
 #    define ADDRESS_64
 #  endif
-#  define linux_open    open
-#  define linux_read    read
-#  define linux_closure close
+#  define linux_open  open
+#  define linux_read  read
+#  define linux_close close
+#  define linux_stat  stat
 #else
 #  error "Please specify a platform!"
 #endif

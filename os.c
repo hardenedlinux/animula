@@ -93,10 +93,9 @@ ssize_t zephyr_read (int fd, void *buf, size_t count)
   return size;
 }
 
-int zephyr_stat (const char *path)
+int zephyr_stat (const char *path, struct fs_dirent *entry)
 {
-  struct fs_dirent entry = {0};
-  return fs_stat (path, &entry);
+  return fs_stat (path, entry);
 }
 
 #  endif /* CONFIG_MAXIMUM_NUMBER_OPEN_FILE_DESCRIPTOR */
