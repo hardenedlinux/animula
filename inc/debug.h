@@ -41,7 +41,9 @@ static inline void panic (const char *reason)
 #  endif
 #else
 #  define VM_DEBUG
-#  define assert
+#  ifndef assert
+#    define assert
+#  endif
 #endif
 
 #endif // End of __LAMBDACHIP_DEBUG_H__
