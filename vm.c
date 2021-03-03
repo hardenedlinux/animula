@@ -168,7 +168,21 @@ static void call_prim (vm_t vm, pn_t pn)
           vm->sp = vm->local;
           PUSH_OBJ (k);
           PUSH_OBJ (*node->obj);
-          apply_proc (vm, &proc, ret);
+
+          switch (proc.attr.type)
+            {
+            case procedure:
+              {
+                apply_proc (vm, &proc, ret);
+                break;
+              }
+            case primitive:
+              {
+                call_prim (vm, (pn_t)proc.value);
+                *ret = POP_OBJ ();
+                break;
+              }
+            }
 
           if (!prev)
             {
@@ -213,7 +227,19 @@ static void call_prim (vm_t vm, pn_t pn)
           vm->sp = vm->local;
           PUSH_OBJ (k);
           PUSH_OBJ (*(node->obj));
-          apply_proc (vm, &proc, NULL);
+          switch (proc.attr.type)
+            {
+            case procedure:
+              {
+                apply_proc (vm, &proc, ret);
+                break;
+              }
+            case primitive:
+              {
+                call_prim (vm, (pn_t)proc.value);
+                break;
+              }
+            }
           vm->sp = vm->local;
         }
 

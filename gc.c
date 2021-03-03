@@ -309,10 +309,15 @@ bool gc (const gc_info_t gci)
 
 void gc_clean_cache (void)
 {
+  printf ("1\n");
   FORCE_FREE_OBJECTS (&obj_free_list);
+  printf ("2\n");
   FORCE_FREE_OBJECTS (&list_free_list);
+  printf ("3\n");
   FORCE_FREE_OBJECTS (&vector_free_list);
+  printf ("4\n");
   FORCE_FREE_OBJECTS (&pair_free_list);
+  printf ("5\n");
   FORCE_FREE_OBJECTS (&closure_free_list);
 }
 
