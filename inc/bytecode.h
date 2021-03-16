@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_BYTECODE_H__
 #define __LAMBDACHIP_BYTECODE_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -41,13 +41,13 @@
  * 3. The up frame of free is 16
  * 4. The code size is no more than 2^16, we can extend to around 16MB
       or even 4GB, but it's not a good idea, since we have to tweak
-      conditions and closures either. Do we really care about big RAMs
+      the conditions and closures either. Do we really care about big RAMs
       in embedded world?
  * 5. Closure arity is no more than 64
  * 6. Closure frame-size is no more than 64
  * 7. Procedure entry is no more than 65KB, which means the LEF size is no more
       than 65KB.
- * 8. Globals are limited to the first 128 + 65536 bytes RAMs,
+ * 8. Globals are limited to the first 256 + 65536 bytes RAMs,
       8208 objects in total
 
  * New idea:
@@ -69,8 +69,8 @@
 
  -> double encoding (start from 1010)
  1010 0000 nnnnnnnn             Prelude with n args
- 1010 0001 xxxxxxxx             Ref local [x + 32]
- 1010 0010 xxxxxxxx             Call local [x + 32]
+ 1010 0001 xxxxxxxx             Ref local[x + 32]
+ 1010 0010 xxxxxxxx             Call local[x + 32]
  1010 0011 xxxxxxxx             Assign TOS to global[x]
  1010 0100 xxxxxxxx             Ref global[x]
  1010 0101 xxxxxxxx             Call global[x]
@@ -88,7 +88,7 @@
  1011 0011 xxxxxxxx iiiiiiii    Vector ss[x] ref i
  1011 0100 xxxxxxxx xxxxxxxx    Assign TOS to global[x + 128]
  1011 0101 xxxxxxxx xxxxxxxx    Ref global[x + 128]
- 1011 0110 xxxxxxxx xxxxxxxx    Reserved
+ 1011 0110 xxxxxxxx xxxxxxxx    Call global[x]
  1011 0111 xxxxxxxx xxxxxxxx    Reserved
  1011 1000 xxxxxxxx xxxxxxxx    Reserved
  1011 1001 xxxxxxxx xxxxxxxx    Reserved
@@ -112,7 +112,7 @@
  11100000                   Boolean false
  11100001                   Boolean true
  11100010 tttttttt          General object: t is the type, see object.h
- 11100011 cccccccc          Char object: c: 0~256 (no UTF-8)
+ 11100011 cccccccc          Char object: c: 0~255 (no UTF-8)
  11100100                   Empty list, '() in Scheme
  11100101                   None object, undefined in JS, unspecified in Scheme
  11100110 oooooooo oooooooo Symbol object, o is the offset in symbol table
@@ -146,10 +146,13 @@
 #define CALL_GLOBAL_VAR   0b0101
 
 // triple encode
-#define CALL_PROC 0b0000
-#define F_JMP     0b0001
-#define JMP       0b0010
-#define VEC_REF   0b0011
+#define CALL_PROC                0b0000
+#define F_JMP                    0b0001
+#define JMP                      0b0010
+#define VEC_REF                  0b0011
+#define GLOBAL_VAR_ASSIGN_EXTEND 0b0100
+#define GLOBAL_VAR_REF_EXTEND    0b0101
+#define CALL_GLOBAL_VAR_EXTEND   0b0110
 
 // quadruple encoding
 #define VEC_SET          0b0000

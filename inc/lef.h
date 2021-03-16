@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_LEF_H__
 #define __LAMBDACHIP_LEF_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -35,6 +35,7 @@ typedef struct LEF
   char sig[3];
   u8_t ver[3];
   u32_t msize;
+  u32_t gsize;
   u32_t psize;
   u32_t csize;
   u32_t entry;
@@ -45,11 +46,14 @@ typedef struct LEF
 #define LEF_VERIFY(lef) \
   ((lef)->sig[0] == 'L' && (lef)->sig[1] == 'E' && (lef)->sig[2] == 'F')
 
-#define LEF_MEM(lef)       (&(lef)->body[0])
-#define LEF_PROG(lef)      (&(lef)->body[(lef)->msize])
-#define LEF_CLEAN(lef)     (&(lef)->body[(lef)->psize])
-#define LEF_BODY_SIZE(lef) ((lef)->msize + (lef)->psize + (lef)->csize)
-#define LEF_SIZE(lef)      (sizeof (struct LEF) + LEF_BODY_SIZE (lef))
+#define LEF_MEM(lef)    (&(lef)->body[0])
+#define LEF_GLOBAL(lef) (&(lef)->body[(lef)->msize])
+#define LEF_PROG(lef)   (&(lef)->body[(lef)->msize + (lef)->gsize])
+#define LEF_CLEAN(lef) \
+  (&(lef)->body[(lef)->msize + (lef)->gsize + (lef)->psize])
+#define LEF_BODY_SIZE(lef) \
+  ((lef)->msize + (lef)->gsize + (lef)->psize + (lef)->csize)
+#define LEF_SIZE(lef) (sizeof (struct LEF) + LEF_BODY_SIZE (lef))
 
 static inline u16_t lef_get_u16 (u16_t offset, lef_t lef)
 {

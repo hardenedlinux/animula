@@ -39,6 +39,7 @@ typedef enum vm_state
   VM_RUN = 1,
   VM_PAUSE = 2,
   VM_GC = 3,
+  VM_INIT_GLOBALS = 4
 } vm_state_t;
 
 typedef struct LambdaVM
@@ -58,7 +59,8 @@ typedef struct LambdaVM
   u8_t *code;
   u8_t *data;
   u8_t *stack;
-  u8_t shadow; // shadow frame
+  u8_t shadow;      // shadow frame
+  object_t globals; // global table
   symtab_t symtab;
   closure_t closure; // for closure
   bool tail_rec;
@@ -196,6 +198,9 @@ static inline void vm_stack_check (vm_t vm)
       }                                                                    \
     ret;                                                                   \
   })
+
+#define GLOBAL(index)             (vm->globals[(index)])
+#define GLOBAL_ASSIGN(index, var) (vm->globals[(index)] = (var))
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \

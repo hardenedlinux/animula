@@ -40,8 +40,9 @@ lef_t load_lef_from_flash (size_t offset)
     os_flash_read (lef->ver, i, 4);
 
   os_flash_read ((void *)&lef->msize, 4, 4);
-  os_flash_read ((void *)&lef->psize, 7, 4);
-  os_flash_read ((void *)&lef->csize, 11, 4);
+  os_flash_read ((void *)&lef->gsize, 8, 4);
+  os_flash_read ((void *)&lef->psize, 12, 4);
+  os_flash_read ((void *)&lef->csize, 16, 4);
 
   u32_t size = LEF_BODY_SIZE (lef);
   lef->body = (u8_t *)os_malloc (size);
@@ -81,6 +82,7 @@ lef_t load_lef_from_uart ()
     lef->ver[i] = os_getchar ();
 
   lef->msize = uart_get_u32 ();
+  lef->gsize = uart_get_u32 ();
   lef->psize = uart_get_u32 ();
   lef->csize = uart_get_u32 ();
 
@@ -143,6 +145,8 @@ lef_t load_lef_from_file (const char *filename)
   os_read (fd, lef->ver, 3);
   os_read_u32 (fd, &lef->msize);
   os_printk ("msize: %d\n", lef->msize);
+  os_read_u32 (fd, &lef->gsize);
+  os_printk ("gsize: %d\n", lef->gsize);
   os_read_u32 (fd, &lef->psize);
   os_printk ("psize: %d\n", lef->psize);
   os_read_u32 (fd, &lef->csize);

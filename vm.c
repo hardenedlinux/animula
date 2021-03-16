@@ -569,10 +569,6 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(call-local %d)\n", bc.data);
         object_t obj = (object_t)LOCAL (bc.data);
-        /* if (vm->closure) */
-        /*   printf ("closure: %p, offset: %d, arity: %d, type: %d\n",
-         * vm->closure, */
-        /*           bc.data, vm->closure->arity, obj->attr.type); */
         if (NEED_VARGS (obj))
           handle_optional_args (vm, obj);
         CALL (obj);
@@ -655,7 +651,7 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
       }
     case LOCAL_REF_HIGH:
       {
-        u8_t offset = NEXT_DATA () + 32;
+        u8_t offset = bc.bc2 + 32;
         VM_DEBUG ("(local %d)\n", offset);
         object_t obj = (object_t)LOCAL (offset);
         PUSH_OBJ (*obj);
@@ -663,7 +659,7 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
       }
     case CALL_LOCAL_HIGH:
       {
-        u8_t offset = NEXT_DATA () + 32;
+        u8_t offset = bc.bc2 + 32;
         VM_DEBUG ("(call-local %d)\n", offset);
         object_t obj = (object_t)LOCAL (offset);
         if (NEED_VARGS (obj))
@@ -673,31 +669,32 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
       }
     case GLOBAL_VAR_REF:
       {
-        panic ("global hasn't implemented yet!\n");
-        /* u8_t offset = NEXT_DATA (); */
-        /* VM_DEBUG ("(global-assign %d)\n", offset); */
-        /* object_t obj = (object_t)GLOBAL (offset); */
-        /* PUSH_OBJ (*obj); */
+        u8_t index = bc.bc2;
+        VM_DEBUG ("(global %d)\n", index);
+        object_t obj = &GLOBAL (index);
+        PUSH_OBJ (*obj);
         break;
       }
     case GLOBAL_VAR_ASSIGN:
       {
-        panic ("global-assign hasn't implemented yet!\n");
-        /* u8_t offset = NEXT_DATA (); */
-        /* VM_DEBUG ("(global-assign %d)\n", offset); */
-        /* object_t obj = (object_t)GLOBAL (offset); */
-        /* *obj = POP_OBJ (); */
+        u8_t index = bc.bc2;
+        Object var = POP_OBJ ();
+#ifdef LAMBDACHIP_DEBUG
+        os_printk ("(global-assign %d ", index);
+        object_printer (&var);
+#endif
+        GLOBAL_ASSIGN (index, var);
+        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
         break;
       }
     case CALL_GLOBAL_VAR:
       {
-        panic ("global-call hasn't implemented yet!\n");
-        /* u8_t offset = NEXT_DATA (); */
-        /* VM_DEBUG ("(global-assign %d)\n", offset); */
-        /* object_t obj = (object_t)GLOBAL (offset); */
-        /* if (NEED_VARGS (obj)) */
-        /*   handle_optional_args (vm, obj); */
-        /* CALL (obj); */
+        u8_t index = bc.bc2;
+        VM_DEBUG ("(call-global %d)\n", index);
+        object_t obj = &GLOBAL (index);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
+        CALL (obj);
         break;
       }
     default:
@@ -749,6 +746,36 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
         u32_t offset = bc.data;
         VM_DEBUG ("(jump 0x%x)\n", offset);
         JUMP (offset);
+        break;
+      }
+    case GLOBAL_VAR_REF_EXTEND:
+      {
+        u32_t index = NEXT_DATA () + 256;
+        VM_DEBUG ("(global-assign %d)\n", index);
+        object_t obj = &GLOBAL (index);
+        PUSH_OBJ (*obj);
+        break;
+      }
+    case GLOBAL_VAR_ASSIGN_EXTEND:
+      {
+        u32_t index = NEXT_DATA () + 256;
+        Object var = POP_OBJ ();
+#ifdef LAMBDACHIP_DEBUG
+        os_printk ("(global-assign %d ", index);
+        object_printer (&var);
+#endif
+        GLOBAL_ASSIGN (index, var);
+        PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        break;
+      }
+    case CALL_GLOBAL_VAR_EXTEND:
+      {
+        u32_t index = NEXT_DATA () + 256;
+        VM_DEBUG ("(call-global %d)\n", index);
+        object_t obj = &GLOBAL (index);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
+        CALL (obj);
         break;
       }
     default:
@@ -874,10 +901,13 @@ static void interp_special (vm_t vm, bytecode8_t bc)
           {
           case HALT:
             {
+              if (VM_INIT_GLOBALS != vm->state)
+                {
+                  VM_DEBUG ("GC clean!\n");
+                  gc_clean_cache ();
+                  VM_DEBUG ("Halt here!\n");
+                }
               vm->state = VM_STOP;
-              VM_DEBUG ("GC clean!\n");
-              gc_clean_cache ();
-              VM_DEBUG ("Halt here!\n");
               break;
             }
           default:
@@ -895,8 +925,9 @@ static void interp_special (vm_t vm, bytecode8_t bc)
 
 static bytecode8_t fetch_next_bytecode (vm_t vm)
 {
-  bytecode8_t bc = {0};
+  static bytecode8_t bc = {0};
 
+  // printf ("pc: %d\n", vm->pc);
   if (vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
     {
       bc.all = vm->code[vm->pc++];
@@ -931,6 +962,7 @@ void vm_init (vm_t vm)
   vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
+  vm->globals = NULL;
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
   __store_offset = 256;
@@ -947,16 +979,46 @@ void vm_clean (vm_t vm)
 
   os_free (vm->stack);
   vm->stack = NULL;
+
+  os_free (vm->globals);
+  vm->globals = NULL;
+}
+
+void vm_init_globals (vm_t vm, lef_t lef)
+{
+  u8_t *stack = vm->stack; // backup stack
+  os_memcpy (vm->code, LEF_GLOBAL (lef), lef->gsize);
+  vm->pc = 0;
+  vm->globals = (object_t)os_malloc (vm->sp);
+  vm->stack = (u8_t *)vm->globals;
+  vm->state = VM_INIT_GLOBALS;
+
+  vm_run (vm);
+
+#ifdef LAMBDACHIP_DEBUG
+  printf ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp);
+  for (u32_t i = 0; i < vm->sp / sizeof (Object); i++)
+    {
+      object_printer (&GLOBAL (i));
+      os_printk ("\n");
+    }
+#endif
+
+  vm->stack = stack; // restore the stack
+  vm_init_environment (vm);
 }
 
 void vm_load_lef (vm_t vm, lef_t lef)
 {
   create_symbol_table (&lef->symtab);
   GLOBAL_REF (symtab) = &lef->symtab;
-  // FIXME: Check size boundary
-  os_memcpy (vm->code, LEF_PROG (lef), lef->psize);
   // FIXME: not all mem section is data seg
   os_memcpy (vm->data, LEF_MEM (lef), lef->msize);
+
+  vm_init_globals (vm, lef);
+
+  // FIXME: Check size boundary
+  os_memcpy (vm->code, LEF_PROG (lef), lef->psize);
   vm->pc = lef->entry;
 }
 
@@ -1054,14 +1116,14 @@ void vm_run (vm_t vm)
 {
   VM_DEBUG ("VM run!\n");
 
-  while (VM_RUN == vm->state)
+  while (VM_RUN == vm->state || VM_INIT_GLOBALS == vm->state)
     {
       /* TODO:
        * 1. Add debug info
        */
       dispatch (vm, FETCH_NEXT_BYTECODE ());
-      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
-       * vm->sp, */
+      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, */
+      /* vm->sp, */
       /*         vm->fp); */
       /* printf ("----------LOCAL------------\n"); */
       /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
@@ -1069,7 +1131,8 @@ void vm_run (vm_t vm)
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
       /*     printf ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
-       * 8, */
+       */
+      /* 8, */
       /*             obj->attr.type, (imm_int_t)obj->value); */
       /*   } */
       /* printf ("------------END-----------\n"); */

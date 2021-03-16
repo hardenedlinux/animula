@@ -120,7 +120,7 @@ typedef union ObjectAttribute
   u8_t all;
 } __packed oattr;
 
-typedef struct Procedure
+typedef union Procedure
 {
   struct
   {
