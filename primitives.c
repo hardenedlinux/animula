@@ -19,6 +19,7 @@
 #ifdef LAMBDACHIP_ZEPHYR
 // #  include <string.h> // memncpy
 #  include <drivers/gpio.h>
+#  include <vos/drivers/gpio.h>
 #endif /* LAMBDACHIP_ZEPHYR */
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
@@ -276,6 +277,12 @@ static imm_int_t _os_usleep (object_t us)
 }
 
 #ifdef LAMBDACHIP_ZEPHYR
+
+extern super_device super_dev_led0;
+extern super_device super_dev_led1;
+extern super_device super_dev_led2;
+extern super_device super_dev_led3;
+
 static object_t _os_get_board_id (void)
 {
   static uint32_t g_board_uid[3] = {0, 0, 0};
@@ -299,34 +306,30 @@ extern const struct device *GLOBAL_REF (dev_led2);
 extern const struct device *GLOBAL_REF (dev_led3);
 #  endif
 
-static const struct device *translate_dev_from_string (const char *dev)
+static super_device *translate_supper_dev_from_string (const char *dev)
 {
-  struct device *ret = NULL;
+  super_device *ret = NULL;
   static const char char_dev_led0[] = "dev_led0";
   static const char char_dev_led1[] = "dev_led1";
   static const char char_dev_led2[] = "dev_led2";
   static const char char_dev_led3[] = "dev_led3";
-#  define len_char_dev_led0 sizeof (char_dev_led0)
-#  define len_char_dev_led1 sizeof (char_dev_led1)
-#  define len_char_dev_led2 sizeof (char_dev_led2)
-#  define len_char_dev_led3 sizeof (char_dev_led3)
 
   int len = os_strnlen (dev, MAX_STR_LEN);
   if (0 == os_strncmp (dev, char_dev_led0, len))
     {
-      ret = GLOBAL_REF (dev_led0);
+      ret = &super_dev_led0;
     }
   else if (0 == os_strncmp (dev, char_dev_led1, len))
     {
-      ret = GLOBAL_REF (dev_led1);
+      ret = &super_dev_led1;
     }
   else if (0 == os_strncmp (dev, char_dev_led2, len))
     {
-      ret = GLOBAL_REF (dev_led2);
+      ret = &super_dev_led2;
     }
   else if (0 == os_strncmp (dev, char_dev_led3, len))
     {
-      ret = GLOBAL_REF (dev_led3);
+      ret = &super_dev_led3;
     }
   else
     {
@@ -337,18 +340,18 @@ static const struct device *translate_dev_from_string (const char *dev)
   return ret;
 }
 
-static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
-                              object_t v)
+// dev->value is the string/symbol refer to of a super_device
+static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
 {
-  const struct device *port = translate_dev_from_string (dev->value);
-  ret->value = (void *)gpio_pin_set (port, (int)pin->value, (int)v->value);
+  super_device *p = translate_supper_dev_from_string (dev->value);
+  ret->value = (void *)gpio_pin_set (p->dev, p->gpio_pin, (int)v->value);
   return ret;
 }
 
-static object_t _os_gpio_toggle (object_t ret, object_t dev, object_t pin)
+static object_t _os_gpio_toggle (object_t ret, object_t dev)
 {
-  const struct device *port = translate_dev_from_string (dev->value);
-  ret->value = (void *)gpio_pin_toggle (port, (int)pin->value);
+  super_device *p = translate_supper_dev_from_string (dev->value);
+  ret->value = (void *)gpio_pin_toggle (p->dev, p->gpio_pin);
   return ret;
 }
 
@@ -365,8 +368,7 @@ static object_t _os_get_board_id (void)
   return (object_t)NULL;
 }
 
-static object_t _os_gpio_set (object_t ret, object_t dev, object_t pin,
-                              object_t v)
+static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
 {
   os_printk ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
              (imm_int_t)pin->value, (imm_int_t)v->value);
@@ -418,8 +420,8 @@ void primitives_init (void)
   def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
   // #ifdef LAMBDACHIP_ZEPHYR
   // def_prim (27, "gpio_pin_configure", 3, (void *)gpio_pin_configure);
-  def_prim (28, "gpio_set", 3, (void *)_os_gpio_set);
-  def_prim (29, "gpio_toggle", 2, (void *)_os_gpio_toggle);
+  def_prim (28, "gpio_set", 2, (void *)_os_gpio_set);
+  def_prim (29, "gpio_toggle", 1, (void *)_os_gpio_toggle);
   def_prim (30, "get_board_id", 2, (void *)_os_get_board_id);
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 

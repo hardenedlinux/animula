@@ -23,6 +23,12 @@
 #  include <drivers/gpio.h>
 #  include <drivers/i2c.h>
 
+typedef struct super_device_t
+{
+  const struct device *dev;
+  int gpio_pin;
+} super_device;
+
 #  define LED0_NODE       DT_ALIAS (led0)
 #  define LED1_NODE       DT_ALIAS (led1)
 #  define LED2_NODE       DT_ALIAS (led2)
