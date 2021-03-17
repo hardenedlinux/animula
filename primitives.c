@@ -278,10 +278,10 @@ static imm_int_t _os_usleep (object_t us)
 
 #ifdef LAMBDACHIP_ZEPHYR
 
-extern super_device super_dev_led0;
-extern super_device super_dev_led1;
-extern super_device super_dev_led2;
-extern super_device super_dev_led3;
+extern GLOBAL_DEF (super_device, super_dev_led0);
+extern GLOBAL_DEF (super_device, super_dev_led1);
+extern GLOBAL_DEF (super_device, super_dev_led2);
+extern GLOBAL_DEF (super_device, super_dev_led3);
 
 static object_t _os_get_board_id (void)
 {
@@ -299,12 +299,10 @@ static object_t _os_get_board_id (void)
   return create_new_string (uid);
 }
 
-#  ifndef LAMBDACHIP_LINUX
 extern const struct device *GLOBAL_REF (dev_led0);
 extern const struct device *GLOBAL_REF (dev_led1);
 extern const struct device *GLOBAL_REF (dev_led2);
 extern const struct device *GLOBAL_REF (dev_led3);
-#  endif
 
 static super_device *translate_supper_dev_from_string (const char *dev)
 {
@@ -317,19 +315,19 @@ static super_device *translate_supper_dev_from_string (const char *dev)
   int len = os_strnlen (dev, MAX_STR_LEN);
   if (0 == os_strncmp (dev, char_dev_led0, len))
     {
-      ret = &super_dev_led0;
+      ret = &(GLOBAL_REF (super_dev_led0));
     }
   else if (0 == os_strncmp (dev, char_dev_led1, len))
     {
-      ret = &super_dev_led1;
+      ret = &(GLOBAL_REF (super_dev_led1));
     }
   else if (0 == os_strncmp (dev, char_dev_led2, len))
     {
-      ret = &super_dev_led2;
+      ret = &(GLOBAL_REF (super_dev_led2));
     }
   else if (0 == os_strncmp (dev, char_dev_led3, len))
     {
-      ret = &super_dev_led3;
+      ret = &(GLOBAL_REF (super_dev_led3));
     }
   else
     {
