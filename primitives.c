@@ -368,16 +368,15 @@ static object_t _os_get_board_id (void)
 
 static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
 {
-  os_printk ("imm_int_t _os_gpio_set (%s, %d, %d)\n", (char *)dev->value,
-             (imm_int_t)pin->value, (imm_int_t)v->value);
+  os_printk ("imm_int_t _os_gpio_set (%s, %d)\n", (char *)dev->value,
+             (imm_int_t)v->value);
   ret->value = (void *)0;
   return ret;
 }
 
-static object_t _os_gpio_toggle (object_t ret, object_t dev, object_t pin)
+static object_t _os_gpio_toggle (object_t ret, object_t dev)
 {
-  os_printk ("imm_int_t _os_gpio_toggle (%s, %d)\n", (char *)dev->value,
-             (imm_int_t)pin->value);
+  os_printk ("imm_int_t _os_gpio_toggle (%s)\n", (char *)dev->value);
   ret->value = (void *)0;
   return ret;
 }
