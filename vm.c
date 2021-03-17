@@ -682,6 +682,7 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
 #ifdef LAMBDACHIP_DEBUG
         os_printk ("(global-assign %d ", index);
         object_printer (&var);
+        os_printk (")\n");
 #endif
         GLOBAL_ASSIGN (index, var);
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
@@ -763,6 +764,7 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
 #ifdef LAMBDACHIP_DEBUG
         os_printk ("(global-assign %d ", index);
         object_printer (&var);
+        os_printk (")\n");
 #endif
         GLOBAL_ASSIGN (index, var);
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
