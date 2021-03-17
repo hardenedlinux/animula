@@ -75,7 +75,7 @@ static void call_prim (vm_t vm, pn_t pn)
         imm_int_t g = gcd ((imm_int_t)d.value, (imm_int_t)n.value);
         imm_int_t dd = (imm_int_t)d.value / g;
         imm_int_t nn = (imm_int_t)n.value / g;
-        uintptr_t v = ((nn << 0xf) | dd);
+        uintptr_t v = ((nn << 16) | dd);
         int t = (dd ^ nn) < 0 ? rational_neg : rational_pos;
         Object ret = {.attr = {.type = t, .gc = 0}, .value = (void *)v};
         PUSH_OBJ (ret);
@@ -487,7 +487,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         numerator_t n = (u16_t)vm_get_u16 (vm);
         denominator_t d = (u16_t)vm_get_u16 (vm);
-        hov_t value = ((n << 0xf) | d);
+        hov_t value = ((n << 16) | d);
         VM_DEBUG ("(push-rational-object %d/%d)\n", n > 0 ? n : -n, d);
         obj->value = (void *)value;
         break;

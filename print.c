@@ -48,8 +48,8 @@ static inline void vector_printer (const object_t obj)
 static inline void rational_printer (const object_t obj)
 {
   hov_t value = (hov_t)obj->value;
-  numerator_t n = (numerator_t) (value >> 0xf);
-  denominator_t d = (denominator_t) (value & 0xf);
+  numerator_t n = (numerator_t) (value >> 16);
+  denominator_t d = (denominator_t) (value & 0xffff);
 
   os_printk ("%d/%d", n > 0 ? n : -n, d);
 }

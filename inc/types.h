@@ -93,7 +93,7 @@ typedef u32_t real_part_t;
 typedef u32_t imag_part_t;
 #else
 typedef s32_t imm_int_t;
-typedef u16_t hov_t;
+typedef u32_t hov_t;
 typedef u16_t denominator_t;
 typedef u16_t numerator_t;
 typedef s16_t real_part_t;
