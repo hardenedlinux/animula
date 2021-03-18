@@ -304,7 +304,7 @@ extern const struct device *GLOBAL_REF (dev_led1);
 extern const struct device *GLOBAL_REF (dev_led2);
 extern const struct device *GLOBAL_REF (dev_led3);
 
-static super_device *translate_supper_dev_from_string (const char *dev)
+static super_device *translate_supper_dev_from_symbol (object_t sym)
 {
   super_device *ret = NULL;
   static const char char_dev_led0[] = "dev_led0";
@@ -312,26 +312,27 @@ static super_device *translate_supper_dev_from_string (const char *dev)
   static const char char_dev_led2[] = "dev_led2";
   static const char char_dev_led3[] = "dev_led3";
 
-  int len = os_strnlen (dev, MAX_STR_LEN);
-  if (0 == os_strncmp (dev, char_dev_led0, len))
+  const char *str_buf = GET_SYMBOL ((u32_t)sym->value);
+  size_t len = os_strnlen (str_buf, MAX_STR_LEN);
+  if (0 == os_strncmp (str_buf, char_dev_led0, len))
     {
       ret = &(GLOBAL_REF (super_dev_led0));
     }
-  else if (0 == os_strncmp (dev, char_dev_led1, len))
+  else if (0 == os_strncmp (str_buf, char_dev_led1, len))
     {
       ret = &(GLOBAL_REF (super_dev_led1));
     }
-  else if (0 == os_strncmp (dev, char_dev_led2, len))
+  else if (0 == os_strncmp (str_buf, char_dev_led2, len))
     {
       ret = &(GLOBAL_REF (super_dev_led2));
     }
-  else if (0 == os_strncmp (dev, char_dev_led3, len))
+  else if (0 == os_strncmp (str_buf, char_dev_led3, len))
     {
       ret = &(GLOBAL_REF (super_dev_led3));
     }
   else
     {
-      os_printk ("BUG: Invalid dev_led name %s!\n", dev);
+      os_printk ("BUG: Invalid dev_led name %s!\n", str_buf);
       panic ("PANIC");
     }
 
@@ -339,16 +340,16 @@ static super_device *translate_supper_dev_from_string (const char *dev)
 }
 
 // dev->value is the string/symbol refer to of a super_device
-static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
+static object_t _os_gpio_set (object_t ret, object_t obj, object_t v)
 {
-  super_device *p = translate_supper_dev_from_string (dev->value);
+  super_device *p = translate_supper_dev_from_symbol (obj);
   ret->value = (void *)gpio_pin_set (p->dev, p->gpio_pin, (int)v->value);
   return ret;
 }
 
-static object_t _os_gpio_toggle (object_t ret, object_t dev)
+static object_t _os_gpio_toggle (object_t ret, object_t obj)
 {
-  super_device *p = translate_supper_dev_from_string (dev->value);
+  super_device *p = translate_supper_dev_from_symbol (obj);
   ret->value = (void *)gpio_pin_toggle (p->dev, p->gpio_pin);
   return ret;
 }
@@ -374,9 +375,10 @@ static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
   return ret;
 }
 
-static object_t _os_gpio_toggle (object_t ret, object_t dev)
+static object_t _os_gpio_toggle (object_t ret, object_t obj)
 {
-  os_printk ("imm_int_t _os_gpio_toggle (%s)\n", (char *)dev->value);
+  const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
+  os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
   ret->value = (void *)0;
   return ret;
 }

@@ -324,7 +324,7 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
         VALIDATE (&o2, imm_int);
-        VALIDATE_STRING (&o1);
+        VALIDATE (&o1, symbol);
         Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
         ret = *(fn (&ret, &o1, &o2));
         PUSH_OBJ (ret);
@@ -334,7 +334,7 @@ static void call_prim (vm_t vm, pn_t pn)
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o1 = POP_OBJ ();
-        VALIDATE_STRING (&o1);
+        VALIDATE (&o1, symbol);
         Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
         ret = *(fn (&ret, &o1));
         PUSH_OBJ (ret);
