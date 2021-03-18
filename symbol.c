@@ -80,7 +80,7 @@ void create_symbol_table (symtab_t st)
   for (u16_t i = 0, start = 0; i < st->cnt; i++)
     {
       const char *str = str_buf + start;
-      // printf ("intern: %s\n", str_buf + start);
+      // os_printk ("intern: %s\n", str_buf + start);
       intern (str);
       start = os_strnlen (str, MAX_STR_LEN) + 2; // skip '\0'
     }

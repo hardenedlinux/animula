@@ -92,7 +92,7 @@ bool __file_exist (const char *filename)
 #ifdef LAMBDACHIP_LINUX
 int mount_disk (void)
 {
-  printf ("int mount_disk (void)\n");
+  os_printk ("int mount_disk (void)\n");
   return 0;
 }
 #endif /* LAMBDACHIP_LINUX */

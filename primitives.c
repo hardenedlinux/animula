@@ -28,13 +28,13 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 static inline imm_int_t _int_add (imm_int_t x, imm_int_t y)
 {
-  /* printf ("%d + %d = %d\n", x, y, x + y); */
+  /* os_printk ("%d + %d = %d\n", x, y, x + y); */
   return x + y;
 }
 
 static inline imm_int_t _int_sub (imm_int_t x, imm_int_t y)
 {
-  /* printf ("%d - %d = %d\n", x, y, x - y); */
+  /* os_printk ("%d - %d = %d\n", x, y, x - y); */
   return x - y;
 }
 
@@ -63,7 +63,7 @@ static bool _int_eq (object_t x, object_t y)
 {
   VALIDATE (x, imm_int);
   VALIDATE (y, imm_int);
-  // printf ("%p == %p is %d\n", x->value, y->value, x->value == y->value);
+  // os_printk ("%p == %p is %d\n", x->value, y->value, x->value == y->value);
   return (imm_int_t)x->value == (imm_int_t)y->value;
 }
 

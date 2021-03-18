@@ -44,9 +44,9 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
   for (u8_t i = frame_size; i > 0; i--)
     {
       closure->env[i - 1] = POP_OBJ ();
-      /* printf ("capture local-%d ", i - 1); */
+      /* os_printk ("capture local-%d ", i - 1); */
       /* object_printer (&closure->env[i - 1]); */
-      /* printf ("\n"); */
+      /* os_printk ("\n"); */
     }
 
   return closure;
@@ -537,14 +537,14 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(local %d)\n", bc.data);
         object_t obj = (object_t)LOCAL (bc.data);
-        /* printf ("\nobj: "); */
+        /* os_printk ("\nobj: "); */
         /* object_printer (obj); */
-        /* printf ("\n"); */
+        /* os_printk ("\n"); */
         /* if (vm->closure) */
         /*   { */
         /*     for (int i = 0; i < vm->closure->frame_size; i++) */
         /*       { */
-        /*         printf ("env[%d] type: %d, value: %d\n", i, */
+        /*         os_printk ("env[%d] type: %d, value: %d\n", i, */
         /*                 vm->closure->env[i].attr.type, */
         /*                 (imm_int_t) (vm->closure->env[i].value)); */
         /*       } */
@@ -584,7 +584,7 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         u8_t offset = ((bc.data << 2) | ((frame & 0b11000000) >> 6));
         VM_DEBUG ("(free %x %d)\n", up, offset);
         object_t obj = (object_t)FREE_VAR (up, offset);
-        /* printf ("obj: type = %d, value = %d\n", obj->attr.type, */
+        /* os_printk ("obj: type = %d, value = %d\n", obj->attr.type, */
         /*         (imm_int_t)obj->value); */
         PUSH_OBJ (*obj);
         break;
@@ -715,11 +715,11 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
       {
         u32_t offset = bc.data;
         VM_DEBUG ("(call-proc 0x%x)\n", offset);
-        /* printf ("call-proc before fp: %d\n", ((u32_t *)vm->stack)[vm->fp]);
+        /* os_printk ("call-proc before fp: %d\n", ((u32_t *)vm->stack)[vm->fp]);
          */
         FIX_PC ();
         PROC_CALL (offset);
-        /* printf ("call-proc after fp: %d\n", ((u32_t *)vm->stack)[vm->fp]); */
+        /* os_printk ("call-proc after fp: %d\n", ((u32_t *)vm->stack)[vm->fp]); */
         break;
       }
     case F_JMP:
@@ -835,9 +835,9 @@ static void interp_special (vm_t vm, bytecode8_t bc)
       {
         VM_DEBUG ("(primitive %d %s)\n", bc.data, prim_name (bc.data));
         call_prim (vm, (pn_t)bc.data);
-        /* printf ("result: "); */
+        /* os_printk ("result: "); */
         /* object_printer (TOP_OBJ_PTR ()); */
-        /* printf ("\n"); */
+        /* os_printk ("\n"); */
 
         break;
       }
@@ -847,9 +847,9 @@ static void interp_special (vm_t vm, bytecode8_t bc)
         u16_t pn = ((bc.data & 0xF) << 8 | pn_low) + 16;
         VM_DEBUG ("(primitive-ext %d %s)\n", pn, prim_name (pn));
         call_prim (vm, pn);
-        /* printf ("result: "); */
+        /* os_printk ("result: "); */
         /* object_printer (TOP_OBJ_PTR ()); */
-        /* printf ("\n"); */
+        /* os_printk ("\n"); */
         break;
       }
     case OBJECT:
@@ -923,7 +923,7 @@ static bytecode8_t fetch_next_bytecode (vm_t vm)
 {
   static bytecode8_t bc = {0};
 
-  // printf ("pc: %d\n", vm->pc);
+  // os_printk ("pc: %d\n", vm->pc);
   if (vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
     {
       bc.all = vm->code[vm->pc++];
@@ -1118,20 +1118,20 @@ void vm_run (vm_t vm)
        * 1. Add debug info
        */
       dispatch (vm, FETCH_NEXT_BYTECODE ());
-      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, */
+      /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, */
       /* vm->sp, */
       /*         vm->fp); */
-      /* printf ("----------LOCAL------------\n"); */
+      /* os_printk ("----------LOCAL------------\n"); */
       /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     printf ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
+      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
        */
       /* 8, */
       /*             obj->attr.type, (imm_int_t)obj->value); */
       /*   } */
-      /* printf ("------------END-----------\n"); */
+      /* os_printk ("------------END-----------\n"); */
       /* getchar (); */
 
       if (!vm->sp)
@@ -1158,19 +1158,19 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
         break;
 
       dispatch (vm, bc);
-      /* printf ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
+      /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
        * vm->sp, */
       /*         vm->fp); */
-      /* printf ("----------LOCAL------------\n"); */
+      /* os_printk ("----------LOCAL------------\n"); */
       /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     printf ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
+      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
        * 8, */
       /*             obj->attr.type, (imm_int_t)obj->value); */
       /*   } */
-      /* printf ("------------END-----------\n"); */
+      /* os_printk ("------------END-----------\n"); */
       /* getchar (); */
     }
 
