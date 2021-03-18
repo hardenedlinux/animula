@@ -429,7 +429,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         uintptr_t prim = vm_get_uintptr (vm);
         // vm->pc += sizeof (uintptr_t);
-        VM_DEBUG ("(push-prim-object %lu %s)\n", prim, prim_name (prim));
+        VM_DEBUG ("(push-prim-object %u %s)\n", prim, prim_name (prim));
         obj->value = (void *)prim;
         break;
       }
@@ -715,11 +715,13 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
       {
         u32_t offset = bc.data;
         VM_DEBUG ("(call-proc 0x%x)\n", offset);
-        /* os_printk ("call-proc before fp: %d\n", ((u32_t *)vm->stack)[vm->fp]);
+        /* os_printk ("call-proc before fp: %d\n", ((u32_t
+         * *)vm->stack)[vm->fp]);
          */
         FIX_PC ();
         PROC_CALL (offset);
-        /* os_printk ("call-proc after fp: %d\n", ((u32_t *)vm->stack)[vm->fp]); */
+        /* os_printk ("call-proc after fp: %d\n", ((u32_t *)vm->stack)[vm->fp]);
+         */
         break;
       }
     case F_JMP:
@@ -1126,7 +1128,8 @@ void vm_run (vm_t vm)
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
+      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local +
+       * i *
        */
       /* 8, */
       /*             obj->attr.type, (imm_int_t)obj->value); */
@@ -1166,8 +1169,8 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local + i *
-       * 8, */
+      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local +
+       * i * 8, */
       /*             obj->attr.type, (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
