@@ -16,7 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
+#include "os.h"
 #ifdef LAMBDACHIP_ZEPHYR
 #  include "vos/drivers/file_operation.h"
 #  include <disk/disk_access.h>
