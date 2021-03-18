@@ -293,8 +293,8 @@ static object_t _os_get_board_id (void)
       os_memcpy (g_board_uid, (char *)UID_BASE, sizeof (g_board_uid));
     }
   char uid[25] = {0};
-  // snprintf, last is \0, shall be included
-  os_snprintf (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
+  // snprintk, last is \0, shall be included
+  os_snprintk (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
                g_board_uid[2]);
   return create_new_string (uid);
 }

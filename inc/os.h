@@ -21,6 +21,7 @@
 #  include <sys/printk.h>
 #  include <zephyr.h>
 #  define os_printk           printk
+#  define os_snprintk         snprintk
 #  define get_platform_info() CONFIG_BOARD
 #  include <kernel.h>
 #  define __malloc malloc
