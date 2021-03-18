@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -61,6 +61,11 @@ static void free_object (object_t obj)
         // simple object, we don't need to free its value
         break;
       }
+    case symbol:
+      {
+        // symbol should never be recycled
+        break;
+      }
     case pair:
       {
         free_object ((object_t) ((pair_t)obj->value)->car);
@@ -85,7 +90,6 @@ static void free_object (object_t obj)
         FREE_OBJECT (&list_free_list, obj->value);
         break;
       }
-    case symbol:
     case continuation:
     case mut_string:
       {
