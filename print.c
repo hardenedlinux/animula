@@ -17,7 +17,7 @@
 
 #include "print.h"
 
-static inline void list_printer (object_t obj)
+static inline void list_printer (const object_t obj)
 {
   obj_list_head_t head = ((list_t)obj->value)->list;
   obj_list_t node = NULL;
@@ -32,7 +32,7 @@ static inline void list_printer (object_t obj)
   os_printk (")");
 }
 
-static inline void vector_printer (object_t obj)
+static inline void vector_printer (const object_t obj)
 {
   u16_t size = ((vector_t)obj->value)->size;
   os_printk ("#(");
@@ -45,7 +45,7 @@ static inline void vector_printer (object_t obj)
   os_printk (")");
 }
 
-static inline void rational_printer (object_t obj)
+static inline void rational_printer (const object_t obj)
 {
   hov_t value = (hov_t)obj->value;
   numerator_t n = (numerator_t) (value >> 0xf);
@@ -54,7 +54,7 @@ static inline void rational_printer (object_t obj)
   os_printk ("%d/%d", n > 0 ? n : -n, d);
 }
 
-static inline void complex_exact_printer (object_t obj)
+static inline void complex_exact_printer (const object_t obj)
 {
   hov_t value = (hov_t)obj->value;
   real_part_t r = (real_part_t) (value >> 0xf);
@@ -70,7 +70,7 @@ static inline void complex_exact_printer (object_t obj)
     }
 }
 
-static inline void complex_inexact_printer (object_t obj)
+static inline void complex_inexact_printer (const object_t obj)
 {
   real_t r = {.v = read_uintptr_from_ptr ((char *)obj->value)};
   real_t i = {.v = read_uintptr_from_ptr ((char *)obj->value + 4)};
@@ -85,7 +85,7 @@ static inline void complex_inexact_printer (object_t obj)
     }
 }
 
-void object_printer (object_t obj)
+void object_printer (const object_t obj)
 {
   switch (obj->attr.type)
     {

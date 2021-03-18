@@ -22,6 +22,6 @@
 #include "symbol.h"
 #include "types.h"
 
-void object_printer (object_t obj);
+void object_printer (const object_t obj);
 
 #endif // End of __LAMBDACHIP_PRINT_H__
