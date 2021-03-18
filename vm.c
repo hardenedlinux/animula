@@ -992,7 +992,7 @@ void vm_init_globals (vm_t vm, lef_t lef)
   vm_run (vm);
 
 #ifdef LAMBDACHIP_DEBUG
-  printf ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp);
+  os_printk ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp);
   for (u32_t i = 0; i < vm->sp / sizeof (Object); i++)
     {
       object_printer (&GLOBAL (i));
