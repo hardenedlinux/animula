@@ -446,7 +446,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         for (u16_t i = 0; i < size; i++)
           {
             // object_t new_obj = NEW_OBJ (0);
-            object_t new_obj = (object_t)os_malloc (sizeof (Object));
+            object_t new_obj = (object_t)GC_MALLOC (sizeof (Object));
             *new_obj = POP_OBJ ();
             new_obj->attr.gc = 1; // don't forget
             obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
@@ -461,14 +461,14 @@ static object_t generate_object (vm_t vm, object_t obj)
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-vector-object %d)\n", size);
         vector_t v = NEW (vector);
-        v->vec = (object_t *)os_malloc (sizeof (Object) * size);
+        v->vec = (object_t *)GC_MALLOC (sizeof (Object) * size);
         v->size = size;
         obj->attr.type = vector;
         obj->value = (void *)v;
 
         for (u16_t i = 0; i < size; i++)
           {
-            object_t new_obj = (object_t)os_malloc (sizeof (Object));
+            object_t new_obj = (object_t)GC_MALLOC (sizeof (Object));
             *new_obj = POP_OBJ ();
             new_obj->attr.gc = 1; // don't forget
             v->vec[i] = new_obj;
