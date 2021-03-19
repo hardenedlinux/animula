@@ -103,21 +103,25 @@ object_t lambdachip_new_object (u8_t type)
     case list:
       {
         object->value = (void *)lambdachip_new_list ();
+        gc_book (gc_list, (void *)object);
         break;
       }
     case pair:
       {
         object->value = (void *)lambdachip_new_pair ();
+        gc_book (gc_pair, (void *)object);
         break;
       }
     case closure_on_heap:
       {
         object->value = (void *)lambdachip_new_closure ();
+        gc_book (gc_closure, (void *)object);
         break;
       }
     case vector:
       {
         object->value = (void *)lambdachip_new_vector ();
+        gc_book (gc_vector, (void *)object);
         break;
       }
       /* case string: */
@@ -129,11 +133,14 @@ object_t lambdachip_new_object (u8_t type)
       // gc_malloc
       // gc_free
       // mutable string, mutable string->value = malloc()
+    default:
+      {
+        gc_book (gc_vector, (void *)object);
+      }
     }
 
   object->attr.type = type;
   object->attr.gc = 1;
-  gc_book (gc_object, (void *)object);
   return object;
 }
 
