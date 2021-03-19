@@ -82,7 +82,7 @@ void create_symbol_table (symtab_t st)
       const char *str = str_buf + start;
       // os_printk ("intern: %s\n", str);
       intern (str);
-      start += os_strnlen (str, MAX_STR_LEN) + 2; // skip '\0'
+      start += os_strnlen (str, MAX_STR_LEN) + 1; // skip '\0'
     }
 }
 
