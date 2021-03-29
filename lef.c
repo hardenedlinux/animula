@@ -55,7 +55,7 @@ lef_t load_lef_from_flash (size_t offset)
   /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
   u16_t symtab_offset = 4 + symtab_size;
   lef->entry = lef_entry (symtab_offset, lef);
-  os_printk ("Done\n");
+  VM_DEBUG ("Done\n");
   return lef;
 #else
   os_printk ("load_lef_from_uart doesn't support GNU/Linux platform!\n");
@@ -144,17 +144,17 @@ lef_t load_lef_from_file (const char *filename)
 
   os_read (fd, lef->ver, 3);
   os_read_u32 (fd, &lef->msize);
-  os_printk ("msize: %d\n", lef->msize);
+  VM_DEBUG ("msize: %d\n", lef->msize);
   os_read_u32 (fd, &lef->gsize);
-  os_printk ("gsize: %d\n", lef->gsize);
+  VM_DEBUG ("gsize: %d\n", lef->gsize);
   os_read_u32 (fd, &lef->psize);
-  os_printk ("psize: %d\n", lef->psize);
+  VM_DEBUG ("psize: %d\n", lef->psize);
   os_read_u32 (fd, &lef->csize);
-  os_printk ("csize: %d\n", lef->csize);
+  VM_DEBUG ("csize: %d\n", lef->csize);
 
   u32_t size = LEF_BODY_SIZE (lef);
   lef->body = (u8_t *)os_malloc (size);
-  os_printk ("body: %p, prog: %p\n", lef->body, LEF_PROG (lef));
+  VM_DEBUG ("body: %p, prog: %p\n", lef->body, LEF_PROG (lef));
 
   os_read (fd, lef->body, size);
 
@@ -165,9 +165,9 @@ lef_t load_lef_from_file (const char *filename)
   /* offset = sizeof(sym_cnt) + sizeof(symtab_size) + symtab_size */
   u16_t symtab_offset = 4 + symtab_size;
   lef->entry = lef_entry (symtab_offset, lef);
-  os_printk ("sym_cnt = %d\n", sym_cnt);
-  os_printk ("symtab_size = %d\n", symtab_size);
-  os_printk ("entry = %d\n", lef->entry);
+  VM_DEBUG ("sym_cnt = %d\n", sym_cnt);
+  VM_DEBUG ("symtab_size = %d\n", symtab_size);
+  VM_DEBUG ("entry = %d\n", lef->entry);
   VM_DEBUG ("Done\n");
 
 #else

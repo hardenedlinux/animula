@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -49,9 +49,9 @@ void lambdachip_start (lef_loader_t lef_loader)
   vm_t vm = lambdachip_init ();
 
   // TODO: Print lambdachip version information
-  os_printk ("Welcome to Lambdachip! %s\n", get_platform_info ());
-  os_printk ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
-  os_printk ("Type `help' to get help\n");
+  VM_DEBUG ("Welcome to Lambdachip! %s\n", get_platform_info ());
+  VM_DEBUG ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
+  VM_DEBUG ("Type `help' to get help\n");
 
   lef_t lef = LEF_LOAD (lef_loader);
 

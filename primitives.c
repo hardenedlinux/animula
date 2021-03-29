@@ -28,7 +28,7 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 static inline imm_int_t _int_add (imm_int_t x, imm_int_t y)
 {
-  /* os_printk ("%d + %d = %d\n", x, y, x + y); */
+  // os_printk ("%d + %d = %d\n", x, y, x + y);
   return x + y;
 }
 
@@ -182,7 +182,7 @@ static bool _eqv (object_t a, object_t b)
     default:
       {
         os_printk ("eqv?: The type %d hasn't implemented yet\n", t1);
-        panic ("PANIC!\n");
+        panic ("");
       }
       // TODO-1
       /* case character: */
@@ -333,7 +333,7 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
   else
     {
       os_printk ("BUG: Invalid dev_led name %s!\n", str_buf);
-      panic ("PANIC");
+      panic ("");
     }
 
   return ret;

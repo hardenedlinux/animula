@@ -161,7 +161,7 @@ static inline void vm_stack_check (vm_t vm)
   })
 
 // LOCAL_FIX is only for debug since it doesn't print stored REG.
-#define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->fp + FPS))[offset])
+#define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->local))[offset])
 
 /* NOTE:
  * Because vm->local is activate iff the actual calling occurs, so (free 0 n)
@@ -355,7 +355,7 @@ static inline void vm_stack_check (vm_t vm)
         default:                                                     \
           {                                                          \
             os_printk ("Not a callable type %d!\n", obj->attr.type); \
-            panic ("VM panic!");                                     \
+            panic ("VM panic!\n");                                   \
           }                                                          \
         }                                                            \
     }                                                                \
@@ -428,8 +428,8 @@ static inline void save_closure (reg_t fp, closure_t closure)
       vm->sp = vm->fp + FPS;                                \
       vm->fp = POP_REG ();                                  \
       vm->pc = POP_REG ();                                  \
-      PUSH_OBJ (ret);                                       \
       vm->local = vm->fp + FPS;                             \
+      PUSH_OBJ (ret);                                       \
       vm->closure = vm->tail_rec ? NULL : pop_closure (vm); \
       vm->tail_rec = false;                                 \
     }                                                       \

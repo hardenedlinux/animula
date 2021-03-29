@@ -133,7 +133,7 @@ object_t _list_ref (object_t lst, object_t idx)
   if (!ret)
     {
       os_printk ("list-ref: Invalid index %d!\n", cnt);
-      panic ("PANIC!");
+      panic ("");
       // FIXME: implement throw
       // throw ();
     }
@@ -165,7 +165,7 @@ object_t _list_set (object_t lst, object_t idx, object_t val)
   if (node->obj != val)
     {
       os_printk ("list-set!: Invalid index %d!\n", cnt);
-      panic ("PANIC!");
+      panic ("");
       // FIXME: implement throw
       // throw ();
     }

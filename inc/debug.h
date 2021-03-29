@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_DEBUG_H__
 #define __LAMBDACHIP_DEBUG_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -24,9 +24,14 @@ extern GLOBAL_DEF (bool, vm_verbose);
 
 static inline void panic (const char *reason)
 {
+  os_printk ("PANIC!\n");
   os_printk ("%s", reason);
+#ifdef LAMBDACHIP_LINUX
+  exit (-1);
+#else
   while (1)
     ;
+#endif
 }
 
 #if defined LAMBDACHIP_DEBUG

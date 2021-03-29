@@ -995,14 +995,14 @@ void vm_init_globals (vm_t vm, lef_t lef)
 
   vm_run (vm);
 
-#ifdef LAMBDACHIP_DEBUG
-  os_printk ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp);
-  for (u32_t i = 0; i < vm->sp / sizeof (Object); i++)
-    {
-      object_printer (&GLOBAL (i));
-      os_printk ("\n");
-    }
-#endif
+  /* #ifdef LAMBDACHIP_DEBUG */
+  /*   os_printk ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp); */
+  /*   for (u32_t i = 0; i < vm->sp / sizeof (Object); i++) */
+  /*     { */
+  /*       object_printer (&GLOBAL (i)); */
+  /*       os_printk ("\n"); */
+  /*     } */
+  /* #endif */
 
   vm->stack = stack; // restore the stack
   vm_init_environment (vm);
@@ -1123,18 +1123,15 @@ void vm_run (vm_t vm)
        */
       dispatch (vm, FETCH_NEXT_BYTECODE ());
       /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, */
-      /* vm->sp, */
-      /*         vm->fp); */
+      /*            vm->sp, vm->fp); */
       /* os_printk ("----------LOCAL------------\n"); */
       /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local +
-       * i *
-       */
-      /* 8, */
-      /*             obj->attr.type, (imm_int_t)obj->value); */
+      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", */
+      /*                vm->local + i * 8, obj->attr.type,
+       * (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
       /* getchar (); */

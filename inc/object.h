@@ -111,7 +111,7 @@ static inline bool is_unspecified (object_t obj)
         {                                                          \
           os_printk ("%s: Invalid type, expect %d, but it's %d\n", \
                      __PRETTY_FUNCTION__, t, (obj)->attr.type);    \
-          panic ("PANIC!");                                        \
+          panic ("");                                              \
         }                                                          \
     }                                                              \
   while (0)
@@ -123,7 +123,7 @@ static inline bool is_unspecified (object_t obj)
         {                                                                   \
           os_printk ("%s: Invalid type, expect string, but it's %d\n",      \
                      __PRETTY_FUNCTION__, (obj)->attr.type);                \
-          panic ("PANIC!");                                                 \
+          panic ("");                                                       \
         }                                                                   \
     }                                                                       \
   while (0)
