@@ -39,5 +39,5 @@ typedef struct LEF_Loader
 
 vm_t lambdachip_init (void);
 void lambdachip_clean (vm_t vm);
-void lambdachip_start (lef_loader_t lef_loader);
+vm_t lambdachip_start (lef_loader_t lef_loader);
 #endif // End of __LAMBDACHIP_H__

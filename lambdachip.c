@@ -44,7 +44,7 @@ void lambdachip_clean (vm_t vm)
   stdio_clean ();
 }
 
-void lambdachip_start (lef_loader_t lef_loader)
+vm_t lambdachip_start (lef_loader_t lef_loader)
 {
   vm_t vm = lambdachip_init ();
 
@@ -67,4 +67,6 @@ void lambdachip_start (lef_loader_t lef_loader)
       os_printk ("No LEF loaded, run kernel shell!\n");
       run_shell (vm);
     }
+
+  return vm;
 }
