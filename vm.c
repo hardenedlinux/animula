@@ -964,8 +964,7 @@ void vm_init (vm_t vm)
   vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
   vm->globals = NULL;
-  /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
-   */
+
   SLIST_INIT (&closure_stack);
 }
 
@@ -989,8 +988,6 @@ void vm_init_globals (vm_t vm, lef_t lef)
   u8_t *stack = vm->stack; // backup stack
   os_memcpy (vm->code, LEF_GLOBAL (lef), lef->gsize);
   vm->pc = 0;
-  vm->globals = (object_t)os_malloc (vm->sp);
-  vm->stack = (u8_t *)vm->globals;
   vm->state = VM_INIT_GLOBALS;
 
   vm_run (vm);
@@ -1004,7 +1001,11 @@ void vm_init_globals (vm_t vm, lef_t lef)
   /*     } */
   /* #endif */
 
-  vm->stack = stack; // restore the stack
+  size_t size = vm->sp + sizeof (Object); // sp + 1
+  // FIXME: What if there's no global? We'll waste an Object size.
+  vm->globals = (object_t)os_malloc (size);
+  os_memcpy (vm->globals, vm->stack, size);
+
   vm_init_environment (vm);
 }
 
