@@ -1001,8 +1001,7 @@ void vm_init_globals (vm_t vm, lef_t lef)
   /*     } */
   /* #endif */
 
-  size_t size = vm->sp + sizeof (Object); // sp + 1
-  // FIXME: What if there's no global? We'll waste an Object size.
+  size_t size = vm->sp;
   vm->globals = (object_t)os_malloc (size);
   os_memcpy (vm->globals, vm->stack, size);
 
