@@ -708,8 +708,8 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
     {
     case VEC_REF:
       {
-        vector_t vec = (vector_t)ss_read_u32 (bc.bc2);
-        VM_DEBUG ("(vec-ref 0x%p %d)\n", vec, bc.bc3);
+        panic ("VEC_REf hasn't been implemented yet!");
+        // VM_DEBUG ("(vec-ref 0x%p %d)\n", vec, bc.bc3);
         // PUSH (vector_ref (vec, bc.bc2));
         break;
       }
@@ -792,9 +792,10 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
     {
     case VEC_SET:
       {
-        vector_t vec = (vector_t)ss_read_u32 (bc.bc1);
-        object_t obj = (object_t)ss_read_u32 (bc.bc3);
-        VM_DEBUG ("(vec-set! 0x%p %d 0x%p)\n", vec, bc.bc2, obj);
+        panic ("VEC_SET hasn't been implemented yet!");
+        /* vector_t vec = (vector_t)ss_read_u32 (bc.bc1); */
+        /* object_t obj = (object_t)ss_read_u32 (bc.bc3); */
+        /* VM_DEBUG ("(vec-set! 0x%p %d 0x%p)\n", vec, bc.bc2, obj); */
         // vector_set (vec, bc.bc2, obj);
         break;
       }
@@ -965,7 +966,6 @@ void vm_init (vm_t vm)
   vm->globals = NULL;
   /* FIXME: We set it to 256, it should be decided by the end of ss in LEF
    */
-  __store_offset = 256;
   SLIST_INIT (&closure_stack);
 }
 

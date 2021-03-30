@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -34,14 +34,6 @@
 u8_t *__static_stack = NULL;
 u8_t *__global_array = NULL;
 
-/* NOTE:
- * Current storeable offset in ss.
- * 1. Should be initialized when initializing VM
- * 2. Depends on the end of ss recorded in LEF
- *
- */
-u32_t __store_offset = 0;
-
 // malloc and free should work after init_ram_heap
 void init_ram_heap (void)
 {
@@ -52,23 +44,6 @@ void init_ram_heap (void)
   os_printk ("MM is in raw mode.\n");
 #  endif
 #endif
-
-  /* TODO:
-   * 1. The static stack should be in the ROM.
-   *    But our hardware haven't prepared yet, so let it be in RAM.
-   * 2. The ss malloc size should be dynamic determined by LEF.
-   */
-  if (NULL == (__static_stack = (u8_t *)os_malloc (SS_MAX_SIZE)))
-    {
-      os_printk ("Fatal: static stack init failed, request size: %d\n",
-                 SS_MAX_SIZE);
-    }
-
-  if (NULL == (__global_array = (u8_t *)os_malloc (GARR_MAX_SIZE)))
-    {
-      os_printk ("Fatal: global array init failed, request size: %d\n",
-                 GARR_MAX_SIZE);
-    }
 }
 
 void *raw_malloc (size_t size)
