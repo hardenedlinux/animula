@@ -451,13 +451,14 @@ static inline void save_closure (reg_t fp, closure_t closure)
     }                                            \
   while (0)
 
-#define GC()                                                         \
-  do                                                                 \
-    {                                                                \
-      os_printk ("oh GC?!\n");                                       \
-      GCInfo gci = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack}; \
-      gc (&gci);                                                     \
-    }                                                                \
+#define GC()                                                               \
+  do                                                                       \
+    {                                                                      \
+      os_printk ("oh GC?!\n");                                             \
+      GCInfo gci                                                           \
+        = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack, .hurt = false}; \
+      gc (&gci);                                                           \
+    }                                                                      \
   while (0)
 
 #define GC_MALLOC(size)                 \

@@ -198,6 +198,7 @@ typedef struct GCInfo
   u32_t fp;
   u32_t sp;
   u8_t *stack;
+  bool hurt;
 } __packed GCInfo, *gc_info_t;
 
 typedef union ieee754_float

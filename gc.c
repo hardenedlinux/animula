@@ -281,9 +281,18 @@ static void clean_active_root ()
   os_free ((void *)prev);
 }
 
-static void collect (gobj_t type, obj_list_head_t *head)
+static void collect (size_t *count, gobj_t type, obj_list_head_t *head,
+                     bool hurt)
 {
   obj_list_t node = NULL;
+
+  /* GC algo:
+      1. Skip permanent object.
+      2. If it 's in active root, it get aged if it' s gen-1, keep age if it's
+         gen-2.
+      3. If it's not in active root, release it.
+      4. Collect all gen-2 object in hurt collect.
+   */
 
   SLIST_FOREACH (node, head, next)
   {
@@ -295,20 +304,28 @@ static void collect (gobj_t type, obj_list_head_t *head)
       }
     else if (exist (node->obj))
       {
-        if (GEN_2_OBJ == gc)
-          {
-            // release older object
-            node->obj->attr.gc = 0;
-          }
-        else
+        if (GEN_1_OBJ == gc)
           {
             // younger object aged
             node->obj->attr.gc++;
-            continue;
+          }
+        else if (GEN_2_OBJ == gc && hurt)
+          {
+            // hurtly collect
+            node->obj->attr.gc = FREE_OBJ;
           }
       }
+    else
+      {
+        // Not alive, release it
+        node->obj->attr.gc = FREE_OBJ;
+      }
 
-    recycle_object (type, node->obj);
+    if (FREE_OBJ == node->obj->attr.gc)
+      {
+        recycle_object (type, node->obj);
+        *count++;
+      }
   }
 }
 
@@ -324,11 +341,28 @@ bool gc (const gc_info_t gci)
 
   build_active_root (gci);
 
-  collect (gc_object, &obj_free_list);
-  collect (gc_list, &list_free_list);
-  collect (gc_vector, &vector_free_list);
-  collect (gc_pair, &pair_free_list);
-  collect (gc_closure, &closure_free_list);
+  size_t count = 0;
+try_collect:
+  collect (&count, gc_object, &obj_free_list, gci->hurt);
+  collect (&count, gc_list, &list_free_list, gci->hurt);
+  collect (&count, gc_vector, &vector_free_list, gci->hurt);
+  collect (&count, gc_pair, &pair_free_list, gci->hurt);
+  collect (&count, gc_closure, &closure_free_list, gci->hurt);
+
+  if (0 == count && false == gci->hurt)
+    {
+      /*
+        NOTE: No memory and no freed object, hurtly collect to release all
+              active gen-2 object.
+
+        FIXME: Hurt collect will cause the active node collected intendedly,
+               however, this is the edge case if there's no memory to alloc.
+               Do we have better approach to avoid big hurt?
+               Or do we really need hurt collect in embedded system?
+      */
+      gci->hurt = true;
+      goto try_collect;
+    }
 
   clean_active_root ();
   return false;
