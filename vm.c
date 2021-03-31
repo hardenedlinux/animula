@@ -394,7 +394,7 @@ static object_t generate_object (vm_t vm, object_t obj)
 {
   bytecode8_t bc;
   bc.all = NEXT_DATA ();
-  obj->attr.gc = 0;
+  obj->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 0;
   obj->attr.type = bc.all;
 
   switch (obj->attr.type)
