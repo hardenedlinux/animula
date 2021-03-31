@@ -22,6 +22,11 @@
 #include "rbtree.h"
 #include "types.h"
 
+#define PERMANENT_OBJ 3
+#define GEN_2_OBJ     2
+#define GEN_1_OBJ     1
+#define FREE_OBJ      0
+
 typedef enum gc_obj_type
 {
   gc_object,

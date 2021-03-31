@@ -21,7 +21,8 @@
    We don't perform mark/sweep, or any reference counting.
 
    The meaning of `gc' field in Object:
-   * 1~3 means the generation, 0 means free.
+   * 3 means permernant.
+   * 1~2 means the generation, 0 means free.
    * The `gc' will increase by 1 when it survives from GC.
    * For stack-allocated object, `gc' field is always 0.
 
@@ -286,10 +287,25 @@ static void collect (gobj_t type, obj_list_head_t *head)
 
   SLIST_FOREACH (node, head, next)
   {
-    if (exist (node->obj))
+    int gc = node->obj->attr.gc;
+
+    if (PERMANENT_OBJ == gc)
       {
-        node->obj->attr.gc++;
         continue;
+      }
+    else if (exist (node->obj))
+      {
+        if (GEN_2_OBJ == gc)
+          {
+            // release older object
+            node->obj->attr.gc = 0;
+          }
+        else
+          {
+            // younger object aged
+            node->obj->attr.gc++;
+            continue;
+          }
       }
 
     recycle_object (type, node->obj);
@@ -431,7 +447,12 @@ void simple_collect (obj_list_head_t *head)
 
   SLIST_FOREACH (node, head, next)
   {
-    ((object_t)node->obj)->attr.gc = 0;
+    object_t obj = (object_t)node->obj;
+
+    if (PERMANENT_OBJ != obj->attr.gc)
+      {
+        obj->attr.gc = 0;
+      }
   }
 }
 
