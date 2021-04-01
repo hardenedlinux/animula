@@ -75,7 +75,7 @@ static void call_prim (vm_t vm, pn_t pn)
         imm_int_t g = gcd ((imm_int_t)d.value, (imm_int_t)n.value);
         imm_int_t dd = (imm_int_t)d.value / g;
         imm_int_t nn = (imm_int_t)n.value / g;
-        uintptr_t v = ((nn << 16) | dd);
+        uintptr_t v = (abs (nn) << 16) | abs (dd);
         int t = (dd ^ nn) < 0 ? rational_neg : rational_pos;
         Object ret = {.attr = {.type = t, .gc = 0}, .value = (void *)v};
         PUSH_OBJ (ret);
