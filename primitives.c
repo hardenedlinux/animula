@@ -511,8 +511,7 @@ static object_t _os_get_board_id (void)
 
 static object_t _os_device_configure (object_t ret, object_t obj)
 {
-  os_printk ("object_t _os_device_configure (%s, %d)\n", (char *)dev->value,
-             (imm_int_t)v->value);
+  os_printk ("object_t _os_device_configure (%s)\n", (char *)obj->value);
   ret->value = (void *)0;
   return ret;
 }
