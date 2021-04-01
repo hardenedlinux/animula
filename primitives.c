@@ -283,6 +283,27 @@ extern GLOBAL_DEF (super_device, super_dev_led1);
 extern GLOBAL_DEF (super_device, super_dev_led2);
 extern GLOBAL_DEF (super_device, super_dev_led3);
 
+extern GLOBAL_DEF (super_device, super_dev_gpio_pa9);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pa10);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb4);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pa8);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb5);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb6);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb7);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb8);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb9);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pa2);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pa3);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb3);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb10);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb15);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb14);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb13);
+extern GLOBAL_DEF (super_device, super_dev_gpio_pb12);
+
+extern GLOBAL_DEF (super_device, super_dev_i2c2);
+extern GLOBAL_DEF (super_device, super_dev_i2c3);
+
 static object_t _os_get_board_id (void)
 {
   static uint32_t g_board_uid[3] = {0, 0, 0};
@@ -311,6 +332,25 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
   static const char char_dev_led1[] = "dev_led1";
   static const char char_dev_led2[] = "dev_led2";
   static const char char_dev_led3[] = "dev_led3";
+  static const char char_gpio_pa9[] = "dev_gpio_pa9";
+  static const char char_gpio_pa10[] = "dev_gpio_pa10";
+  static const char char_gpio_pb4[] = "dev_gpio_pb4";
+  static const char char_gpio_pa8[] = "dev_gpio_pa8";
+  static const char char_gpio_pb5[] = "dev_gpio_pb5";
+  static const char char_gpio_pb6[] = "dev_gpio_pb6";
+  static const char char_gpio_pb7[] = "dev_gpio_pb7";
+  static const char char_gpio_pb8[] = "dev_gpio_pb8";
+  static const char char_gpio_pb9[] = "dev_gpio_pb9";
+  static const char char_gpio_pa2[] = "dev_gpio_pa2";
+  static const char char_gpio_pa3[] = "dev_gpio_pa3";
+  static const char char_gpio_pb3[] = "dev_gpio_pb3";
+  static const char char_gpio_pb10[] = "dev_gpio_pb10";
+  static const char char_gpio_pb15[] = "dev_gpio_pb15";
+  static const char char_gpio_pb14[] = "dev_gpio_pb14";
+  static const char char_gpio_pb13[] = "dev_gpio_pb13";
+  static const char char_gpio_pb12[] = "dev_gpio_pb12";
+  static const char char_i2c2[] = "dev_i2c2";
+  static const char char_i2c3[] = "dev_i2c3";
 
   const char *str_buf = GET_SYMBOL ((u32_t)sym->value);
   size_t len = os_strnlen (str_buf, MAX_STR_LEN);
@@ -330,12 +370,114 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
     {
       ret = &(GLOBAL_REF (super_dev_led3));
     }
+  else if (0 == os_strncmp (str_buf, char_gpio_pa9, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pa9));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pa10, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pa10));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb4, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb4));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pa8, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pa8));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb5, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb5));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb6, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb6));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb7, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb7));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb8, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb8));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb9, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb9));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pa2, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pa2));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pa3, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pa3));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb3, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb3));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb10, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb10));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb15, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb15));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb14, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb14));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb13, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb13));
+    }
+  else if (0 == os_strncmp (str_buf, char_gpio_pb12, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_pb12));
+    }
+  else if (0 == os_strncmp (str_buf, char_i2c2, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_i2c2));
+    }
+  else if (0 == os_strncmp (str_buf, char_i2c3, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_i2c3));
+    }
   else
     {
       os_printk ("BUG: Invalid dev_led name %s!\n", str_buf);
       panic ("");
     }
 
+  return ret;
+}
+
+static object_t _os_device_configure (object_t ret, object_t obj)
+{
+  // const char *str_buf = GET_SYBOL ((u32_t)obj->value);
+  super_device *p = translate_supper_dev_from_symbol (obj);
+
+  if (p->type == SUPERDEVICE_TYPE_GPIO_PIN)
+    {
+      gpio_pin_configure (p->dev, p->gpio_pin, GPIO_OUTPUT_ACTIVE | LED0_FLAGS);
+    }
+  else if (p->type == SUPERDEVICE_TYPE_I2C)
+    {
+      i2c_configure (p->dev, 0);
+    }
+  else if (p->type == SUPERDEVICE_TYPE_SPI)
+    {
+    }
+  else
+    {
+      assert (-1 && "device type not defined, cannot handle");
+    }
+
+  // os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
+  ret->value = (void *)0;
   return ret;
 }
 
@@ -367,9 +509,17 @@ static object_t _os_get_board_id (void)
   return (object_t)NULL;
 }
 
+static object_t _os_device_configure (object_t ret, object_t obj)
+{
+  os_printk ("object_t _os_device_configure (%s, %d)\n", (char *)dev->value,
+             (imm_int_t)v->value);
+  ret->value = (void *)0;
+  return ret;
+}
+
 static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
 {
-  os_printk ("imm_int_t _os_gpio_set (%s, %d)\n", (char *)dev->value,
+  os_printk ("object_t _os_gpio_set (%s, %d)\n", (char *)dev->value,
              (imm_int_t)v->value);
   ret->value = (void *)0;
   return ret;
@@ -378,7 +528,7 @@ static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
 static object_t _os_gpio_toggle (object_t ret, object_t obj)
 {
   const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
-  os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
+  os_printk ("object_t _os_gpio_toggle (%s)\n", str_buf);
   ret->value = (void *)0;
   return ret;
 }
@@ -418,7 +568,7 @@ void primitives_init (void)
   def_prim (25, "equal", 2, (void *)_equal);
   def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
   // #ifdef LAMBDACHIP_ZEPHYR
-  // def_prim (27, "gpio_pin_configure", 3, (void *)gpio_pin_configure);
+  def_prim (27, "device_configure", 2, (void *)_os_device_configure);
   def_prim (28, "gpio_set", 2, (void *)_os_gpio_set);
   def_prim (29, "gpio_toggle", 1, (void *)_os_gpio_toggle);
   def_prim (30, "get_board_id", 2, (void *)_os_get_board_id);

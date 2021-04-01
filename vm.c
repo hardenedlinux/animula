@@ -314,10 +314,6 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-    case prim_gpio_config:
-      {
-        break;
-      }
     case prim_gpio_set:
       {
         func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
@@ -330,6 +326,7 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
+    case prim_device_configure:
     case prim_gpio_toggle:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;

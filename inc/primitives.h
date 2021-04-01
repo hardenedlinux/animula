@@ -62,7 +62,7 @@ typedef enum prim_num
   eqv = 24,
   equal = 25,
   prim_usleep = 26,
-  prim_gpio_config = 27,
+  prim_device_configure = 27,
   prim_gpio_set = 28,
   prim_gpio_toggle = 29,
   prim_get_board_id = 30,
