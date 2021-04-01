@@ -509,17 +509,18 @@ static object_t _os_get_board_id (void)
   return (object_t)NULL;
 }
 
-static object_t _os_device_configure (object_t ret, object_t obj)
+static object_t _os_device_configure (object_t ret, object_t dev)
 {
-  os_printk ("object_t _os_device_configure (%s)\n", (char *)obj->value);
+  const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
+  os_printk ("object_t _os_device_configure (%s)\n", str_buf);
   ret->value = (void *)0;
   return ret;
 }
 
 static object_t _os_gpio_set (object_t ret, object_t dev, object_t v)
 {
-  os_printk ("object_t _os_gpio_set (%s, %d)\n", (char *)dev->value,
-             (imm_int_t)v->value);
+  const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
+  os_printk ("object_t _os_gpio_set (%s, %d)\n", str_buf, (imm_int_t)v->value);
   ret->value = (void *)0;
   return ret;
 }
