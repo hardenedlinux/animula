@@ -957,8 +957,8 @@ void vm_init (vm_t vm)
 {
   os_memset (vm, 0, sizeof (struct LambdaVM));
   vm_init_environment (vm);
-  vm->code = (u8_t *)os_malloc (GLOBAL_REF (VM_CODESEG_SIZE));
-  vm->data = (u8_t *)os_malloc (GLOBAL_REF (VM_DATASEG_SIZE));
+  vm->code = NULL;
+  vm->data = NULL;
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
   vm->globals = NULL;
 
@@ -1007,6 +1007,9 @@ void vm_init_globals (vm_t vm, lef_t lef)
 
 void vm_load_lef (vm_t vm, lef_t lef)
 {
+  vm->data = (void *)os_malloc (lef->msize);
+  vm->code = (void *)os_malloc (lef->psize);
+
   create_symbol_table (&lef->symtab);
   GLOBAL_REF (symtab) = &lef->symtab;
   // FIXME: not all mem section is data seg
@@ -1014,7 +1017,6 @@ void vm_load_lef (vm_t vm, lef_t lef)
 
   vm_init_globals (vm, lef);
 
-  // FIXME: Check size boundary
   os_memcpy (vm->code, LEF_PROG (lef), lef->psize);
   vm->pc = lef->entry;
 }
