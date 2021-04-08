@@ -17,6 +17,10 @@
 
 #include "vm.h"
 
+GLOBAL_DEF (size_t, VM_CODESEG_SIZE) = 0;
+GLOBAL_DEF (size_t, VM_DATASEG_SIZE) = 0;
+GLOBAL_DEF (size_t, VM_GLOBALSEG_SIZE) = 0;
+
 static void handle_optional_args (vm_t vm, object_t proc)
 {
   u8_t cnt = COUNT_ARGS () - proc->proc.opt;
@@ -926,14 +930,18 @@ static bytecode8_t fetch_next_bytecode (vm_t vm)
   static bytecode8_t bc = {0};
 
   // os_printk ("pc: %d\n", vm->pc);
-  if (vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
+  if ((VM_RUN == vm->state && vm->pc < GLOBAL_REF (VM_CODESEG_SIZE))
+      || (VM_INIT_GLOBALS == vm->state
+          && vm->pc < GLOBAL_REF (VM_GLOBALSEG_SIZE)))
     {
       bc.all = vm->code[vm->pc++];
       // os_printk ("BC type(%x) data(%x)\n", bc.type, bc.data);
     }
   else
     {
-      os_printk ("Oops, no more bytecode!\n");
+      os_printk ("Oops, no more bytecode! pc: %d, global: %d, code: %d\n",
+                 vm->pc, GLOBAL_REF (VM_GLOBALSEG_SIZE),
+                 GLOBAL_REF (VM_CODESEG_SIZE));
       VM_PANIC ();
     }
 
@@ -983,6 +991,11 @@ void vm_clean (vm_t vm)
 void vm_init_globals (vm_t vm, lef_t lef)
 {
   u8_t *stack = vm->stack; // backup stack
+  u8_t *code = vm->code;   // backup code seg
+  /* NOTE: We have to create a temporary global code in gsize, and set it to
+   *       vm->code, since the size of code_seg may be smaller than data_seg.
+   */
+  vm->code = (void *)os_malloc (lef->gsize);
   os_memcpy (vm->code, LEF_GLOBAL (lef), lef->gsize);
   vm->pc = 0;
   vm->state = VM_INIT_GLOBALS;
@@ -1002,11 +1015,17 @@ void vm_init_globals (vm_t vm, lef_t lef)
   vm->globals = (object_t)os_malloc (size);
   os_memcpy (vm->globals, vm->stack, size);
 
+  os_free (vm->code); // free temporary global code seg
+  vm->code = code;    // restore code seg
   vm_init_environment (vm);
 }
 
 void vm_load_lef (vm_t vm, lef_t lef)
 {
+  GLOBAL_SET (VM_DATASEG_SIZE, lef->msize);
+  GLOBAL_SET (VM_CODESEG_SIZE, lef->psize);
+  GLOBAL_SET (VM_GLOBALSEG_SIZE, lef->gsize);
+
   vm->data = (void *)os_malloc (lef->msize);
   vm->code = (void *)os_malloc (lef->psize);
 
@@ -1023,6 +1042,10 @@ void vm_load_lef (vm_t vm, lef_t lef)
 
 void vm_restart (vm_t vm)
 {
+  GLOBAL_SET (VM_CODESEG_SIZE, 0);
+  GLOBAL_SET (VM_DATASEG_SIZE, 0);
+  GLOBAL_SET (VM_GLOBALSEG_SIZE, 0);
+
   /* TODO:
    * 1. Free all objects in the heap
    * 2. Clean all global information, include ss
