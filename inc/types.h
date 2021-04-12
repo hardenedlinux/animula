@@ -60,7 +60,7 @@ typedef enum obj_type
 {
   imm_int = 0,
   arbi_int = 1,
-  /* reserved = 2, */
+  keyword = 2,
   pair = 3,
   symbol = 4,
   vector = 5,

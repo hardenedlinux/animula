@@ -106,6 +106,11 @@ void object_printer (const object_t obj)
         os_printk ("%s", (char *)obj->value);
         break;
       }
+    case keyword:
+      {
+        os_printk ("#:%s", (char *)obj->value);
+        break;
+      }
     case symbol:
       {
         const char *str_buf = GET_SYMBOL ((u32_t)obj->value);

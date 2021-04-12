@@ -415,6 +415,14 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)str;
         break;
       }
+    case keyword:
+      {
+        const char *str = (char *)(vm->code + vm->pc);
+        vm->pc += os_strnlen (str, MAX_STR_LEN) + 1;
+        VM_DEBUG ("(push-keyword-object #:%s)\n", str);
+        obj->value = (void *)str;
+        break;
+      }
     case procedure:
       {
         u16_t offset = vm_get_u16 (vm);

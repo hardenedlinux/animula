@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_OBJECT_H__
 #define __LAMBDACHIP_OBJECT_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -30,7 +30,7 @@
   |                 |                      |                      |
   0.  Imm Int       |              32bit signed int               |
   1.  Arbi Int      |      next cell       |      16bit int       |
-  2.  Reserved      |                                             |
+  2.  Keyword       |      head pointer                           |
   3.  Pair          |      pair_t address                         |
   4.  Symbol        |      interned head pointer                  |
   5.  Vector        |      length          |      content         |
