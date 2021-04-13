@@ -300,6 +300,7 @@ static void call_prim (vm_t vm, pn_t pn)
       }
     case list_append:
     case list_ref:
+    case cons:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();
@@ -353,7 +354,57 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
+    case car:
+      {
+        func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
+        Object o = POP_OBJ ();
+        PUSH_OBJ (*fn (&o));
+        break;
+      }
+    case cdr:
+      {
+        Object o = POP_OBJ ();
+        object_t obj = &o;
 
+        switch (obj->attr.type)
+          {
+          case list:
+            {
+              obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+              obj_list_t first = SLIST_FIRST (head);
+              obj_list_t next_node = SLIST_NEXT (first, next);
+
+              if (next_node)
+                {
+                  Object new_obj = {0};
+                  list_t l = NEW (list);
+                  SLIST_INIT (&l->list);
+                  new_obj.attr.type = list;
+                  new_obj.value = (void *)l;
+                  obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_obj);
+                  new_head->slh_first = next_node;
+                  // SLIST_INSERT_HEAD (&l->list, next_node, next);
+                  PUSH_OBJ (new_obj);
+                }
+              else
+                {
+                  PUSH_OBJ (GLOBAL_REF (null_const));
+                }
+              break;
+            }
+          case pair:
+            {
+              PUSH_OBJ (*((pair_t)obj->value)->cdr);
+              break;
+            }
+          default:
+            {
+              os_printk ("cdr: Invalid object type %d\n", obj->attr.type);
+              panic ("The program is down!\n");
+            }
+          }
+        break;
+      }
     default:
       os_printk ("Invalid prim number: %d\n", pn);
     }
@@ -440,6 +491,25 @@ static object_t generate_object (vm_t vm, object_t obj)
         // vm->pc += sizeof (uintptr_t);
         VM_DEBUG ("(push-prim-object %u %s)\n", prim, prim_name (prim));
         obj->value = (void *)prim;
+        break;
+      }
+    case pair:
+      {
+        VM_DEBUG ("(push-pair-object)\n");
+        pair_t p = NEW (pair);
+        obj->attr.type = pair;
+        obj->value = (void *)p;
+
+        object_t cdr = (object_t)GC_MALLOC (sizeof (Object));
+        cdr->attr.gc = 1;
+        *cdr = POP_OBJ ();
+        p->cdr = cdr;
+
+        object_t car = (object_t)GC_MALLOC (sizeof (Object));
+        car->attr.gc = 1;
+        *car = POP_OBJ ();
+        p->car = car;
+
         break;
       }
     case list:

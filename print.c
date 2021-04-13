@@ -32,6 +32,15 @@ static inline void list_printer (const object_t obj)
   os_printk (")");
 }
 
+static inline void pair_printer (const object_t obj)
+{
+  os_printk ("(");
+  object_printer (((pair_t)obj->value)->car);
+  os_printk (" . ");
+  object_printer (((pair_t)obj->value)->cdr);
+  os_printk (")");
+}
+
 static inline void vector_printer (const object_t obj)
 {
   u16_t size = ((vector_t)obj->value)->size;
@@ -134,6 +143,11 @@ void object_printer (const object_t obj)
         os_printk ("<procedure: %p>", obj->value);
         break;
       }
+    case pair:
+      {
+        pair_printer (obj);
+        break;
+      }
     case list:
       {
         list_printer (obj);
@@ -169,6 +183,11 @@ void object_printer (const object_t obj)
     case complex_inexact:
       {
         complex_inexact_printer (obj);
+        break;
+      }
+    case null_obj:
+      {
+        os_printk ("()");
         break;
       }
     default:

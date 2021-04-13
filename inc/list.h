@@ -26,7 +26,6 @@
 #define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
 
 object_t _car (object_t obj);
-object_t _cdr (object_t obj);
 object_t _cons (object_t a, object_t b);
 object_t _list_ref (object_t lst, object_t idx);
 object_t _list_set (object_t lst, object_t idx, object_t val);

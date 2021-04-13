@@ -59,6 +59,7 @@
   17. Complex       |      inexact complex address                |
 
   18. Mut string    |      malloced C-string header               |
+  18. Mut list      |      list_t address                         |
 
   61. Boolean       |      false: 0,     true: 1                  |
   62. null_object   |                                             |

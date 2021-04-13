@@ -66,6 +66,9 @@ typedef enum prim_num
   prim_gpio_set = 28,
   prim_gpio_toggle = 29,
   prim_get_board_id = 30,
+  cons = 31,
+  car = 32,
+  cdr = 33,
 
   do_not_forget_modify_PRIM_MAX = 63
 } pn_t;
@@ -80,6 +83,7 @@ typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);
 typedef bool (*logic_check_t) (object_t, object_t);
 typedef object_t (*func_0_args_with_ret_t) ();
+typedef object_t (*func_1_args_with_ret_t) (object_t);
 typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
 typedef object_t (*func_3_args_with_ret_t) (object_t, object_t, object_t);
 typedef object_t (*func_4_args_with_ret_t) (object_t, object_t, object_t,

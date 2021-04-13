@@ -560,9 +560,9 @@ void primitives_init (void)
   def_prim (17, "remainder", 2, (void *)_int_remainder);
   def_prim (18, "foreach", 2, NULL);
   def_prim (19, "map", 2, NULL);
-  def_prim (20, "list_ref", 2, (void *)list_ref);
-  def_prim (21, "list_set", 3, (void *)list_set);
-  def_prim (22, "list_append", 2, (void *)list_append);
+  def_prim (20, "list_ref", 2, (void *)_list_ref);
+  def_prim (21, "list_set", 3, (void *)_list_set);
+  def_prim (22, "list_append", 2, (void *)_list_append);
   def_prim (23, "eq", 2, (void *)_eq);
   def_prim (24, "eqv", 2, (void *)_eqv);
   def_prim (25, "equal", 2, (void *)_equal);
@@ -572,6 +572,9 @@ void primitives_init (void)
   def_prim (28, "gpio_set", 2, (void *)_os_gpio_set);
   def_prim (29, "gpio_toggle", 1, (void *)_os_gpio_toggle);
   def_prim (30, "get_board_id", 2, (void *)_os_get_board_id);
+  def_prim (31, "cons", 2, (void *)_cons);
+  def_prim (32, "car", 1, (void *)_car);
+  def_prim (33, "cdr", 1, NULL);
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
   // #endif /* LAMBDACHIP_ZEPHYR */

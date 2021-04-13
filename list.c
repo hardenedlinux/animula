@@ -41,39 +41,6 @@ object_t _car (object_t obj)
   return NULL;
 }
 
-object_t _cdr (object_t obj)
-{
-  switch (obj->attr.type)
-    {
-    case list:
-      {
-        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
-        obj_list_t first = SLIST_FIRST (head);
-        obj_list_t next = SLIST_NEXT (first, next);
-
-        if (next)
-          {
-            return next->obj;
-          }
-        else
-          {
-            return &GLOBAL_REF (null_const);
-          }
-      }
-    case pair:
-      {
-        return ((pair_t)obj->value)->cdr;
-      }
-    default:
-      {
-        os_printk ("cdr: Invalid object type %d\n", obj->attr.type);
-        panic ("The program is down!\n");
-      }
-    }
-
-  return NULL;
-}
-
 object_t _cons (object_t a, object_t b)
 {
   object_t obj = lambdachip_new_object (pair);
@@ -143,7 +110,7 @@ object_t _list_ref (object_t lst, object_t idx)
 
 object_t _list_set (object_t lst, object_t idx, object_t val)
 {
-  VALIDATE (lst, list);
+  VALIDATE (lst, mut_list);
   VALIDATE (idx, imm_int);
 
   obj_list_t node = NULL;
