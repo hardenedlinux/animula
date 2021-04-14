@@ -33,39 +33,6 @@ extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
 
-typedef enum vm_state
-{
-  VM_STOP = 0,
-  VM_RUN = 1,
-  VM_PAUSE = 2,
-  VM_GC = 3,
-  VM_INIT_GLOBALS = 4
-} vm_state_t;
-
-typedef struct LambdaVM
-{
-  u32_t pc; // program counter
-  u32_t sp; // stack pointer, move when objects pushed
-  u32_t fp; // last frame pointer, move when env was created
-  /* NOTE:
-   * The prelude would pre-execute before the actual call, so the local frame
-   * was hidden by prelude, that's why we need a `local' to record the acutal
-   * frame.
-   */
-  u32_t local; // local frame
-  vm_state_t state;
-  cont_t cc; // current continuation
-  bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);
-  u8_t *code;
-  u8_t *data;
-  u8_t *stack;
-  u8_t shadow;      // shadow frame
-  object_t globals; // global table
-  symtab_t symtab;
-  closure_t closure; // for closure
-  bool tail_rec;
-} __packed *vm_t;
-
 #define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
 
 #define NEXT_DATA() ((vm->fetch_next_bytecode (vm)).all)
@@ -450,58 +417,6 @@ static inline void save_closure (reg_t fp, closure_t closure)
       call_prim (vm, prim);                      \
     }                                            \
   while (0)
-
-#define GC()                                                               \
-  do                                                                       \
-    {                                                                      \
-      os_printk ("oh GC?!\n");                                             \
-      GCInfo gci                                                           \
-        = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack, .hurt = false}; \
-      gc (&gci);                                                           \
-    }                                                                      \
-  while (0)
-
-#define GC_MALLOC(size)                 \
-  ({                                    \
-    void *ret = NULL;                   \
-    do                                  \
-      {                                 \
-        ret = (void *)os_malloc (size); \
-        if (ret)                        \
-          break;                        \
-        GC ();                          \
-      }                                 \
-    while (1);                          \
-    ret;                                \
-  })
-
-#define NEW_OBJ(type)                       \
-  ({                                        \
-    object_t obj = NULL;                    \
-    do                                      \
-      {                                     \
-        obj = lambdachip_new_object (type); \
-        if (obj)                            \
-          break;                            \
-        GC ();                              \
-      }                                     \
-    while (1);                              \
-    obj;                                    \
-  })
-
-#define NEW(type)                       \
-  ({                                    \
-    type##_t obj = NULL;                \
-    do                                  \
-      {                                 \
-        obj = lambdachip_new_##type (); \
-        if (obj)                        \
-          break;                        \
-        GC ();                          \
-      }                                 \
-    while (1);                          \
-    obj;                                \
-  })
 
 #define NEED_VARGS(p) \
   ((procedure == (p)->attr.type) && ((p)->proc.arity != (p)->proc.opt))

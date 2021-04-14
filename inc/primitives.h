@@ -82,15 +82,19 @@ typedef imm_int_t (*arith_prim_t) (imm_int_t, imm_int_t);
 typedef void (*printer_prim_t) (object_t);
 typedef bool (*logic_not_t) (object_t);
 typedef bool (*logic_check_t) (object_t, object_t);
-typedef object_t (*func_0_args_with_ret_t) ();
-typedef object_t (*func_1_args_with_ret_t) (object_t);
-typedef object_t (*func_2_args_with_ret_t) (object_t, object_t);
-typedef object_t (*func_3_args_with_ret_t) (object_t, object_t, object_t);
-typedef object_t (*func_4_args_with_ret_t) (object_t, object_t, object_t,
+typedef object_t (*func_0_args_with_ret_t) (vm_t, object_t);
+typedef object_t (*func_1_args_with_ret_t) (vm_t, object_t, object_t);
+typedef object_t (*func_2_args_with_ret_t) (vm_t, object_t, object_t, object_t);
+typedef object_t (*func_3_args_with_ret_t) (vm_t, object_t, object_t, object_t,
                                             object_t);
-
-// FIXME: Shall this change to other type name?
-typedef object_t (*func_1_args_with_ret_t) (object_t);
+typedef object_t (*func_4_args_with_ret_t) (vm_t, object_t, object_t, object_t,
+                                            object_t, object_t);
+typedef object_t (*func_0_args_t) (vm_t);
+typedef object_t (*func_1_args_t) (vm_t, object_t);
+typedef object_t (*func_2_args_t) (vm_t, object_t, object_t);
+typedef object_t (*func_3_args_t) (vm_t, object_t, object_t, object_t);
+typedef object_t (*func_4_args_t) (vm_t, object_t, object_t, object_t,
+                                   object_t);
 
 typedef struct Primitive
 {

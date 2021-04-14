@@ -22,12 +22,6 @@
 #include "rbtree.h"
 #include "types.h"
 
-typedef struct SymTab
-{
-  u16_t cnt;
-  u8_t *entry;
-} __packed *symtab_t, symtab;
-
 extern GLOBAL_DEF (symtab_t, symtab);
 
 #define GET_SYMBOL(offset) \

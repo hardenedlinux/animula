@@ -31,7 +31,6 @@ static void handle_optional_args (vm_t vm, object_t proc)
     {
       object_t new_obj = NEW_OBJ (0);
       *new_obj = POP_OBJ ();
-      new_obj->attr.gc = 1; // don't forget
       obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
       bl->obj = new_obj;
       SLIST_INSERT_HEAD (head, bl, next);
@@ -301,108 +300,29 @@ static void call_prim (vm_t vm, pn_t pn)
     case list_append:
     case list_ref:
     case cons:
+    case prim_gpio_set:
       {
-        func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
+        func_2_args_t fn = (func_2_args_t)prim->fn;
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
-        PUSH_OBJ (*fn (&o1, &o2));
+        PUSH_OBJ (*fn (vm, &o1, &o2));
         break;
       }
     case prim_usleep:
-      {
-        func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
-        Object o1 = POP_OBJ ();
-        VALIDATE (&o1, imm_int);
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
-
-        ret.value = (void *)fn (&o1);
-        PUSH_OBJ (ret);
-        break;
-      }
-    case prim_gpio_set:
-      {
-        func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
-        Object o2 = POP_OBJ ();
-        Object o1 = POP_OBJ ();
-        VALIDATE (&o2, imm_int);
-        VALIDATE (&o1, symbol);
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
-        ret = *(fn (&ret, &o1, &o2));
-        PUSH_OBJ (ret);
-        break;
-      }
     case prim_device_configure:
     case prim_gpio_toggle:
+    case car:
+    case cdr:
       {
-        func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
-        Object o1 = POP_OBJ ();
-        VALIDATE (&o1, symbol);
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
-        ret = *(fn (&ret, &o1));
-        PUSH_OBJ (ret);
+        func_1_args_t fn = (func_1_args_t)prim->fn;
+        Object o = POP_OBJ ();
+        PUSH_OBJ (*fn (vm, &o));
         break;
       }
     case prim_get_board_id:
       {
-        func_0_args_with_ret_t fn = (func_0_args_with_ret_t)prim->fn;
-        Object ret = {.attr = {.type = mut_string, .gc = 0}, .value = NULL};
-        ret = *(fn ());
-        if (ret.attr.type != mut_string)
-          {
-            os_printk ("primitive: get-board-id type wrong\n");
-          }
-        PUSH_OBJ (ret);
-        break;
-      }
-    case car:
-      {
-        func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
-        Object o = POP_OBJ ();
-        PUSH_OBJ (*fn (&o));
-        break;
-      }
-    case cdr:
-      {
-        Object o = POP_OBJ ();
-        object_t obj = &o;
-
-        switch (obj->attr.type)
-          {
-          case list:
-            {
-              obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
-              obj_list_t first = SLIST_FIRST (head);
-              obj_list_t next_node = SLIST_NEXT (first, next);
-
-              if (next_node)
-                {
-                  Object new_obj = {0};
-                  list_t l = NEW (list);
-                  SLIST_INIT (&l->list);
-                  new_obj.attr.type = list;
-                  new_obj.value = (void *)l;
-                  obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_obj);
-                  new_head->slh_first = next_node;
-                  // SLIST_INSERT_HEAD (&l->list, next_node, next);
-                  PUSH_OBJ (new_obj);
-                }
-              else
-                {
-                  PUSH_OBJ (GLOBAL_REF (null_const));
-                }
-              break;
-            }
-          case pair:
-            {
-              PUSH_OBJ (*((pair_t)obj->value)->cdr);
-              break;
-            }
-          default:
-            {
-              os_printk ("cdr: Invalid object type %d\n", obj->attr.type);
-              panic ("The program is down!\n");
-            }
-          }
+        func_0_args_t fn = (func_0_args_t)prim->fn;
+        PUSH_OBJ (*fn (vm));
         break;
       }
     default:
@@ -500,13 +420,11 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->attr.type = pair;
         obj->value = (void *)p;
 
-        object_t cdr = (object_t)GC_MALLOC (sizeof (Object));
-        cdr->attr.gc = 1;
+        object_t cdr = NEW_OBJ (0);
         *cdr = POP_OBJ ();
         p->cdr = cdr;
 
-        object_t car = (object_t)GC_MALLOC (sizeof (Object));
-        car->attr.gc = 1;
+        object_t car = NEW_OBJ (0);
         *car = POP_OBJ ();
         p->car = car;
 
@@ -525,10 +443,9 @@ static object_t generate_object (vm_t vm, object_t obj)
         for (u16_t i = 0; i < size; i++)
           {
             // object_t new_obj = NEW_OBJ (0);
-            object_t new_obj = (object_t)GC_MALLOC (sizeof (Object));
+            object_t new_obj = NEW_OBJ (0);
             *new_obj = POP_OBJ ();
-            new_obj->attr.gc = 1; // don't forget
-            obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
+            obj_list_t bl = NEW_OBJ_LIST ();
             bl->obj = new_obj;
             SLIST_INSERT_HEAD (&l->list, bl, next);
           }
@@ -547,9 +464,8 @@ static object_t generate_object (vm_t vm, object_t obj)
 
         for (u16_t i = 0; i < size; i++)
           {
-            object_t new_obj = (object_t)GC_MALLOC (sizeof (Object));
+            object_t new_obj = NEW_OBJ (0);
             *new_obj = POP_OBJ ();
-            new_obj->attr.gc = 1; // don't forget
             v->vec[i] = new_obj;
           }
         break;

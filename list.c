@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -17,7 +17,7 @@
 
 #include "list.h"
 
-object_t _car (object_t obj)
+object_t _car (vm_t vm, object_t obj)
 {
   switch (obj->attr.type)
     {
@@ -41,26 +41,71 @@ object_t _car (object_t obj)
   return NULL;
 }
 
-object_t _cons (object_t a, object_t b)
+object_t _cdr (vm_t vm, object_t obj)
 {
-  object_t obj = lambdachip_new_object (pair);
+  object_t ret = NULL;
+
+  switch (obj->attr.type)
+    {
+    case list:
+      {
+        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        obj_list_t first = SLIST_FIRST (head);
+        obj_list_t next_node = SLIST_NEXT (first, next);
+
+        if (next_node)
+          {
+            object_t new_obj = NEW_OBJ (list);
+            list_t l = NEW (list);
+            SLIST_INIT (&l->list);
+            new_obj->value = (void *)l;
+            obj_list_head_t *new_head = LIST_OBJECT_HEAD (new_obj);
+            new_head->slh_first = next_node;
+            ret = new_obj;
+          }
+        else
+          {
+            ret = &GLOBAL_REF (null_const);
+          }
+        break;
+      }
+    case pair:
+      {
+        ret = ((pair_t)obj->value)->cdr;
+        break;
+      }
+    default:
+      {
+        os_printk ("cdr: Invalid object type %d\n", obj->attr.type);
+        panic ("");
+      }
+    }
+
+  return ret;
+}
+
+object_t _cons (vm_t vm, object_t a, object_t b)
+{
+  object_t obj = NEW_OBJ (0);
 
   switch (b->attr.type)
     {
     case null_obj:
       {
         obj->attr.type = list;
-        list_t lst = lambdachip_new_list ();
-        obj_list_t ol = new_obj_list ();
+        list_t lst = NEW (list);
+        obj_list_t ol = NEW_OBJ_LIST ();
         SLIST_INSERT_HEAD (&lst->list, ol, next);
         obj->value = (void *)lst;
         break;
       }
     default:
       {
-        pair_t p = lambdachip_new_pair ();
+        pair_t p = NEW (pair);
         p->car = a;
         p->cdr = b;
+        obj->attr.type = pair;
+        obj->value = (void *)p;
       }
     }
 
@@ -79,7 +124,7 @@ bool _is_pair (object_t obj)
     }
 }
 
-object_t _list_ref (object_t lst, object_t idx)
+object_t _list_ref (vm_t vm, object_t lst, object_t idx)
 {
   VALIDATE (lst, list);
   VALIDATE (idx, imm_int);
@@ -108,7 +153,7 @@ object_t _list_ref (object_t lst, object_t idx)
   return ret;
 }
 
-object_t _list_set (object_t lst, object_t idx, object_t val)
+object_t _list_set (vm_t vm, object_t lst, object_t idx, object_t val)
 {
   VALIDATE (lst, mut_list);
   VALIDATE (idx, imm_int);
@@ -116,7 +161,6 @@ object_t _list_set (object_t lst, object_t idx, object_t val)
   obj_list_t node = NULL;
   obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
   imm_int_t cnt = (imm_int_t)idx->value;
-  object_t ret = val;
 
   SLIST_FOREACH (node, head, next)
   {
@@ -137,32 +181,61 @@ object_t _list_set (object_t lst, object_t idx, object_t val)
       // throw ();
     }
 
-  return ret;
+  return &GLOBAL_REF (none_const);
 }
 
-object_t _list_append (object_t l1, object_t l2)
+object_t _list_append (vm_t vm, object_t l1, object_t l2)
 {
   VALIDATE (l1, list);
   VALIDATE (l2, list);
+
+  object_t new_obj = NEW_OBJ (list);
+  list_t l = NEW (list);
+  SLIST_INIT (&l->list);
+  new_obj->value = (void *)l;
+  obj_list_head_t *new_head = LIST_OBJECT_HEAD (new_obj);
 
   if (list == l2->attr.type)
     {
       obj_list_head_t *h1 = LIST_OBJECT_HEAD (l1);
       obj_list_head_t *h2 = LIST_OBJECT_HEAD (l2);
       obj_list_t node = NULL;
-      obj_list_t tail = NULL;
+      obj_list_t prev = NULL;
 
+      /* NOTE:
+       * According to r7rs, the element objects should be shared with the
+       * original lists. However, we still need to allocate new node for each of
+       * them.
+       */
       SLIST_FOREACH (node, h1, next)
       {
-        tail = node;
+        obj_list_t new_node = NEW_OBJ_LIST ();
+        new_node->obj = node->obj;
+
+        if (!prev)
+          {
+            // when the new list is still empty
+            SLIST_INSERT_HEAD (new_head, new_node, next);
+          }
+        else
+          {
+            SLIST_INSERT_AFTER (prev, new_node, next);
+          }
+        prev = new_node;
       }
 
-      SLIST_NEXT (tail, next) = SLIST_FIRST (h2);
+      SLIST_FOREACH (node, h2, next)
+      {
+        obj_list_t new_node = NEW_OBJ_LIST ();
+        new_node->obj = node->obj;
+        SLIST_INSERT_AFTER (prev, new_node, next);
+        prev = new_node;
+      }
     }
   else
     {
-      return _cons (l1, l2);
+      return _cons (vm, l1, l2);
     }
 
-  return l1;
+  return new_obj;
 }

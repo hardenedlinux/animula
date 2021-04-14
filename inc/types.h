@@ -258,4 +258,168 @@ static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 #endif
   return *((uintptr_t *)buf);
 }
+
+typedef struct SymTab
+{
+  u16_t cnt;
+  u8_t *entry;
+} __packed *symtab_t, symtab;
+
+typedef enum encode_type
+{
+  SMALL,
+  SINGLE,
+  DOUBLE,
+  TRIPLE,
+  QUADRUPLE,
+  SPECIAL
+} encode_t;
+
+// FIXME: tweak bit-fields order by bits endian
+
+typedef union ByteCode8
+{
+  struct
+  {
+#if defined LAMBDACHIP_BITS_LITTLE
+    unsigned type : 4;
+    unsigned data : 4;
+#elif defined LAMBDACHIP_BITS_BIG
+    unsigned data : 4;
+    unsigned type : 4;
+#else
+#  error "Please define LAMBDACHIP_BITS_BIG or LAMBDACHIP_BITS_LITTLE"
+#endif
+  };
+  u8_t all;
+} __packed bytecode8_t;
+
+typedef union ByteCode16
+{
+#if defined LAMBDACHIP_BITS_LITTLE
+  struct
+  {
+    unsigned bc1 : 8;
+    unsigned bc2 : 8;
+  };
+  struct
+  {
+    unsigned _ : 4;
+    unsigned type : 4;
+    unsigned data : 8;
+  };
+#elif defined LAMBDACHIP_BITS_BIG
+  struct
+  {
+    unsigned bc2 : 8;
+    unsigned bc1 : 8;
+  };
+  struct
+  {
+    unsigned data : 8;
+    unsigned type : 4;
+    unsigned _ : 4;
+  };
+#endif
+  u16_t all;
+} __packed bytecode16_t;
+
+typedef union ByteCode24
+{
+#if defined LAMBDACHIP_BITS_LITTLE
+  struct
+  {
+    unsigned bc1 : 8;
+    unsigned bc2 : 8;
+    unsigned bc3 : 8;
+  };
+  struct
+  {
+    unsigned _ : 4;
+    unsigned type : 4;
+    unsigned data : 16;
+  };
+#elif defined LAMBDACHIP_BITS_BIG
+  struct
+  {
+    unsigned bc3 : 8;
+    unsigned bc2 : 8;
+    unsigned bc1 : 8;
+  };
+  struct
+  {
+    unsigned data : 16;
+    unsigned type : 4;
+    unsigned _ : 4;
+  };
+#endif
+} __packed bytecode24_t;
+
+typedef union ByteCode32
+{
+#if defined LAMBDACHIP_BITS_LITTLE
+  struct
+  {
+    unsigned bc1 : 8;
+    unsigned bc2 : 8;
+    unsigned bc3 : 8;
+    unsigned bc4 : 8;
+  };
+  struct
+  {
+    unsigned _ : 4;
+    unsigned type : 4;
+    unsigned data : 24;
+  };
+#elif defined LAMBDACHIP_BITS_BIG
+  struct
+  {
+    unsigned bc4 : 8;
+    unsigned bc3 : 8;
+    unsigned bc2 : 8;
+    unsigned bc1 : 8;
+  };
+  struct
+  {
+    unsigned data : 24;
+    unsigned type : 4;
+    unsigned _ : 4;
+  };
+#endif
+  u32_t all;
+} __packed bytecode32_t;
+
+typedef enum vm_state
+{
+  VM_STOP = 0,
+  VM_RUN = 1,
+  VM_PAUSE = 2,
+  VM_GC = 3,
+  VM_INIT_GLOBALS = 4
+} vm_state_t;
+
+typedef struct LambdaVM
+{
+  u32_t pc; // program counter
+  u32_t sp; // stack pointer, move when objects pushed
+  u32_t fp; // last frame pointer, move when env was created
+  /* NOTE:
+   * The prelude would pre-execute before the actual call, so the local frame
+   * was hidden by prelude, that's why we need a `local' to record the acutal
+   * frame.
+   */
+  u32_t local; // local frame
+  vm_state_t state;
+  cont_t cc; // current continuation
+  bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);
+  u8_t *code;
+  u8_t *data;
+  u8_t *stack;
+  u8_t shadow;      // shadow frame
+  object_t globals; // global table
+  symtab_t symtab;
+  closure_t closure; // for closure
+  bool tail_rec;
+} __packed *vm_t;
+
 #endif // End of __LAMBDACHIP_TYPES_H;

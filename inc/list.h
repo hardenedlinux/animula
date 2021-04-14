@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_LIST_H__
 #define __LAMBDACHIP_LIST_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -25,10 +25,11 @@
 
 #define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
 
-object_t _car (object_t obj);
-object_t _cons (object_t a, object_t b);
-object_t _list_ref (object_t lst, object_t idx);
-object_t _list_set (object_t lst, object_t idx, object_t val);
-object_t _list_append (object_t l1, object_t l2);
+object_t _car (vm_t vm, object_t obj);
+object_t _cdr (vm_t vm, object_t obj);
+object_t _cons (vm_t vm, object_t a, object_t b);
+object_t _list_ref (vm_t vm, object_t lst, object_t idx);
+object_t _list_set (vm_t vm, object_t lst, object_t idx, object_t val);
+object_t _list_append (vm_t vm, object_t l1, object_t l2);
 
 #endif // End of __LAMBDACHIP_LIST_H__

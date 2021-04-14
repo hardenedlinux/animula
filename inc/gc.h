@@ -27,6 +27,74 @@
 #define GEN_1_OBJ     1
 #define FREE_OBJ      0
 
+#define GC()                                                               \
+  do                                                                       \
+    {                                                                      \
+      os_printk ("oh GC?!\n");                                             \
+      GCInfo gci                                                           \
+        = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack, .hurt = false}; \
+      gc (&gci);                                                           \
+    }                                                                      \
+  while (0)
+
+#define GC_MALLOC(size)                 \
+  ({                                    \
+    void *ret = NULL;                   \
+    do                                  \
+      {                                 \
+        ret = (void *)os_malloc (size); \
+        if (ret)                        \
+          break;                        \
+        GC ();                          \
+      }                                 \
+    while (1);                          \
+    ret;                                \
+  })
+
+#define NEW_OBJ(type)                       \
+  ({                                        \
+    object_t obj = NULL;                    \
+    do                                      \
+      {                                     \
+        obj = lambdachip_new_object (type); \
+        if (obj)                            \
+          break;                            \
+        GC ();                              \
+      }                                     \
+    while (1);                              \
+    obj->attr.gc = 1;                       \
+    obj;                                    \
+  })
+
+#define NEW_OBJ_LIST()        \
+  ({                          \
+    obj_list_t ol = NULL;     \
+    do                        \
+      {                       \
+        ol = new_obj_list (); \
+        if (ol)               \
+          break;              \
+        GC ();                \
+      }                       \
+    while (1);                \
+    ol;                       \
+  })
+
+#define NEW(type)                       \
+  ({                                    \
+    type##_t obj = NULL;                \
+    do                                  \
+      {                                 \
+        obj = lambdachip_new_##type (); \
+        if (obj)                        \
+          break;                        \
+        GC ();                          \
+      }                                 \
+    while (1);                          \
+    obj->attr.gc = 1;                   \
+    obj;                                \
+  })
+
 typedef enum gc_obj_type
 {
   gc_object,
