@@ -33,6 +33,15 @@ extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
 
+/* NOTE:
+ * The magic here is to set gc=1. Although ret_obj is on the stack, this magic
+ * can prevent GC mis-recycle the sub-object of ret_obj.
+ */
+#define CREATE_RET_OBJ() \
+  {                      \
+    .attr = {.gc = 1 }   \
+  }
+
 #define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
 
 #define NEXT_DATA() ((vm->fetch_next_bytecode (vm)).all)

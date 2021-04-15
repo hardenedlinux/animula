@@ -265,12 +265,13 @@ static bool _equal (object_t a, object_t b)
   return ret;
 }
 
-static object_t _os_usleep (vm_t vm, object_t us)
+static object_t _os_usleep (vm_t vm, object_t ret, object_t us)
 {
   VALIDATE (us, imm_int);
 
   os_usleep ((int32_t)us->value);
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
 #ifdef LAMBDACHIP_ZEPHYR
@@ -301,10 +302,10 @@ extern GLOBAL_DEF (super_device, super_dev_gpio_pb12);
 extern GLOBAL_DEF (super_device, super_dev_i2c2);
 extern GLOBAL_DEF (super_device, super_dev_i2c3);
 
-static object_t _os_get_board_id (vm_t vm)
+static object_t _os_get_board_id (vm_t vm, object_t ret)
 {
   static uint32_t g_board_uid[3] = {0, 0, 0};
-  object_t obj = NEW_OBJ (mut_string);
+  ret->attr.type = mut_string;
   char *uid = (char *)GC_MALLOC (BOARD_ID_LEN); // last is \0, shall be included
   obj->value = (void *)uid;
 
@@ -318,7 +319,7 @@ static object_t _os_get_board_id (vm_t vm)
   os_snprintk (uid, BOARD_ID_LEN, "%08X%08X%08X", g_board_uid[0],
                g_board_uid[1], g_board_uid[2]);
 
-  return obj;
+  return ret;
 }
 
 extern const struct device *GLOBAL_REF (dev_led0);
@@ -456,10 +457,11 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
   return ret;
 }
 
-static object_t _os_device_configure (vm_t vm, object_t obj)
+static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
 {
   VALIDATE (obj, symbol);
 
+  ret = &GLOBAL_REF (none_const);
   // const char *str_buf = GET_SYBOL ((u32_t)obj->value);
   super_device *p = translate_supper_dev_from_symbol (obj);
 
@@ -480,30 +482,32 @@ static object_t _os_device_configure (vm_t vm, object_t obj)
     }
 
   // os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
-  return &GLOBAL_REF (none_const);
+  return ret;
 }
 
 // dev->value is the string/symbol refer to of a super_device
-static object_t _os_gpio_set (vm_t vm, object_t dev, object_t v)
+static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
 {
   VALIDATE (dev, symbol);
   VALIDATE (v, boolean);
 
   super_device *p = translate_supper_dev_from_symbol (dev);
   gpio_pin_set (p->dev, p->gpio_pin, (int)v->value);
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
-static object_t _os_gpio_toggle (vm_t vm, object_t obj)
+static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
 {
   super_device *p = translate_supper_dev_from_symbol (obj);
   gpio_pin_toggle (p->dev, p->gpio_pin);
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
 /* LAMBDACHIP_ZEPHYR */
 #elif defined LAMBDACHIP_LINUX
-static object_t _os_get_board_id (void)
+static object_t _os_get_board_id (vm_t vm)
 {
   // static char[] board_id = "GNU/Linux";
   // return board_id;
@@ -514,17 +518,18 @@ static object_t _os_get_board_id (void)
   return (object_t)NULL;
 }
 
-static object_t _os_device_configure (object_t dev)
+static object_t _os_device_configure (vm_t vm, object_t ret, object_t dev)
 {
   VALIDATE (dev, symbol);
 
   const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
   os_printk ("object_t _os_device_configure (%s)\n", str_buf);
 
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
-static object_t _os_gpio_set (vm_t vm, object_t dev, object_t v)
+static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
 {
   VALIDATE (dev, symbol);
   VALIDATE (v, boolean);
@@ -532,17 +537,19 @@ static object_t _os_gpio_set (vm_t vm, object_t dev, object_t v)
   const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
   os_printk ("object_t _os_gpio_set (%s, %d)\n", str_buf, (imm_int_t)v->value);
 
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
-static object_t _os_gpio_toggle (vm_t vm, object_t obj)
+static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
 {
   VALIDATE (obj, symbol);
 
   const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
   os_printk ("object_t _os_gpio_toggle (%s)\n", str_buf);
 
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 #endif /* LAMBDACHIP_LINUX */
 

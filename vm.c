@@ -302,28 +302,23 @@ static void call_prim (vm_t vm, pn_t pn)
     case cons:
     case prim_gpio_set:
       {
-        func_2_args_t fn = (func_2_args_t)prim->fn;
+        func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
-        PUSH_OBJ (*fn (vm, &o1, &o2));
+        Object ret = CREATE_RET_OBJ ();
+        PUSH_OBJ (*fn (vm, &ret, &o1, &o2));
         break;
       }
     case prim_usleep:
     case prim_device_configure:
     case prim_gpio_toggle:
+    case list_to_string:
     case car:
     case cdr:
       {
-        func_1_args_t fn = (func_1_args_t)prim->fn;
-        Object o = POP_OBJ ();
-        PUSH_OBJ (*fn (vm, &o));
-        break;
-      }
-    case list_to_string:
-      {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o = POP_OBJ ();
-        Object ret = {0};
+        Object ret = CREATE_RET_OBJ ();
         PUSH_OBJ (*fn (vm, &ret, &o));
         break;
       }
@@ -337,7 +332,7 @@ static void call_prim (vm_t vm, pn_t pn)
     case readln:
       {
         func_0_args_with_ret_t fn = (func_0_args_with_ret_t)prim->fn;
-        Object ret = {0};
+        Object ret = CREATE_RET_OBJ ();
         PUSH_OBJ (*fn (vm, &ret));
         break;
       }

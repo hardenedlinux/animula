@@ -17,7 +17,7 @@
 
 #include "list.h"
 
-object_t _car (vm_t vm, object_t obj)
+object_t _car (vm_t vm, object_t ret, object_t obj)
 {
   switch (obj->attr.type)
     {
@@ -25,11 +25,13 @@ object_t _car (vm_t vm, object_t obj)
       {
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
         obj_list_t first = SLIST_FIRST (head);
-        return first->obj;
+        *ret = *(first->obj);
+        break;
       }
     case pair:
       {
-        return ((pair_t)obj->value)->car;
+        *ret = *(((pair_t)obj->value)->car);
+        break;
       }
     default:
       {
@@ -38,13 +40,11 @@ object_t _car (vm_t vm, object_t obj)
       }
     }
 
-  return NULL;
+  return ret;
 }
 
-object_t _cdr (vm_t vm, object_t obj)
+object_t _cdr (vm_t vm, object_t ret, object_t obj)
 {
-  object_t ret = NULL;
-
   switch (obj->attr.type)
     {
     case list:
@@ -61,7 +61,7 @@ object_t _cdr (vm_t vm, object_t obj)
             new_obj->value = (void *)l;
             obj_list_head_t *new_head = LIST_OBJECT_HEAD (new_obj);
             new_head->slh_first = next_node;
-            ret = new_obj;
+            *ret = *new_obj;
           }
         else
           {
@@ -71,7 +71,7 @@ object_t _cdr (vm_t vm, object_t obj)
       }
     case pair:
       {
-        ret = ((pair_t)obj->value)->cdr;
+        *ret = *(((pair_t)obj->value)->cdr);
         break;
       }
     default:
@@ -84,19 +84,17 @@ object_t _cdr (vm_t vm, object_t obj)
   return ret;
 }
 
-object_t _cons (vm_t vm, object_t a, object_t b)
+object_t _cons (vm_t vm, object_t ret, object_t a, object_t b)
 {
-  object_t obj = NEW_OBJ (0);
-
   switch (b->attr.type)
     {
     case null_obj:
       {
-        obj->attr.type = list;
+        ret->attr.type = list;
         list_t lst = NEW (list);
         obj_list_t ol = NEW_OBJ_LIST ();
         SLIST_INSERT_HEAD (&lst->list, ol, next);
-        obj->value = (void *)lst;
+        ret->value = (void *)lst;
         break;
       }
     default:
@@ -110,12 +108,12 @@ object_t _cons (vm_t vm, object_t a, object_t b)
           *new_b = *b;
         p->car = new_a;
         p->cdr = new_b;
-        obj->attr.type = pair;
-        obj->value = (void *)p;
+        ret->attr.type = pair;
+        ret->value = (void *)p;
       }
     }
 
-  return obj;
+  return ret;
 }
 
 bool _is_pair (object_t obj)
@@ -130,7 +128,7 @@ bool _is_pair (object_t obj)
     }
 }
 
-object_t _list_ref (vm_t vm, object_t lst, object_t idx)
+object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
 {
   VALIDATE (lst, list);
   VALIDATE (idx, imm_int);
@@ -138,17 +136,18 @@ object_t _list_ref (vm_t vm, object_t lst, object_t idx)
   obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
   obj_list_t node = NULL;
   imm_int_t cnt = (imm_int_t)idx->value;
-  object_t ret = &GLOBAL_REF (null_const);
+  obj_list_t next = NULL;
 
   SLIST_FOREACH (node, head, next)
   {
     if (!cnt)
-      ret = node->obj;
+      break;
 
+    next = node;
     cnt--;
   }
 
-  if (!ret)
+  if (!next)
     {
       os_printk ("list-ref: Invalid index %d!\n", cnt);
       panic ("");
@@ -156,10 +155,12 @@ object_t _list_ref (vm_t vm, object_t lst, object_t idx)
       // throw ();
     }
 
+  *ret = *(next->obj);
   return ret;
 }
 
-object_t _list_set (vm_t vm, object_t lst, object_t idx, object_t val)
+object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
+                    object_t val)
 {
   VALIDATE (lst, mut_list);
   VALIDATE (idx, imm_int);
@@ -189,17 +190,16 @@ object_t _list_set (vm_t vm, object_t lst, object_t idx, object_t val)
 
   return &GLOBAL_REF (none_const);
 }
-
-object_t _list_append (vm_t vm, object_t l1, object_t l2)
+object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
 {
   VALIDATE (l1, list);
   VALIDATE (l2, list);
 
-  object_t new_obj = NEW_OBJ (list);
+  ret->attr.type = list;
   list_t l = NEW (list);
   SLIST_INIT (&l->list);
-  new_obj->value = (void *)l;
-  obj_list_head_t *new_head = LIST_OBJECT_HEAD (new_obj);
+  ret->value = (void *)l;
+  obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);
 
   if (list == l2->attr.type)
     {
@@ -240,8 +240,8 @@ object_t _list_append (vm_t vm, object_t l1, object_t l2)
     }
   else
     {
-      return _cons (vm, l1, l2);
+      return _cons (vm, ret, l1, l2);
     }
 
-  return new_obj;
+  return ret;
 }
