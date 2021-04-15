@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_PRIMITIVE_H__
 #define __LAMBDACHIP_PRIMITIVE_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -30,6 +30,7 @@
 
 #define PRIM_NAME_SIZE 16
 #define PRIM_MAX       64
+#define BOARD_ID_LEN   25
 
 // NOTE: assign is not a primitive
 typedef enum prim_num
