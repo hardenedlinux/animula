@@ -305,7 +305,7 @@ static object_t _os_get_board_id (vm_t vm)
 {
   static uint32_t g_board_uid[3] = {0, 0, 0};
   object_t obj = NEW_OBJ (mut_string);
-  char *uid = (char *)GC_MALLOC (25); // last is \0, shall be included
+  char *uid = (char *)GC_MALLOC (BOARD_ID_LEN); // last is \0, shall be included
   obj->value = (void *)uid;
 
   /* copy 96 bit UID as 3 uint32_t integer
@@ -315,8 +315,8 @@ static object_t _os_get_board_id (vm_t vm)
     {
       os_memcpy (g_board_uid, (char *)UID_BASE, sizeof (g_board_uid));
     }
-  os_snprintk (uid, 25, "%08X%08X%08X", g_board_uid[0], g_board_uid[1],
-               g_board_uid[2]);
+  os_snprintk (uid, BOARD_ID_LEN, "%08X%08X%08X", g_board_uid[0],
+               g_board_uid[1], g_board_uid[2]);
 
   return obj;
 }
