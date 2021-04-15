@@ -195,6 +195,11 @@ typedef struct Vector
   object_t *vec;
 } __packed Vector, *vector_t;
 
+typedef struct MutString
+{
+  char *buf;
+} __packed MutString, *mut_string_t;
+
 typedef struct GCInfo
 {
   u32_t fp;

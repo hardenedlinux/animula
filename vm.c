@@ -319,6 +319,14 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (*fn (vm, &o));
         break;
       }
+    case list_to_string:
+      {
+        func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
+        Object o = POP_OBJ ();
+        Object ret = {0};
+        PUSH_OBJ (*fn (vm, &ret, &o));
+        break;
+      }
     case prim_get_board_id:
       {
         func_0_args_t fn = (func_0_args_t)prim->fn;
@@ -326,6 +334,7 @@ static void call_prim (vm_t vm, pn_t pn)
         break;
       }
     case read_char:
+    case readln:
       {
         func_0_args_with_ret_t fn = (func_0_args_with_ret_t)prim->fn;
         Object ret = {0};

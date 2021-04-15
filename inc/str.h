@@ -17,11 +17,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "list.h"
 #include "object.h"
 #include "os.h"
 #include "types.h"
 
 bool str_eq (object_t s1, object_t s2);
 object_t _read_char (vm_t vm, object_t ret);
+object_t _read_str (vm_t vm, object_t ret, object_t cnt);
+object_t _read_line (vm_t vm, object_t ret);
+object_t _list_to_string (vm_t vm, object_t ret, object_t lst);
 
 #endif // End of __LAMBDACHIP_STRING_H__

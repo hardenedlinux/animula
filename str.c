@@ -29,3 +29,63 @@ object_t _read_char (vm_t vm, object_t ret)
   ret->value = (void *)ch;
   return ret;
 }
+
+object_t _read_str (vm_t vm, object_t ret, object_t obj)
+{
+  VALIDATE (obj, imm_int);
+
+  char ch;
+  imm_int_t cnt = (imm_int_t)obj->value;
+  char *buf = (char *)GC_MALLOC (cnt + 1);
+
+  for (int i = 0; i < cnt; i++)
+    {
+      buf[i] = getchar ();
+    }
+
+  ret->attr.type = mut_string;
+  ret->value = (void *)buf;
+
+  return ret;
+}
+
+object_t _read_line (vm_t vm, object_t ret)
+{
+
+  char buf[MAX_STR_LEN] = {0};
+  char ch;
+  int cnt = 0;
+
+  while ((buf[cnt++] = os_getchar ()) != '\n')
+    ;
+
+  buf[cnt] = '\0';
+  char *str = (char *)GC_MALLOC (cnt);
+  os_memcpy (str, buf, cnt);
+  ret->attr.type = mut_string;
+  ret->value = (void *)str;
+
+  return ret;
+}
+
+object_t _list_to_string (vm_t vm, object_t ret, object_t lst)
+{
+  char buf[MAX_STR_LEN] = {0};
+  obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
+  obj_list_t node = NULL;
+  ret->attr.type = mut_string;
+  int cnt = 0;
+
+  SLIST_FOREACH (node, head, next)
+  {
+    buf[cnt++] = (char)node->obj->value;
+  }
+
+  buf[cnt] = '\0';
+  char *str = (char *)GC_MALLOC (cnt);
+  os_memcpy (str, buf, cnt);
+  ret->attr.type = mut_string;
+  ret->value = (void *)str;
+
+  return ret;
+}

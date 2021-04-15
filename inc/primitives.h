@@ -71,6 +71,9 @@ typedef enum prim_num
   car = 32,
   cdr = 33,
   read_char = 34,
+  read_str = 35,
+  readln = 36,
+  list_to_string = 37,
 
   do_not_forget_modify_PRIM_MAX = 63
 } pn_t;

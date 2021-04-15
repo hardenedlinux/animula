@@ -54,7 +54,6 @@ static inline size_t os_strnlen (const char *s, size_t n)
 #  include <stdlib.h>
 #  include <sys/cdefs.h>
 #  define os_snprintf snprintf
-#  define os_getchar  getchar
 int zephyr_open (const char *pathname, int flags);
 int zephyr_close (int fd);
 ssize_t zephyr_read (int fd, void *buf, size_t count);

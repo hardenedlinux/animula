@@ -587,7 +587,10 @@ void primitives_init (void)
   def_prim (31, "cons", 2, (void *)_cons);
   def_prim (32, "car", 1, (void *)_car);
   def_prim (33, "cdr", 1, (void *)_cdr);
-  def_prim (34, "read_char", 1, (void *)_read_char);
+  def_prim (34, "read_char", 0, (void *)_read_char);
+  def_prim (35, "read_str", 1, (void *)_read_str);
+  def_prim (36, "read_line", 0, (void *)_read_line);
+  def_prim (37, "list_to_string", 1, (void *)_list_to_string);
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
   // #endif /* LAMBDACHIP_ZEPHYR */
