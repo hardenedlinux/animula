@@ -304,7 +304,7 @@ extern GLOBAL_DEF (super_device, super_dev_i2c3);
 static object_t _os_get_board_id (vm_t vm)
 {
   static uint32_t g_board_uid[3] = {0, 0, 0};
-  object_t obj = NEW (mut_string);
+  object_t obj = NEW_OBJ (mut_string);
   char *uid = (char *)GC_MALLOC (25); // last is \0, shall be included
   obj->value = (void *)uid;
 
@@ -480,8 +480,7 @@ static object_t _os_device_configure (vm_t vm, object_t obj)
     }
 
   // os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
-  ret->value = (void *)0;
-  return ret;
+  return &GLOBAL_REF (none_const);
 }
 
 // dev->value is the string/symbol refer to of a super_device
@@ -492,14 +491,14 @@ static object_t _os_gpio_set (vm_t vm, object_t dev, object_t v)
 
   super_device *p = translate_supper_dev_from_symbol (dev);
   gpio_pin_set (p->dev, p->gpio_pin, (int)v->value);
-  return GLOBAL_REF (non_const);
+  return &GLOBAL_REF (none_const);
 }
 
 static object_t _os_gpio_toggle (vm_t vm, object_t obj)
 {
   super_device *p = translate_supper_dev_from_symbol (obj);
   gpio_pin_toggle (p->dev, p->gpio_pin);
-  return GLOBAL_REF (non_const);
+  return &GLOBAL_REF (none_const);
 }
 
 /* LAMBDACHIP_ZEPHYR */
