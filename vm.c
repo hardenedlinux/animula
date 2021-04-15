@@ -325,6 +325,12 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (*fn (vm));
         break;
       }
+    /* case read_char: */
+    /*   { */
+    /*     func_0_args_t fn = (func_0_args_t)prim->fn; */
+    /*     PUSH_OBJ (*fn (vm)); */
+    /*     break; */
+    /*   } */
     default:
       os_printk ("Invalid prim number: %d\n", pn);
     }
@@ -886,6 +892,15 @@ static void interp_special (vm_t vm, bytecode8_t bc)
               make_symbol (str_buf, &sym);
               sym.value = (void *)offset;
               PUSH_OBJ (sym);
+              break;
+            }
+          case CHAR:
+            {
+              Object obj
+                = {.attr = {.type = character, .gc = 0}, .value = NULL};
+              u8_t ch = NEXT_DATA ();
+              obj.value = (void *)ch;
+              PUSH_OBJ (obj);
               break;
             }
           }

@@ -58,6 +58,7 @@ static void free_object (object_t obj)
   switch (obj->attr.type)
     {
     case imm_int:
+    case character:
       {
         // simple object, we don't need to free its value
         break;

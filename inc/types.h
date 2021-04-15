@@ -78,6 +78,7 @@ typedef enum obj_type
   complex_inexact = 17,
   mut_string = 18,
   mut_list = 19,
+  character = 20,
 
   boolean = 61,
   null_obj = 62,

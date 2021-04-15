@@ -126,6 +126,11 @@ void object_printer (const object_t obj)
         os_printk ("%s", str_buf);
         break;
       }
+    case character:
+      {
+        os_printk ("#\\%c", (char)obj->value);
+        break;
+      }
     case primitive:
       {
         u16_t pn = (u16_t)obj->value;

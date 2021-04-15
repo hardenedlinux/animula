@@ -102,8 +102,14 @@ object_t _cons (vm_t vm, object_t a, object_t b)
     default:
       {
         pair_t p = NEW (pair);
-        p->car = a;
-        p->cdr = b;
+        object_t new_a = OBJ_IS_ON_STACK (a) ? NEW_OBJ (0) : a;
+        object_t new_b = OBJ_IS_ON_STACK (b) ? NEW_OBJ (0) : b;
+        if (new_a != a)
+          *new_a = *a;
+        if (new_b != b)
+          *new_b = *b;
+        p->car = new_a;
+        p->cdr = new_b;
         obj->attr.type = pair;
         obj->value = (void *)p;
       }
