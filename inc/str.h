@@ -22,5 +22,6 @@
 #include "types.h"
 
 bool str_eq (object_t s1, object_t s2);
+object_t _read_char (vm_t vm, object_t ret);
 
 #endif // End of __LAMBDACHIP_STRING_H__

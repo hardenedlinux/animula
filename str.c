@@ -22,4 +22,10 @@ bool str_eq (object_t s1, object_t s2)
   return (0 == os_strncmp (s1->value, s2->value, MAX_STR_LEN));
 }
 
-// object_t _read_char () {}
+object_t _read_char (vm_t vm, object_t ret)
+{
+  char ch = os_getchar ();
+  ret->attr.type = character;
+  ret->value = (void *)ch;
+  return ret;
+}

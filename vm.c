@@ -325,12 +325,13 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (*fn (vm));
         break;
       }
-    /* case read_char: */
-    /*   { */
-    /*     func_0_args_t fn = (func_0_args_t)prim->fn; */
-    /*     PUSH_OBJ (*fn (vm)); */
-    /*     break; */
-    /*   } */
+    case read_char:
+      {
+        func_0_args_with_ret_t fn = (func_0_args_with_ret_t)prim->fn;
+        Object ret = {0};
+        PUSH_OBJ (*fn (vm, &ret));
+        break;
+      }
     default:
       os_printk ("Invalid prim number: %d\n", pn);
     }

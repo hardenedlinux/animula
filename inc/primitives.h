@@ -70,6 +70,7 @@ typedef enum prim_num
   cons = 31,
   car = 32,
   cdr = 33,
+  read_char = 34,
 
   do_not_forget_modify_PRIM_MAX = 63
 } pn_t;
