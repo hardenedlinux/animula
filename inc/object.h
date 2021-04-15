@@ -129,12 +129,13 @@ static inline bool is_unspecified (object_t obj)
     }                                                                       \
   while (0)
 
+#define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
+
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
 obj_list_t new_obj_list (void);
 list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);
 object_t lambdachip_new_object (u8_t type);
-object_t create_new_string (const char *str);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__
