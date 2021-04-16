@@ -156,7 +156,7 @@ static void call_prim (vm_t vm, pn_t pn)
         Object k = GEN_PRIM (ret);
         list_t new_list = NEW (list);
         Object new_list_obj
-          = {.attr = {.type = list, .gc = 0}, .value = (void *)new_list};
+          = {.attr = {.type = list, .gc = 1}, .value = (void *)new_list};
         obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_list_obj);
 
         PUSH_REG (vm->pc);
