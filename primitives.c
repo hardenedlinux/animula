@@ -307,7 +307,7 @@ static object_t _os_get_board_id (vm_t vm, object_t ret)
   static uint32_t g_board_uid[3] = {0, 0, 0};
   ret->attr.type = mut_string;
   char *uid = (char *)GC_MALLOC (BOARD_ID_LEN); // last is \0, shall be included
-  obj->value = (void *)uid;
+  ret->value = (void *)uid;
 
   /* copy 96 bit UID as 3 uint32_t integer
    * then convert to 24 bytes of string
