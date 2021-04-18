@@ -195,6 +195,11 @@ void object_printer (const object_t obj)
         os_printk ("()");
         break;
       }
+    case none:
+      {
+        os_printk ("<unspecified>");
+        break;
+      }
     default:
       {
         os_printk ("object_print: Invalid object type %d\n", obj->attr.type);

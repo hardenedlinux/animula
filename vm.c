@@ -705,9 +705,12 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
         u8_t index = bc.bc2;
         Object var = POP_OBJ ();
 #ifdef LAMBDACHIP_DEBUG
-        os_printk ("(global-assign %d ", index);
-        object_printer (&var);
-        os_printk (")\n");
+        if (GLOBAL_REF (vm_verbose))
+          {
+            os_printk ("(global-assign %d ", index);
+            object_printer (&var);
+            os_printk (")\n");
+          }
 #endif
         GLOBAL_ASSIGN (index, var);
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
@@ -760,7 +763,6 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
         u32_t offset = bc.data;
         VM_DEBUG ("(fjump 0x%x)\n", offset);
         Object obj = POP_OBJ ();
-
         if (is_false (&obj))
           {
             VM_DEBUG ("False! Jump!\n");
@@ -1038,19 +1040,28 @@ void vm_init_globals (vm_t vm, lef_t lef)
   vm->state = VM_INIT_GLOBALS;
 
   vm_run (vm);
+  size_t size = vm->sp;
+  vm->globals = (object_t)os_malloc (size);
+  os_memcpy (vm->globals, vm->stack, size);
 
   /* #ifdef LAMBDACHIP_DEBUG */
   /*   os_printk ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp); */
   /*   for (u32_t i = 0; i < vm->sp / sizeof (Object); i++) */
   /*     { */
-  /*       object_printer (&GLOBAL (i)); */
-  /*       os_printk ("\n"); */
+  /*       object_t o = &GLOBAL (i); */
+  /*       os_printk ("global %d: %p\n", i, o); */
+  /*       if (o == NULL) */
+  /*         { */
+  /*           // placeholder */
+  /*           os_printk ("placeholder 0\n"); */
+  /*         } */
+  /*       else */
+  /*         { */
+  /*           object_printer (o); */
+  /*           os_printk ("\n"); */
+  /*         } */
   /*     } */
   /* #endif */
-
-  size_t size = vm->sp;
-  vm->globals = (object_t)os_malloc (size);
-  os_memcpy (vm->globals, vm->stack, size);
 
   os_free (vm->code); // free temporary global code seg
   vm->code = code;    // restore code seg

@@ -175,8 +175,12 @@ static inline void vm_stack_check (vm_t vm)
     ret;                                                                   \
   })
 
-#define GLOBAL(index)             (vm->globals[(index)])
-#define GLOBAL_ASSIGN(index, var) (vm->globals[(index)] = (var))
+#define GLOBAL(index) (vm->globals[(index)])
+#define GLOBAL_ASSIGN(index, var) \
+  ({                              \
+    (var).attr.gc = 3;            \
+    vm->globals[(index)] = (var); \
+  })
 
 #define PUSH_FROM_SS(bc)             \
   do                                 \
