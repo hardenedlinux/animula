@@ -80,7 +80,7 @@ static void call_prim (vm_t vm, pn_t pn)
         imm_int_t nn = (imm_int_t)n.value / g;
         uintptr_t v = (abs (nn) << 16) | abs (dd);
         int t = (dd ^ nn) < 0 ? rational_neg : rational_pos;
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = (void *)v};
+        Object ret = {.attr = {.type = t, .gc = 0}, .value = (void *)v};
         PUSH_OBJ (ret);
         break;
       }
