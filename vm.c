@@ -80,7 +80,7 @@ static void call_prim (vm_t vm, pn_t pn)
         imm_int_t nn = (imm_int_t)n.value / g;
         uintptr_t v = (abs (nn) << 16) | abs (dd);
         int t = (dd ^ nn) < 0 ? rational_neg : rational_pos;
-        Object ret = {.attr = {.type = t, .gc = 0}, .value = (void *)v};
+        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = (void *)v};
         PUSH_OBJ (ret);
         break;
       }
@@ -255,7 +255,7 @@ static void call_prim (vm_t vm, pn_t pn)
         VM_DEBUG ("(call apply)\n");
         Object args = POP_OBJ ();
         Object proc = POP_OBJ ();
-        Object ret = {0};
+        Object ret = CREATE_RET_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&args);
         obj_list_t node = NULL;
 
@@ -304,7 +304,7 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o3 = POP_OBJ ();
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        Object ret = CREATE_RET_OBJ ();
         ret = *(fn (vm, &ret, &o1, &o2, &o3, &o4));
         PUSH_OBJ (ret);
         break;
@@ -315,7 +315,7 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o3 = POP_OBJ ();
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        Object ret = CREATE_RET_OBJ ();
         ret = *(fn (vm, &ret, &o1, &o2, &o3));
         PUSH_OBJ (ret);
         break;
