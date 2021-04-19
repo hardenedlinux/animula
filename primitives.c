@@ -298,6 +298,7 @@ extern GLOBAL_DEF (super_device, super_dev_gpio_pb15);
 extern GLOBAL_DEF (super_device, super_dev_gpio_pb14);
 extern GLOBAL_DEF (super_device, super_dev_gpio_pb13);
 extern GLOBAL_DEF (super_device, super_dev_gpio_pb12);
+extern GLOBAL_DEF (super_device, super_dev_gpio_ble_disable);
 
 extern GLOBAL_DEF (super_device, super_dev_i2c2);
 extern GLOBAL_DEF (super_device, super_dev_i2c3);
@@ -329,6 +330,7 @@ extern const struct device *GLOBAL_REF (dev_led3);
 
 static super_device *translate_supper_dev_from_symbol (object_t sym)
 {
+  VALIDATE (sym, symbol);
   super_device *ret = NULL;
   static const char char_dev_led0[] = "dev_led0";
   static const char char_dev_led1[] = "dev_led1";
@@ -351,6 +353,7 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
   static const char char_gpio_pb14[] = "dev_gpio_pb14";
   static const char char_gpio_pb13[] = "dev_gpio_pb13";
   static const char char_gpio_pb12[] = "dev_gpio_pb12";
+  static const char char_gpio_ble_disable[] = "dev_gpio_ble_disable";
   static const char char_i2c2[] = "dev_i2c2";
   static const char char_i2c3[] = "dev_i2c3";
 
@@ -440,6 +443,10 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
     {
       ret = &(GLOBAL_REF (super_dev_gpio_pb12));
     }
+  else if (0 == os_strncmp (str_buf, char_gpio_ble_disable, len))
+    {
+      ret = &(GLOBAL_REF (super_dev_gpio_ble_disable));
+    }
   else if (0 == os_strncmp (str_buf, char_i2c2, len))
     {
       ret = &(GLOBAL_REF (super_dev_i2c2));
@@ -450,7 +457,7 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
     }
   else
     {
-      os_printk ("BUG: Invalid dev_led name %s!\n", str_buf);
+      os_printk ("BUG: Invalid symbol name %s!\n", str_buf);
       panic ("");
     }
 
@@ -465,6 +472,7 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
   // const char *str_buf = GET_SYBOL ((u32_t)obj->value);
   super_device *p = translate_supper_dev_from_symbol (obj);
 
+  // FIXME: flags for different pin shall be different
   if (p->type == SUPERDEVICE_TYPE_GPIO_PIN)
     {
       gpio_pin_configure (p->dev, p->gpio_pin, GPIO_OUTPUT_ACTIVE | LED0_FLAGS);
