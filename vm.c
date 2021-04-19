@@ -297,6 +297,29 @@ static void call_prim (vm_t vm, pn_t pn)
           }
         break;
       }
+    case prim_i2c_write_byte:
+      {
+        func_4_args_with_ret_t fn = (func_4_args_with_ret_t)prim->fn;
+        Object o4 = POP_OBJ ();
+        Object o3 = POP_OBJ ();
+        Object o2 = POP_OBJ ();
+        Object o1 = POP_OBJ ();
+        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        ret = *(fn (vm, &ret, &o1, &o2, &o3, &o4));
+        PUSH_OBJ (ret);
+        break;
+      }
+    case prim_i2c_read_byte:
+      {
+        func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
+        Object o3 = POP_OBJ ();
+        Object o2 = POP_OBJ ();
+        Object o1 = POP_OBJ ();
+        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        ret = *(fn (vm, &ret, &o1, &o2, &o3));
+        PUSH_OBJ (ret);
+        break;
+      }
     case list_append:
     case list_ref:
     case cons:

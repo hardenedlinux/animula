@@ -497,12 +497,52 @@ static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
   return ret;
 }
 
-static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
+static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t dev)
 {
-  super_device *p = translate_supper_dev_from_symbol (obj);
+  VALIDATE (dev, symbol);
+  super_device *p = translate_supper_dev_from_symbol (dev);
   gpio_pin_toggle (p->dev, p->gpio_pin);
   ret = &GLOBAL_REF (none_const);
   return ret;
+}
+
+static object_t _os_i2c_read_byte (vm_t vm, object_t ret, object_t dev,
+                                   object_t dev_addr, object_t reg_addr)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (dev_addr, imm_int);
+  VALIDATE (reg_addr, imm_int);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+  uint8_t buf_read[2] = {0, 0};
+  int status = i2c_reg_read_byte (p->dev, (imm_int_t)dev_addr->value,
+                                  (imm_int_t)reg_addr->value, buf_read);
+  if (0 == status)
+    {
+      ret->value = (void *)buf_read[0];
+    }
+  else
+    {
+      ret = &GLOBAL_REF (none_const);
+    }
+  return ret;
+}
+
+static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
+                                    object_t dev_addr, object_t reg_addr,
+                                    object_t value)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (dev_addr, imm_int);
+  VALIDATE (reg_addr, imm_int);
+  VALIDATE (value, imm_int);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+  uint8_t tx_buf[2] = {(imm_int_t)reg_addr->value, (imm_int_t)value->value};
+  int status
+    = i2c_reg_write_byte (p->dev, (imm_int_t)dev_addr->value,
+                          (imm_int_t)reg_addr->value, (imm_int_t)value->value);
+  return &GLOBAL_REF (none_const);
 }
 
 /* LAMBDACHIP_ZEPHYR */
@@ -521,12 +561,9 @@ static object_t _os_get_board_id (vm_t vm)
 static object_t _os_device_configure (vm_t vm, object_t ret, object_t dev)
 {
   VALIDATE (dev, symbol);
-
   const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
   os_printk ("object_t _os_device_configure (%s)\n", str_buf);
-
-  ret = &GLOBAL_REF (none_const);
-  return ret;
+  return &GLOBAL_REF (none_const);
 }
 
 static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
@@ -548,9 +585,39 @@ static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
   const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
   os_printk ("object_t _os_gpio_toggle (%s)\n", str_buf);
 
+  return &GLOBAL_REF (none_const);
+}
+
+static object_t _os_i2c_read_byte (vm_t vm, object_t ret, object_t dev,
+                                   object_t dev_addr, object_t reg_addr)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (dev_addr, imm_int);
+  VALIDATE (reg_addr, imm_int);
+  const char *dev_str = GET_SYMBOL ((u32_t)dev->value);
+  os_printk ("i2c_reg_read_byte (%s, 0x%02X, 0x%02X)\n", dev_str,
+             (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value);
   ret = &GLOBAL_REF (none_const);
   return ret;
 }
+
+static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
+                                    object_t dev_addr, object_t reg_addr,
+                                    object_t value)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (dev_addr, imm_int);
+  VALIDATE (reg_addr, imm_int);
+  VALIDATE (value, imm_int);
+  const char *dev_name = GET_SYMBOL ((u32_t)dev->value);
+  os_printk ("i2c_reg_write_byte (%s, 0x%02X, 0x%02X, 0x%02X)\n", dev_name,
+             (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value,
+             (imm_int_t)value->value);
+  return &GLOBAL_REF (none_const);
+}
+
 #endif /* LAMBDACHIP_LINUX */
 
 void primitives_init (void)
@@ -598,6 +665,9 @@ void primitives_init (void)
   def_prim (35, "read_str", 1, (void *)_read_str);
   def_prim (36, "read_line", 0, (void *)_read_line);
   def_prim (37, "list_to_string", 1, (void *)_list_to_string);
+  def_prim (38, "i2c_read_byte", 3, (void *)_os_i2c_read_byte);
+  def_prim (39, "i2c_write_byte", 4, (void *)_os_i2c_write_byte);
+
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
   // #endif /* LAMBDACHIP_ZEPHYR */
