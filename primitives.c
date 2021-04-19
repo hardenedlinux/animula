@@ -531,7 +531,7 @@ static object_t _os_i2c_read_byte (vm_t vm, object_t ret, object_t dev,
     }
   else
     {
-      ret = &GLOBAL_REF (none_const);
+      ret = &GLOBAL_REF (false_const);
     }
   return ret;
 }
@@ -606,7 +606,7 @@ static object_t _os_i2c_read_byte (vm_t vm, object_t ret, object_t dev,
   const char *dev_str = GET_SYMBOL ((u32_t)dev->value);
   os_printk ("i2c_reg_read_byte (%s, 0x%02X, 0x%02X)\n", dev_str,
              (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value);
-  ret = &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (false_const);
   return ret;
 }
 
