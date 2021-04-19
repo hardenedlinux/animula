@@ -1363,7 +1363,7 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   os_printk ("i2c_reg_write_byte (%s, 0x%02X, 0x%02X, 0x%02X)\n", dev_name,
              (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value,
              (imm_int_t)value->value);
-  ret = &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (false_const);
   return ret;
 }
 
