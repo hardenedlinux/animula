@@ -550,7 +550,11 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   int status
     = i2c_reg_write_byte (p->dev, (imm_int_t)dev_addr->value,
                           (imm_int_t)reg_addr->value, (imm_int_t)value->value);
-  return &GLOBAL_REF (none_const);
+  if (status != 0)
+    ret = &GLOBAL_REF (false_const);
+  else
+    ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
 /* LAMBDACHIP_ZEPHYR */
@@ -571,7 +575,8 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t dev)
   VALIDATE (dev, symbol);
   const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
   os_printk ("object_t _os_device_configure (%s)\n", str_buf);
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
 static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
@@ -592,8 +597,8 @@ static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
 
   const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
   os_printk ("object_t _os_gpio_toggle (%s)\n", str_buf);
-
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
 static object_t _os_i2c_read_byte (vm_t vm, object_t ret, object_t dev,
@@ -623,7 +628,8 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   os_printk ("i2c_reg_write_byte (%s, 0x%02X, 0x%02X, 0x%02X)\n", dev_name,
              (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value,
              (imm_int_t)value->value);
-  return &GLOBAL_REF (none_const);
+  ret = &GLOBAL_REF (none_const);
+  return ret;
 }
 
 #endif /* LAMBDACHIP_LINUX */
