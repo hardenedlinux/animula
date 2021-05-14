@@ -643,6 +643,9 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         u8_t offset = ((bc.data << 8) | offset_0);
         VM_DEBUG ("(assign-local %x)\n", offset);
         object_t obj = (object_t)LOCAL (offset);
+        /* printf ("who: "); */
+        /* object_printer (obj); */
+        /* printf ("\nvm->local: %d\n", vm->local); */
         *obj = POP_OBJ ();
         break;
       }
@@ -849,7 +852,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         reg_t entry = ((bc.bc3 << 8) | bc.bc4);
         VM_DEBUG ("(closure-on-heap %d %d 0x%x)\n", arity, size, entry);
         closure_t closure = create_closure (vm, arity, size, entry);
-        Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
+        Object obj = {.attr = {.type = closure_on_heap, .gc = 1},
                       .value = (closure_t)closure};
         PUSH_OBJ (obj);
         break;
@@ -1195,13 +1198,14 @@ void vm_run (vm_t vm)
       /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, */
       /*            vm->sp, vm->fp); */
       /* os_printk ("----------LOCAL------------\n"); */
-      /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
+      /* u32_t bound = (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", */
-      /*                vm->local + i * 8, obj->attr.type,
-       * (imm_int_t)obj->value); */
+      /*     os_printk ("obj: local = %d, fp+FPS=%d, type = %d, value = %d\n",
+       */
+      /*                vm->local, vm->fp + FPS + i * 8, obj->attr.type, */
+      /*                (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
       /* getchar (); */
@@ -1234,7 +1238,7 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
        * vm->sp, */
       /*         vm->fp); */
       /* os_printk ("----------LOCAL------------\n"); */
-      /* u32_t bound = (vm->sp - (vm->fp ? vm->fp + FPS : 0)); */
+      /* u32_t bound = (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */

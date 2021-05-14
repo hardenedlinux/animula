@@ -232,15 +232,19 @@ typedef union ieee754_float
 #  if (4 == PC_SIZE)
 #    define PUSH_REG    PUSH_U32
 #    define POP_REG     POP_U32
+#    define TOP_REG     TOP_U32
 #    define NORMAL_JUMP 0xFFFFFFFF
 #    define REG_BIT     32
+#    define NO_PREV_FP  0xFFFFFFFF
 typedef u32_t reg_t;
 #  endif
 #  if (2 == PC_SIZE)
 #    define PUSH_REG    PUSH_U16
 #    define POP_REG     POP_U16
+#    define TOP_REG     TOP_U16
 #    define NORMAL_JUMP 0xFFFF
 #    define REG_BIT     16
+#    define NO_PREV_FP  0xFFFF
 typedef u16_t reg_t;
 #  endif
 #endif

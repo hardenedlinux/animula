@@ -137,7 +137,7 @@ static inline void vm_stack_check (vm_t vm)
   })
 
 // LOCAL_FIX is only for debug since it doesn't print stored REG.
-#define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->local))[offset])
+#define LOCAL_FIX(offset) (&((object_t) (vm->stack + vm->fp + FPS))[offset])
 
 /* NOTE:
  * Because vm->local is activate iff the actual calling occurs, so (free 0 n)
@@ -150,7 +150,7 @@ static inline void vm_stack_check (vm_t vm)
     reg_t fp = vm->fp;                                                     \
     object_t ret = NULL;                                                   \
     closure_t closure = NULL;                                              \
-    for (int i = 0; i <= up; i++)                                          \
+    for (int i = 0; i < up; i++)                                           \
       {                                                                    \
         fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
       }                                                                    \
@@ -170,7 +170,8 @@ static inline void vm_stack_check (vm_t vm)
       }                                                                    \
     else                                                                   \
       {                                                                    \
-        ret = (&((object_t) (vm->stack + fp + FPS))[offset]);              \
+        reg_t local = (NO_PREV_FP == fp ? 0 : fp + FPS);                   \
+        ret = (&((object_t) (vm->stack + local))[offset]);                 \
       }                                                                    \
     ret;                                                                   \
   })
@@ -258,34 +259,35 @@ static inline void vm_stack_check (vm_t vm)
 #define NORMAL_CALL   2
 #define PROC_ARITY(b) (((b)&0xFC) >> 2)
 #define PROC_MODE(b)  ((b)&0x3)
-#define SAVE_ENV()                             \
-  do                                           \
-    {                                          \
-      u8_t arity = PROC_ARITY (bc.bc2);        \
-      u8_t mode = PROC_MODE (bc.bc2);          \
-      switch (mode)                            \
-        {                                      \
-        case TAIL_CALL:                        \
-          {                                    \
-            break;                             \
-          }                                    \
-        case TAIL_REC:                         \
-          {                                    \
-            vm->shadow = arity;                \
-            vm->sp += sizeof (Object) * arity; \
-            vm->tail_rec = true;               \
-            break;                             \
-          }                                    \
-        default:                               \
-          {                                    \
-            PUSH_REG (NORMAL_JUMP);            \
-            PUSH_REG (vm->fp);                 \
-            vm->fp = vm->sp - FPS;             \
-            break;                             \
-          }                                    \
-        }                                      \
-      vm_stack_check (vm);                     \
-    }                                          \
+#define SAVE_ENV()                                                   \
+  do                                                                 \
+    {                                                                \
+      u8_t arity = PROC_ARITY (bc.bc2);                              \
+      u8_t mode = PROC_MODE (bc.bc2);                                \
+      switch (mode)                                                  \
+        {                                                            \
+        case TAIL_CALL:                                              \
+          {                                                          \
+            break;                                                   \
+          }                                                          \
+        case TAIL_REC:                                               \
+          {                                                          \
+            vm->sp = vm->local + arity * sizeof (Object);            \
+            vm->shadow = arity;                                      \
+            vm->tail_rec = true;                                     \
+            break;                                                   \
+          }                                                          \
+        default:                                                     \
+          {                                                          \
+            reg_t sp = vm->sp;                                       \
+            PUSH_REG (NORMAL_JUMP);                                  \
+            PUSH_REG (sp ? (vm->fp ? vm->fp : NO_PREV_FP) : vm->fp); \
+            vm->fp = vm->sp - FPS;                                   \
+            break;                                                   \
+          }                                                          \
+        }                                                            \
+      vm_stack_check (vm);                                           \
+    }                                                                \
   while (0)
 
 #define FIX_PC()                                           \
@@ -407,6 +409,7 @@ static inline void save_closure (reg_t fp, closure_t closure)
       Object ret = POP_OBJ ();                              \
       vm->sp = vm->fp + FPS;                                \
       vm->fp = POP_REG ();                                  \
+      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);         \
       vm->pc = POP_REG ();                                  \
       vm->local = vm->fp + FPS;                             \
       PUSH_OBJ (ret);                                       \
@@ -468,8 +471,20 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
    * closure, otherwise we lose the information to reference free vars of
    * the closure.
    */
+  if (IS_SHADOW_FRAME ())
+    {
+      size_t shadow_size = sizeof (Object) * vm->shadow;
+      // Copy shadow frame of closure
+      os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - shadow_size,
+                 shadow_size);
+      /* printf ("vm->local: %d, size: %d, vm->sp: %d\n", vm->local,
+       * shadow_size, */
+      /*         vm->sp); */
+    }
+
   vm->local = vm->sp - arity * sizeof (Object);
   closure->local = vm->local;
+
   if (false == vm->tail_rec)
     {
       save_closure (vm->fp, closure);
