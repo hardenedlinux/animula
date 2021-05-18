@@ -32,5 +32,6 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx);
 object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
                     object_t val);
 object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2);
+object_t _list_length (vm_t vm, object_t ret, object_t l1);
 
 #endif // End of __LAMBDACHIP_LIST_H__

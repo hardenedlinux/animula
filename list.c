@@ -262,3 +262,19 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
 
   return ret;
 }
+
+object_t _list_length (vm_t vm, object_t ret, object_t l1)
+{
+  VALIDATE (l1, list);
+  ret->attr.type = imm_int;
+  list_t lst = (list_t)l1->value;
+  obj_list_head_t *head = LIST_OBJECT_HEAD (l1);
+  obj_list_t n1 = SLIST_FIRST (head);
+  imm_int_t len = 0;
+  SLIST_FOREACH (n1, head, next)
+  {
+    len++;
+  }
+  ret->value = (void *)len;
+  return ret;
+}
