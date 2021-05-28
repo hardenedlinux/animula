@@ -921,9 +921,8 @@ static void interp_special (vm_t vm, bytecode8_t bc)
               Object sym = {.attr = {.type = symbol, .gc = 0}, .value = NULL};
               u16_t offset = vm_get_u16 (vm);
               const char *str_buf = GET_SYMBOL (offset);
-              VM_DEBUG ("(push-symbol-object #{%s}#)\n", str_buf);
+              VM_DEBUG ("(push-symbol-object %s)\n", str_buf);
               make_symbol (str_buf, &sym);
-              sym.value = (void *)offset;
               PUSH_OBJ (sym);
               break;
             }
