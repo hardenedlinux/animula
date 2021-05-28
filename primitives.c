@@ -357,7 +357,7 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
   static const char char_i2c2[] = "dev_i2c2";
   static const char char_i2c3[] = "dev_i2c3";
 
-  const char *str_buf = GET_SYMBOL ((u32_t)sym->value);
+  const char *str_buf = (const char *)sym->value;
   size_t len = os_strnlen (str_buf, MAX_STR_LEN);
   if (0 == os_strncmp (str_buf, char_dev_led0, len))
     {
@@ -584,7 +584,7 @@ static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
   VALIDATE (dev, symbol);
   VALIDATE (v, boolean);
 
-  const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
+  const char *str_buf = (const char *)dev->value;
   os_printk ("object_t _os_gpio_set (%s, %d)\n", str_buf, (imm_int_t)v->value);
 
   ret = &GLOBAL_REF (none_const);
