@@ -918,7 +918,10 @@ static void interp_special (vm_t vm, bytecode8_t bc)
             }
           case SYMBOL:
             {
-              Object sym = {.attr = {.type = symbol, .gc = 0}, .value = NULL};
+              Object sym
+                = {.attr = {.type = symbol,
+                            .gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 0},
+                   .value = NULL};
               u16_t offset = vm_get_u16 (vm);
               const char *str_buf = GET_SYMBOL (offset);
               VM_DEBUG ("(push-symbol-object %s)\n", str_buf);
@@ -929,7 +932,9 @@ static void interp_special (vm_t vm, bytecode8_t bc)
           case CHAR:
             {
               Object obj
-                = {.attr = {.type = character, .gc = 0}, .value = NULL};
+                = {.attr = {.type = character,
+                            .gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 0},
+                   .value = NULL};
               u8_t ch = NEXT_DATA ();
               obj.value = (void *)ch;
               PUSH_OBJ (obj);
