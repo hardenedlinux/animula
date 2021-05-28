@@ -299,7 +299,8 @@ static void call_prim (vm_t vm, pn_t pn)
           }
         break;
       }
-    case prim_i2c_write_byte:
+    case prim_i2c_write_byte: // 4 parameters
+    case prim_spi_transceive:
       {
         func_4_args_with_ret_t fn = (func_4_args_with_ret_t)prim->fn;
         Object o4 = POP_OBJ ();
@@ -311,7 +312,9 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-    case prim_i2c_read_byte:
+    case prim_i2c_read_list:
+    case prim_i2c_write_list:
+    case prim_i2c_read_byte: // 3 parameters
       {
         func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
         Object o3 = POP_OBJ ();

@@ -1292,6 +1292,122 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
+                                   object_t i2c_addr, object_t length)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  VALIDATE (length, imm_int);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+  // uint8_t buf_read[2] = {0, 0};
+  uint8_t *read_buffer = (uint8_t *)os_malloc ((imm_int_t) (length->value));
+  if (!read_buffer)
+    {
+      // TODO:
+      ret->value = (void *)-1;
+      os_free (read_buffer);
+      return ret;
+    }
+
+  // i2c_write_read(const struct device *dev, uint16_t addr, const void
+  // *write_buf, size_t num_write, void *read_buf, size_t num_read)
+  // int status = i2c_write_read(p->dev, (imm_int_t)i2c_addr->value,
+  // read_buffer, length, (void*)NULL, 0);
+  int status = i2c_write_read (p->dev, (imm_int_t)i2c_addr->value, (void *)NULL,
+                               0, read_buffer, length);
+
+  obj_list_head_t *head = NEW_OBJ (0); // = LIST_OBJECT_HEAD (l1);
+  // struct ObjectListHead head = NEW_OBJ (0);
+
+  obj_list_t iter = SLIST_FIRST (head);
+  for (imm_int_t i = 0; i < (imm_int_t)length->value; i++)
+    {
+      // TODO: check if gc==1
+      object_t element = NEW_OBJ (0);
+      element->attr.gc = 1;
+      element->attr.type = imm_int;
+      element->value = (void *)read_buffer[i];
+
+      iter->obj = element;
+      iter = SLIST_NEXT (iter, next);
+    }
+
+  SLIST_FOREACH (iter, head, next)
+  {
+    printf ("a= %d, b = %d\n", (imm_int_t)iter->obj->value,
+            (imm_int_t)iter->obj->value);
+  }
+
+  if (0 == status)
+    {
+      ret->value = (void *)read_buffer[0];
+    }
+  else
+    {
+      ret = &GLOBAL_REF (false_const);
+    }
+  os_free (read_buffer);
+  return ret;
+}
+
+static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
+                                    object_t i2c_addr, object_t lst)
+{
+  object_printer (dev);
+  os_printk ("\n");
+  object_printer (i2c_addr);
+  os_printk ("\n");
+  object_printer (lst);
+  os_printk ("\n");
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  // VALIDATE (reg_addr, imm_int);
+  VALIDATE (lst, list);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+
+  Object len;
+  object_t len_p = &len;
+  // side effect
+  len_p = _list_length (vm, len_p, lst);
+  os_printk ("len_p = %d", (imm_int_t) (len_p->value));
+  imm_int_t len_list;
+
+  // uint8_t* tx_buf = (uint8_t*)os_malloc()
+
+  // uint8_t tx_buf[2] = {(imm_int_t)reg_addr->value, (imm_int_t)value->value};
+  // int status
+  //   = i2c_reg_write_byte (p->dev, (imm_int_t)dev_addr->value,
+  //                         (imm_int_t)reg_addr->value,
+  //                         (imm_int_t)value->value);
+  // if (status != 0)
+  //   ret = &GLOBAL_REF (false_const);
+  // else
+  //   ret = &GLOBAL_REF (none_const);
+  return ret;
+}
+
+static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
+                                    object_t spi_config, object_t send_buffer,
+                                    object_t receive_buffer)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (spi_config, list);
+  VALIDATE (send_buffer, list);
+  VALIDATE (receive_buffer, list);
+  // super_device *p = translate_supper_dev_from_symbol (dev);
+
+  object_printer (spi_config);
+  int status = 0;
+  if (status != 0)
+    ret = &GLOBAL_REF (false_const);
+  else
+    ret = &GLOBAL_REF (none_const);
+  return ret;
+}
+
 /* LAMBDACHIP_ZEPHYR */
 #elif defined LAMBDACHIP_LINUX
 static object_t _os_get_board_id (vm_t vm)
@@ -1363,6 +1479,98 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+// TODO:
+// FIXME: LambdaChip Linux _os_spi_transceive
+static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
+                                    object_t spi_config, object_t send_buffer,
+                                    object_t receive_buffer)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (spi_config, list);
+  VALIDATE (send_buffer, list);
+  VALIDATE (receive_buffer, list);
+
+  list_t send_buffer_raw = (list_t)send_buffer->value;
+  list_t receive_buffer_raw = (list_t)receive_buffer->value;
+  list_t spi_config_raw = (list_t)spi_config->value;
+
+  // super_device *p = translate_supper_dev_from_symbol (dev);
+
+  Object len; //  = CREATE_RET_OBJ ();
+  object_t len_ptr = &len;
+  len_ptr = _list_length (vm, len_ptr, send_buffer);
+
+  object_printer (spi_config);
+  object_printer (send_buffer);
+  object_printer (receive_buffer);
+  os_printk ("len_ptr = ");
+  object_printer (len_ptr);
+  os_printk ("\n");
+
+  // typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
+  // obj_list_head_t head = send_buffer_raw->list;
+  obj_list_head_t *send_buffer_head = LIST_OBJECT_HEAD (send_buffer);
+  obj_list_t send_buffer_node = SLIST_FIRST (send_buffer_head);
+
+  u8_t *send_buffer_array = (u8_t *)os_malloc ((imm_int_t) (len_ptr->value));
+  if (!send_buffer_array)
+    {
+      ret = &GLOBAL_REF (false_const);
+      return ret;
+    }
+
+  u32_t idx = 0;
+  SLIST_FOREACH (send_buffer_node, send_buffer_head, next)
+  {
+    // VALIDATE (send_buffer_node->obj, imm_int);
+    imm_int_t v = (uint8_t)send_buffer_node->obj;
+    if (!(v < 256 && v >= 0))
+      {
+        ret = &GLOBAL_REF (false_const);
+        return ret;
+      }
+    send_buffer_array[idx] = (u8_t)v;
+    idx++;
+  }
+
+  int status = 0;
+  if (status != 0)
+    ret = &GLOBAL_REF (false_const);
+  else
+    ret = &GLOBAL_REF (none_const);
+  return ret;
+}
+
+static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
+                                   object_t i2c_addr, object_t length)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  VALIDATE (length, imm_int);
+  os_printk ("i2c_reg_read_list (%s, 0x%02X, %d)\n", (const char *)dev->value,
+             (imm_int_t)i2c_addr->value, (imm_int_t)length->value);
+  ret = &GLOBAL_REF (false_const);
+  return ret;
+}
+
+static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
+                                    object_t i2c_addr, object_t lst)
+{
+  VALIDATE (ret, imm_int);
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  // VALIDATE (reg_addr, imm_int);
+  VALIDATE (lst, list);
+  os_printk ("i2c_reg_write_list (%s, 0x%02X, ", (const char *)dev->value,
+             (imm_int_t)i2c_addr->value);
+  object_printer (lst);
+  os_printk (")\n");
+  ret = &GLOBAL_REF (false_const);
+  return ret;
+}
+
 #endif /* LAMBDACHIP_LINUX */
 
 void primitives_init (void)
@@ -1414,6 +1622,9 @@ void primitives_init (void)
   def_prim (39, "i2c_write_byte", 4, (void *)_os_i2c_write_byte);
   def_prim (40, "null?", 1, (void *)prim_is_null);
   def_prim (41, "pair?", 1, (void *)prim_is_pair);
+  def_prim (42, "spi_transceive", 4, (void *)_os_spi_transceive);
+  def_prim (43, "i2c_read_list", 3, (void *)_os_i2c_read_list);
+  def_prim (44, "i2c_write_list", 3, (void *)_os_i2c_write_list);
 
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
