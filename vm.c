@@ -643,9 +643,6 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         u8_t offset = ((bc.data << 8) | offset_0);
         VM_DEBUG ("(assign-local %x)\n", offset);
         object_t obj = (object_t)LOCAL (offset);
-        /* printf ("who: "); */
-        /* object_printer (obj); */
-        /* printf ("\nvm->local: %d\n", vm->local); */
         *obj = POP_OBJ ();
         break;
       }
