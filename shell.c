@@ -134,10 +134,9 @@ static int run_program (int argc, char **argv, vm_t vm)
   lef_t lef = load_lef_from_flash (0);
 
   vm_load_lef (vm, lef);
-  vm_run (vm);
-
   if (lef)
     free_lef (lef);
+  vm_run (vm);
   os_printk ("Free LEF successfully!]\n");
 
   return 0;

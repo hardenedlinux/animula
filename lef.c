@@ -28,7 +28,9 @@ void store_lef (lef_t lef, size_t offset)
 void free_lef (lef_t lef)
 {
   os_free (lef->body);
+  lef->body = NULL;
   os_free (lef);
+  lef = NULL;
 }
 
 lef_t load_lef_from_flash (size_t offset)
