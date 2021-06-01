@@ -17,7 +17,7 @@
 
 #include "symbol.h"
 
-GLOBAL_DEF (symtab_t, symtab) = NULL;
+GLOBAL_DEF (symtab, symbol_table) = {0, NULL};
 
 static RB_HEAD (SymbolInternTable, SymbolNode)
   SymbolInternTableHead = RB_INITIALIZER (&SymbolInternTableHead);
@@ -77,12 +77,27 @@ void create_symbol_table (symtab_t st)
 {
   const char *str_buf = (const char *)st->entry;
 
-  for (u16_t i = 0, start = 0; i < st->cnt; i++)
+  u16_t start = 0;
+  for (u16_t i = 0; i < st->cnt; i++)
     {
       const char *str = str_buf + start;
       // os_printk ("intern: %s\n", str);
       intern (str);
       start += os_strnlen (str, MAX_STR_LEN) + 1; // skip '\0'
+    }
+
+  GLOBAL_SET (symbol_table.cnt, st->cnt);
+
+  uint8_t *p = os_malloc (start);
+  if (p)
+    {
+      // copy symbol_table from lef.symtab to global variable symbol_table
+      GLOBAL_SET (symbol_table.entry, p);
+      os_memcpy (GLOBAL_REF (symbol_table).entry, st->entry, start);
+    }
+  else
+    {
+      panic ("symbol.c:create_symbol_table(): malloc fail\n");
     }
 }
 

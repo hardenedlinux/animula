@@ -1308,8 +1308,7 @@ static object_t _os_get_board_id (vm_t vm)
 static object_t _os_device_configure (vm_t vm, object_t ret, object_t dev)
 {
   VALIDATE (dev, symbol);
-  const char *str_buf = GET_SYMBOL ((u32_t)dev->value);
-  os_printk ("object_t _os_device_configure (%s)\n", str_buf);
+  os_printk ("object_t _os_device_configure (%s)\n", (const char *)dev->value);
   ret = &GLOBAL_REF (none_const);
   return ret;
 }
@@ -1319,8 +1318,8 @@ static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
   VALIDATE (dev, symbol);
   VALIDATE (v, boolean);
 
-  const char *str_buf = (const char *)dev->value;
-  os_printk ("object_t _os_gpio_set (%s, %d)\n", str_buf, (imm_int_t)v->value);
+  os_printk ("object_t _os_gpio_set (%s, %d)\n", (const char *)dev->value,
+             (imm_int_t)v->value);
 
   ret = &GLOBAL_REF (none_const);
   return ret;
@@ -1330,8 +1329,7 @@ static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
 {
   VALIDATE (obj, symbol);
 
-  const char *str_buf = GET_SYMBOL ((u32_t)obj->value);
-  os_printk ("object_t _os_gpio_toggle (%s)\n", str_buf);
+  os_printk ("object_t _os_gpio_toggle (%s)\n", (const char *)obj->value);
   ret = &GLOBAL_REF (none_const);
   return ret;
 }
@@ -1343,8 +1341,7 @@ static object_t _os_i2c_read_byte (vm_t vm, object_t ret, object_t dev,
   VALIDATE (dev, symbol);
   VALIDATE (dev_addr, imm_int);
   VALIDATE (reg_addr, imm_int);
-  const char *dev_str = GET_SYMBOL ((u32_t)dev->value);
-  os_printk ("i2c_reg_read_byte (%s, 0x%02X, 0x%02X)\n", dev_str,
+  os_printk ("i2c_reg_read_byte (%s, 0x%02X, 0x%02X)\n", (char *)dev->value,
              (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value);
   ret = &GLOBAL_REF (false_const);
   return ret;
@@ -1359,10 +1356,9 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   VALIDATE (dev_addr, imm_int);
   VALIDATE (reg_addr, imm_int);
   VALIDATE (value, imm_int);
-  const char *dev_name = GET_SYMBOL ((u32_t)dev->value);
-  os_printk ("i2c_reg_write_byte (%s, 0x%02X, 0x%02X, 0x%02X)\n", dev_name,
-             (imm_int_t)dev_addr->value, (imm_int_t)reg_addr->value,
-             (imm_int_t)value->value);
+  os_printk ("i2c_reg_write_byte (%s, 0x%02X, 0x%02X, 0x%02X)\n",
+             (const char *)dev->value, (imm_int_t)dev_addr->value,
+             (imm_int_t)reg_addr->value, (imm_int_t)value->value);
   ret = &GLOBAL_REF (false_const);
   return ret;
 }

@@ -22,10 +22,10 @@
 #include "rbtree.h"
 #include "types.h"
 
-extern GLOBAL_DEF (symtab_t, symtab);
+extern GLOBAL_DEF (symtab, symbol_table);
 
 #define GET_SYMBOL(offset) \
-  ((const char *)((GLOBAL_REF (symtab))->entry + offset))
+  ((const char *)((GLOBAL_REF (symbol_table)).entry + offset))
 
 typedef struct SymbolInternTable SymbolInternTable;
 typedef struct SymbolNode SymbolNode;

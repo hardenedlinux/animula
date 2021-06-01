@@ -1088,7 +1088,6 @@ void vm_load_lef (vm_t vm, lef_t lef)
   vm->code = (void *)os_malloc (lef->psize);
 
   create_symbol_table (&lef->symtab);
-  GLOBAL_REF (symtab) = &lef->symtab;
   // FIXME: not all mem section is data seg
   os_memcpy (vm->data, LEF_MEM (lef), lef->msize);
 
