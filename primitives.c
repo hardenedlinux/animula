@@ -1300,70 +1300,65 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   VALIDATE (i2c_addr, imm_int);
   VALIDATE (length, imm_int);
   super_device *p = translate_supper_dev_from_symbol (dev);
-  // uint8_t buf_read[2] = {0, 0};
-  uint8_t *read_buffer = (uint8_t *)os_malloc ((imm_int_t) (length->value));
-  if (!read_buffer)
+
+  imm_int_t len_list = (imm_int_t)length->value;
+  uint8_t *rx_buf = (uint8_t *)os_malloc (len_list);
+  if (!rx_buf)
     {
-      // TODO:
-      ret->value = (void *)-1;
-      os_free (read_buffer);
+      ret->attr.type = boolean;
+      ret->value = &GLOBAL_REF (false_const);
+      os_printk ("%s, %s: malloc error\n", __FILE__, __FUNCTION__);
       return ret;
     }
 
-  // i2c_write_read(const struct device *dev, uint16_t addr, const void
-  // *write_buf, size_t num_write, void *read_buf, size_t num_read)
-  // int status = i2c_write_read(p->dev, (imm_int_t)i2c_addr->value,
-  // read_buffer, length, (void*)NULL, 0);
-  int status = i2c_write_read (p->dev, (imm_int_t)i2c_addr->value, (void *)NULL,
-                               0, read_buffer, length);
-
-  obj_list_head_t *head = NEW_OBJ (0); // = LIST_OBJECT_HEAD (l1);
-  // struct ObjectListHead head = NEW_OBJ (0);
-
-  obj_list_t iter = SLIST_FIRST (head);
-  for (imm_int_t i = 0; i < (imm_int_t)length->value; i++)
-    {
-      // TODO: check if gc==1
-      object_t element = NEW_OBJ (0);
-      element->attr.gc = 1;
-      element->attr.type = imm_int;
-      element->value = (void *)read_buffer[i];
-
-      iter->obj = element;
-      iter = SLIST_NEXT (iter, next);
-    }
-
-  SLIST_FOREACH (iter, head, next)
-  {
-    printf ("a= %d, b = %d\n", (imm_int_t)iter->obj->value,
-            (imm_int_t)iter->obj->value);
-  }
-
-  if (0 == status)
-    {
-      ret->value = (void *)read_buffer[0];
-    }
-  else
+  int status = i2c_read (p->dev, rx_buf, len_list, (imm_int_t)i2c_addr->value);
+  if (status != 0)
     {
       ret = &GLOBAL_REF (false_const);
+      free (rx_buf);
+      rx_buf = (void *)NULL;
+      return ret;
     }
-  os_free (read_buffer);
+
+  list_t l = NEW (list);
+  SLIST_INIT (&l->list);
+  ret->attr.type = list;
+  ret->attr.gc = 1;
+  ret->value = (void *)l;
+
+  obj_list_t iter;
+  for (imm_int_t i = 0; i < len_list; i++)
+    {
+      object_t new_obj = NEW_OBJ (0);
+
+      // FIXME: check if pop is needed?
+      // *new_obj = (object_t)POP_OBJ ();
+      obj_list_t bl = NEW_OBJ_LIST_NODE ();
+      bl->obj = new_obj;
+      bl->obj->value = (void *)rx_buf[i];
+      if (i == 0)
+        {
+          SLIST_INSERT_HEAD (&l->list, bl, next);
+          iter = bl;
+        }
+      else
+        {
+          SLIST_INSERT_AFTER (iter, bl, next);
+          iter = bl;
+        }
+    }
+
+  os_free (rx_buf);
+  rx_buf = (void *)NULL;
   return ret;
 }
 
 static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
                                     object_t i2c_addr, object_t lst)
 {
-  object_printer (dev);
-  os_printk ("\n");
-  object_printer (i2c_addr);
-  os_printk ("\n");
-  object_printer (lst);
-  os_printk ("\n");
   VALIDATE (ret, imm_int);
   VALIDATE (dev, symbol);
   VALIDATE (i2c_addr, imm_int);
-  // VALIDATE (reg_addr, imm_int);
   VALIDATE (lst, list);
   super_device *p = translate_supper_dev_from_symbol (dev);
 
@@ -1371,20 +1366,37 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
   object_t len_p = &len;
   // side effect
   len_p = _list_length (vm, len_p, lst);
-  os_printk ("len_p = %d", (imm_int_t) (len_p->value));
-  imm_int_t len_list;
+  imm_int_t len_list = (imm_int_t)len_p->value;
 
-  // uint8_t* tx_buf = (uint8_t*)os_malloc()
+  uint8_t *tx_buf = (uint8_t *)os_malloc (len_list);
+  if (!tx_buf)
+    {
+      ret->attr.type = boolean;
+      ret->value = &GLOBAL_REF (false_const);
+      // os_printk("%s, _os_i2c_write_list(): malloc error\n");
+      os_printk ("%s, %s: malloc error\n", __FILE__, __FUNCTION__);
+      panic ("");
+      return ret;
+    }
 
-  // uint8_t tx_buf[2] = {(imm_int_t)reg_addr->value, (imm_int_t)value->value};
-  // int status
-  //   = i2c_reg_write_byte (p->dev, (imm_int_t)dev_addr->value,
-  //                         (imm_int_t)reg_addr->value,
-  //                         (imm_int_t)value->value);
-  // if (status != 0)
-  //   ret = &GLOBAL_REF (false_const);
-  // else
-  //   ret = &GLOBAL_REF (none_const);
+  list_t obj_lst = (list_t) (lst->value);
+  obj_list_head_t head = obj_lst->list;
+  obj_list_t iter = {0};
+  imm_int_t index = 0;
+  SLIST_FOREACH (iter, &head, next)
+  {
+    tx_buf[index] = (imm_int_t)iter->obj->value;
+    index++;
+  }
+
+  int status = i2c_write (p->dev, tx_buf, len_list, (imm_int_t)i2c_addr->value);
+
+  os_free (tx_buf);
+  tx_buf = (void *)NULL;
+  if (status != 0)
+    ret = &GLOBAL_REF (false_const);
+  else
+    ret = &GLOBAL_REF (none_const);
   return ret;
 }
 
