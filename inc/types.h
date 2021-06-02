@@ -420,7 +420,7 @@ typedef struct LambdaVM
   u32_t fp; // last frame pointer, move when env was created
   /* NOTE:
    * The prelude would pre-execute before the actual call, so the local frame
-   * was hidden by prelude, that's why we need a `local' to record the acutal
+   * was hidden by prelude, that's why we need a `local' to record the actual
    * frame.
    */
   u32_t local; // local frame
