@@ -1069,131 +1069,234 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
   static const char char_dev_led1[] = "dev_led1";
   static const char char_dev_led2[] = "dev_led2";
   static const char char_dev_led3[] = "dev_led3";
-  static const char char_gpio_pa9[] = "dev_gpio_pa9";
-  static const char char_gpio_pa10[] = "dev_gpio_pa10";
-  static const char char_gpio_pb4[] = "dev_gpio_pb4";
-  static const char char_gpio_pa8[] = "dev_gpio_pa8";
-  static const char char_gpio_pb5[] = "dev_gpio_pb5";
-  static const char char_gpio_pb6[] = "dev_gpio_pb6";
-  static const char char_gpio_pb7[] = "dev_gpio_pb7";
-  static const char char_gpio_pb8[] = "dev_gpio_pb8";
-  static const char char_gpio_pb9[] = "dev_gpio_pb9";
-  static const char char_gpio_pa2[] = "dev_gpio_pa2";
-  static const char char_gpio_pa3[] = "dev_gpio_pa3";
-  static const char char_gpio_pb3[] = "dev_gpio_pb3";
-  static const char char_gpio_pb10[] = "dev_gpio_pb10";
-  static const char char_gpio_pb15[] = "dev_gpio_pb15";
-  static const char char_gpio_pb14[] = "dev_gpio_pb14";
-  static const char char_gpio_pb13[] = "dev_gpio_pb13";
-  static const char char_gpio_pb12[] = "dev_gpio_pb12";
-  static const char char_gpio_ble_disable[] = "dev_gpio_ble_disable";
-  static const char char_i2c2[] = "dev_i2c2";
-  static const char char_i2c3[] = "dev_i2c3";
+  static const char char_dev_gpio_pa9[] = "dev_gpio_pa9";
+  static const char char_dev_gpio_pa10[] = "dev_gpio_pa10";
+  static const char char_dev_gpio_pb4[] = "dev_gpio_pb4";
+  static const char char_dev_gpio_pa8[] = "dev_gpio_pa8";
+  static const char char_dev_gpio_pb5[] = "dev_gpio_pb5";
+  static const char char_dev_gpio_pb6[] = "dev_gpio_pb6";
+  static const char char_dev_gpio_pb7[] = "dev_gpio_pb7";
+  static const char char_dev_gpio_pb8[] = "dev_gpio_pb8";
+  static const char char_dev_gpio_pb9[] = "dev_gpio_pb9";
+  static const char char_dev_gpio_pa2[] = "dev_gpio_pa2";
+  static const char char_dev_gpio_pa3[] = "dev_gpio_pa3";
+  static const char char_dev_gpio_pb3[] = "dev_gpio_pb3";
+  static const char char_dev_gpio_pb10[] = "dev_gpio_pb10";
+  static const char char_dev_gpio_pb15[] = "dev_gpio_pb15";
+  static const char char_dev_gpio_pb14[] = "dev_gpio_pb14";
+  static const char char_dev_gpio_pb13[] = "dev_gpio_pb13";
+  static const char char_dev_gpio_pb12[] = "dev_gpio_pb12";
+  static const char char_dev_gpio_ble_disable[] = "dev_gpio_ble_disable";
+  static const char char_dev_i2c2[] = "dev_i2c2";
+  static const char char_dev_i2c3[] = "dev_i2c3";
 
   const char *str_buf = (const char *)sym->value;
   size_t len = os_strnlen (str_buf, MAX_STR_LEN);
-  if (0 == os_strncmp (str_buf, char_dev_led0, len))
+  if (len < 5)
+    goto PANIC;
+  if (0 != os_strncmp (&(str_buf[0]), &(char_dev_led0[0]), 4))
+    goto PANIC;
+  switch (str_buf[4])
     {
-      ret = &(GLOBAL_REF (super_dev_led0));
-    }
-  else if (0 == os_strncmp (str_buf, char_dev_led1, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_led1));
-    }
-  else if (0 == os_strncmp (str_buf, char_dev_led2, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_led2));
-    }
-  else if (0 == os_strncmp (str_buf, char_dev_led3, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_led3));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pa9, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pa9));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pa10, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pa10));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb4, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb4));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pa8, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pa8));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb5, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb5));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb6, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb6));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb7, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb7));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb8, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb8));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb9, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb9));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pa2, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pa2));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pa3, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pa3));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb3, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb3));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb10, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb10));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb15, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb15));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb14, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb14));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb13, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb13));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_pb12, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_pb12));
-    }
-  else if (0 == os_strncmp (str_buf, char_gpio_ble_disable, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_gpio_ble_disable));
-    }
-  else if (0 == os_strncmp (str_buf, char_i2c2, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_i2c2));
-    }
-  else if (0 == os_strncmp (str_buf, char_i2c3, len))
-    {
-      ret = &(GLOBAL_REF (super_dev_i2c3));
-    }
-  else
-    {
-      os_printk ("BUG: Invalid symbol name %s!\n", str_buf);
-      panic ("");
+    case 'l':
+      if (len < 8)
+        goto PANIC;
+      if (0 != os_strncmp (&(str_buf[5]), &(char_dev_led0[5]), 2))
+        goto PANIC;
+      switch (str_buf[7])
+        {
+        case '0':
+          if (len != 8)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_led0));
+          break;
+        case '1':
+          if (len != 8)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_led1));
+          break;
+        case '2':
+          if (len != 8)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_led2));
+          break;
+        case '3':
+          if (len != 8)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_led3));
+          break;
+        default:
+          break;
+        }
+      break;
+    case 'g':
+      if (len < 10)
+        goto PANIC;
+      if (0 != os_strncmp (&(str_buf[5]), &(char_dev_gpio_pa9[5]), 4))
+        goto PANIC;
+      switch (str_buf[9])
+        {
+        case 'p':
+          if (len < 11)
+            goto PANIC;
+          switch (str_buf[10])
+            {
+            case 'a':
+              if (len < 12)
+                goto PANIC;
+              switch (str_buf[11])
+                {
+                case '9':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pa9));
+                  break;
+                case '1':
+                  if (len != 13)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pa10));
+                  break;
+                case '8':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pa8));
+                  break;
+                case '2':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pa2));
+                  break;
+                case '3':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pa3));
+                  break;
+                default:
+                  break;
+                }
+              break;
+            case 'b':
+              if (len < 12)
+                goto PANIC;
+              switch (str_buf[11])
+                {
+                case '4':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb4));
+                  break;
+                case '5':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb5));
+                  break;
+                case '6':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb6));
+                  break;
+                case '7':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb7));
+                  break;
+                case '8':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb8));
+                  break;
+                case '9':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb9));
+                  break;
+                case '3':
+                  if (len != 12)
+                    goto PANIC;
+                  ret = &(GLOBAL_REF (super_dev_gpio_pb3));
+                  break;
+                case '1':
+                  if (len < 13)
+                    goto PANIC;
+                  switch (str_buf[12])
+                    {
+                    case '0':
+                      if (len != 13)
+                        goto PANIC;
+                      ret = &(GLOBAL_REF (super_dev_gpio_pb10));
+                      break;
+                    case '5':
+                      if (len != 13)
+                        goto PANIC;
+                      ret = &(GLOBAL_REF (super_dev_gpio_pb15));
+                      break;
+                    case '4':
+                      if (len != 13)
+                        goto PANIC;
+                      ret = &(GLOBAL_REF (super_dev_gpio_pb14));
+                      break;
+                    case '3':
+                      if (len != 13)
+                        goto PANIC;
+                      ret = &(GLOBAL_REF (super_dev_gpio_pb13));
+                      break;
+                    case '2':
+                      if (len != 13)
+                        goto PANIC;
+                      ret = &(GLOBAL_REF (super_dev_gpio_pb12));
+                      break;
+                    default:
+                      break;
+                    }
+                  break;
+                default:
+                  break;
+                }
+              break;
+            default:
+              break;
+            }
+          break;
+        case 'b':
+          if (len != 20)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_gpio_ble_disable));
+          break;
+        default:
+          break;
+        }
+      break;
+    case 'i':
+      if (len < 8)
+        goto PANIC;
+      if (0 != os_strncmp (&(str_buf[5]), &(char_dev_i2c2[5]), 2))
+        goto PANIC;
+      switch (str_buf[7])
+        {
+        case '2':
+          if (len != 8)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_i2c2));
+          break;
+        case '3':
+          if (len != 8)
+            goto PANIC;
+          ret = &(GLOBAL_REF (super_dev_i2c3));
+          break;
+        default:
+          break;
+        }
+      break;
+    default:
+      break;
     }
 
+  goto OK;
+PANIC:
+  os_printk ("BUG: Invalid symbol name %s!\n", str_buf);
+  panic ("");
+
+OK:
   return ret;
 }
 
