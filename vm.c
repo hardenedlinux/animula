@@ -161,6 +161,7 @@ static void call_prim (vm_t vm, pn_t pn)
 
         PUSH_REG (vm->pc);
         PUSH_REG (vm->fp);
+        PUSH (vm->attr.all);
         vm->fp = vm->sp - FPS;
         vm->local = vm->sp;
         SLIST_FOREACH (node, head, next)
@@ -222,6 +223,7 @@ static void call_prim (vm_t vm, pn_t pn)
 
         PUSH_REG (vm->pc);
         PUSH_REG (vm->fp);
+        PUSH (vm->attr.all);
         vm->fp = vm->sp - FPS;
         vm->local = vm->fp + FPS;
         SLIST_FOREACH (node, head, next)
@@ -998,10 +1000,10 @@ void vm_init_environment (vm_t vm)
   vm->sp = 0;
   vm->fp = 0;
   vm->local = 0;
-  vm->shadow = 0;
+  vm->attr.shadow = 0;
+  vm->attr.tail_rec = false;
   vm->cc = NULL;
   vm->closure = NULL;
-  vm->tail_rec = false;
 }
 
 void vm_init (vm_t vm)
@@ -1199,8 +1201,13 @@ void vm_run (vm_t vm)
       /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local, */
       /*            vm->sp, vm->fp); */
       /* os_printk ("----------LOCAL------------\n"); */
-      /* u32_t bound = (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)); */
+      /* u32_t bound */
+      /*   = vm->sp ? (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)) : 0;
+       */
+      /* printf ("bound: %d\n", bound); */
+      /* getchar (); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
+      /* for (u32_t i = 0; i < 5; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
       /*     os_printk ("obj: local = %d, fp+FPS=%d, type = %d, value = %d\n",
@@ -1235,17 +1242,17 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
         break;
 
       dispatch (vm, bc);
-      /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d\n", vm->pc, vm->local,
-       * vm->sp, */
-      /*         vm->fp); */
+      /* os_printk ("pc: %d, local: %d, sp: %d, fp: %d, ppc: %d\n", vm->pc, */
+      /*            vm->local, vm->sp, vm->fp, *((reg_t *)(vm->stack +
+       * vm->fp))); */
       /* os_printk ("----------LOCAL------------\n"); */
       /* u32_t bound = (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)); */
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", vm->local +
-       * i * 8, */
-      /*             obj->attr.type, (imm_int_t)obj->value); */
+      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", */
+      /*                vm->local + i * 8, obj->attr.type,
+       * (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
       /* getchar (); */

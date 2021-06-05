@@ -249,8 +249,8 @@ typedef u16_t reg_t;
 #  endif
 #endif
 
-// Frame Pre-store Size = sizeof(pc) + sizeof(fp)
-#define FPS 2 * PC_SIZE
+// Frame Pre-store Size = sizeof(pc) + sizeof(fp) + sizeof(attr)
+#define FPS (2 * PC_SIZE + 1)
 
 static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 {
@@ -425,11 +425,19 @@ typedef struct LambdaVM
   u8_t *code;
   u8_t *data;
   u8_t *stack;
-  u8_t shadow;      // shadow frame
   object_t globals; // global table
   symtab_t symtab;
   closure_t closure; // for closure
-  bool tail_rec;
+  union VM_Attr
+  {
+    struct
+    {
+      unsigned shadow : 5; // shadow frame
+      unsigned tail_rec : 1;
+      unsigned reserved : 2;
+    };
+    u8_t all;
+  } attr;
 } __packed *vm_t;
 
 #endif // End of __LAMBDACHIP_TYPES_H;

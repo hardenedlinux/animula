@@ -104,11 +104,6 @@ static inline void vm_stack_check (vm_t vm)
 #define POP_U16()     POPx (u16_t, sizeof (u16_t))
 #define TOP_U16()     TOPx (u16_t, sizeof (u16_t))
 
-#define PUSH_CLOSURE(closure) PUSHx (Closure, sizeof (Closure), closure)
-#define POP_CLOSURE()         POPx (Closure, sizeof (Closure))
-#define TOP_CLOSURE()         TOPx (Closure, sizeof (Closure))
-#define TOP_CLOSURE_PTR()     TOPxp (Closure, sizeof (Closure))
-
 /* NOTE:
  * 1. frame[0] is return address, frame[1] is the last fp, so the actual offset
       begins from 2
@@ -145,35 +140,42 @@ static inline void vm_stack_check (vm_t vm)
  * require fix, so we're not going to call LOCAL, but use the raw reference from
  * vm->local.
  */
-#define FREE_VAR(up, offset)                                               \
-  ({                                                                       \
-    reg_t fp = vm->fp;                                                     \
-    object_t ret = NULL;                                                   \
-    closure_t closure = NULL;                                              \
-    for (int i = 0; i < up; i++)                                           \
-      {                                                                    \
-        fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
-      }                                                                    \
-    if (!vm->tail_rec)                                                     \
-      closure = up ? fp_to_closure (fp) : vm->closure;                     \
-    if (closure)                                                           \
-      {                                                                    \
-        if (offset >= closure->frame_size)                                 \
-          {                                                                \
-            ret = (&((object_t) (                                          \
-              vm->stack + closure->local))[offset - closure->frame_size]); \
-          }                                                                \
-        else                                                               \
-          {                                                                \
-            ret = (&closure->env[offset]);                                 \
-          }                                                                \
-      }                                                                    \
-    else                                                                   \
-      {                                                                    \
-        reg_t local = (NO_PREV_FP == fp ? 0 : fp + FPS);                   \
-        ret = (&((object_t) (vm->stack + local))[offset]);                 \
-      }                                                                    \
-    ret;                                                                   \
+#define FREE_VAR(up, offset)                                                   \
+  ({                                                                           \
+    reg_t fp = vm->fp;                                                         \
+    object_t ret = NULL;                                                       \
+    closure_t closure = NULL;                                                  \
+    if (0 == up)                                                               \
+      {                                                                        \
+        ret = LOCAL (offset);                                                  \
+      }                                                                        \
+    else                                                                       \
+      {                                                                        \
+        for (int i = 0; i < up; i++)                                           \
+          {                                                                    \
+            fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
+          }                                                                    \
+        if (false == vm->attr.tail_rec)                                        \
+          closure = up ? fp_to_closure (fp) : vm->closure;                     \
+        if (closure)                                                           \
+          {                                                                    \
+            if (offset >= closure->frame_size)                                 \
+              {                                                                \
+                ret = (&((object_t) (                                          \
+                  vm->stack + closure->local))[offset - closure->frame_size]); \
+              }                                                                \
+            else                                                               \
+              {                                                                \
+                ret = (&closure->env[offset]);                                 \
+              }                                                                \
+          }                                                                    \
+        else                                                                   \
+          {                                                                    \
+            reg_t local = (NO_PREV_FP == fp ? 0 : fp + FPS);                   \
+            ret = (&((object_t) (vm->stack + local))[offset]);                 \
+          }                                                                    \
+      }                                                                        \
+    ret;                                                                       \
   })
 
 #define GLOBAL(index) (vm->globals[(index)])
@@ -194,11 +196,11 @@ static inline void vm_stack_check (vm_t vm)
 /* NOTE:
  * Shadow frame is used for tail-recursive for passing args correctly.
  */
-#define IS_SHADOW_FRAME() (vm->shadow && (vm->sp != vm->local))
+#define IS_SHADOW_FRAME() (vm->attr.shadow && (vm->sp != vm->local))
 #define COPY_SHADOW_FRAME()                                               \
   do                                                                      \
     {                                                                     \
-      size_t size = sizeof (Object) * vm->shadow;                         \
+      size_t size = sizeof (Object) * vm->attr.shadow;                    \
       os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - size, size); \
       vm->sp = vm->local + size;                                          \
     }                                                                     \
@@ -214,22 +216,21 @@ static inline void vm_stack_check (vm_t vm)
     }                    \
   while (0)
 
-#define PROC_CALL(offset)                              \
-  do                                                   \
-    {                                                  \
-      if (IS_SHADOW_FRAME ())                          \
-        {                                              \
-          COPY_SHADOW_FRAME ();                        \
-        }                                              \
-      else if (vm->closure && (false == vm->tail_rec)) \
-        {                                              \
-          save_closure (vm->fp, vm->closure);          \
-        }                                              \
-      vm->closure = NULL;                              \
-      vm->local = vm->fp + FPS;                        \
-      vm->shadow = 0;                                  \
-      JUMP (offset);                                   \
-    }                                                  \
+#define PROC_CALL(offset)                                   \
+  do                                                        \
+    {                                                       \
+      if (IS_SHADOW_FRAME ())                               \
+        {                                                   \
+          COPY_SHADOW_FRAME ();                             \
+        }                                                   \
+      else if (vm->closure && (false == vm->attr.tail_rec)) \
+        {                                                   \
+          save_closure (vm->fp, vm->closure);               \
+        }                                                   \
+      vm->closure = NULL;                                   \
+      vm->local = vm->fp + FPS;                             \
+      JUMP (offset);                                        \
+    }                                                       \
   while (0)
 
 /* Convention:
@@ -241,6 +242,8 @@ static inline void vm_stack_check (vm_t vm)
  | ret_addr |
  +----------+
  | last_fp  |
+ +----------+
+ | attr     |
  +----------+---> local
  | local 0  |
  +----------+
@@ -273,8 +276,8 @@ static inline void vm_stack_check (vm_t vm)
         case TAIL_REC:                                               \
           {                                                          \
             vm->sp = vm->local + arity * sizeof (Object);            \
-            vm->shadow = arity;                                      \
-            vm->tail_rec = true;                                     \
+            vm->attr.shadow = arity;                                 \
+            vm->attr.tail_rec = true;                                \
             break;                                                   \
           }                                                          \
         default:                                                     \
@@ -282,6 +285,9 @@ static inline void vm_stack_check (vm_t vm)
             reg_t sp = vm->sp;                                       \
             PUSH_REG (NORMAL_JUMP);                                  \
             PUSH_REG (sp ? (vm->fp ? vm->fp : NO_PREV_FP) : vm->fp); \
+            PUSH (vm->attr.all);                                     \
+            vm->attr.tail_rec = false;                               \
+            vm->attr.shadow = 0;                                     \
             vm->fp = vm->sp - FPS;                                   \
             break;                                                   \
           }                                                          \
@@ -319,7 +325,7 @@ static inline void vm_stack_check (vm_t vm)
           }                                                          \
         case primitive:                                              \
           {                                                          \
-            VM_DEBUG ("call prim!\n");                               \
+            VM_DEBUG ("call prim %d!\n", (int)obj->value);           \
             CALL_PRIMITIVE (obj);                                    \
             break;                                                   \
           }                                                          \
@@ -403,19 +409,19 @@ static inline void save_closure (reg_t fp, closure_t closure)
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()                                           \
-  do                                                        \
-    {                                                       \
-      Object ret = POP_OBJ ();                              \
-      vm->sp = vm->fp + FPS;                                \
-      vm->fp = POP_REG ();                                  \
-      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);         \
-      vm->pc = POP_REG ();                                  \
-      vm->local = vm->fp + FPS;                             \
-      PUSH_OBJ (ret);                                       \
-      vm->closure = vm->tail_rec ? NULL : pop_closure (vm); \
-      vm->tail_rec = false;                                 \
-    }                                                       \
+#define RESTORE()                                                \
+  do                                                             \
+    {                                                            \
+      Object ret = POP_OBJ ();                                   \
+      vm->sp = vm->fp + FPS;                                     \
+      vm->attr.all = POP ();                                     \
+      vm->fp = POP_REG ();                                       \
+      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);              \
+      vm->pc = POP_REG ();                                       \
+      vm->local = vm->fp + FPS;                                  \
+      PUSH_OBJ (ret);                                            \
+      vm->closure = vm->attr.tail_rec ? NULL : pop_closure (vm); \
+    }                                                            \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \
@@ -473,19 +479,23 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
    */
   if (IS_SHADOW_FRAME ())
     {
-      size_t shadow_size = sizeof (Object) * vm->shadow;
+      size_t shadow_size = sizeof (Object) * vm->attr.shadow;
       // Copy shadow frame of closure
       os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - shadow_size,
                  shadow_size);
       /* printf ("vm->local: %d, size: %d, vm->sp: %d\n", vm->local,
        * shadow_size, */
       /*         vm->sp); */
+      vm->sp -= shadow_size;
+    }
+  else
+    {
+      vm->local = vm->sp - arity * sizeof (Object);
     }
 
-  vm->local = vm->sp - arity * sizeof (Object);
   closure->local = vm->local;
 
-  if (false == vm->tail_rec)
+  if (false == vm->attr.tail_rec)
     {
       save_closure (vm->fp, closure);
     }
