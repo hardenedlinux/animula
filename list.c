@@ -136,8 +136,17 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
   obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
   obj_list_t node = NULL;
   imm_int_t cnt = (imm_int_t)idx->value;
+  imm_int_t lst_idx = cnt;
   obj_list_t next = NULL;
 
+  if (cnt < 0)
+    {
+      os_printk ("%s:%d, %s: Invalid index %d!\n", __FILE__, __LINE__,
+                 __FUNCTION__, lst_idx);
+      panic ("");
+    }
+
+  cnt++;
   SLIST_FOREACH (node, head, next)
   {
     if (!cnt)
@@ -147,9 +156,17 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
     cnt--;
   }
 
+  if (cnt > 0)
+    {
+      os_printk ("%s:%d, %s: Invalid index %d!\n", __FILE__, __LINE__,
+                 __FUNCTION__, lst_idx);
+      panic ("");
+    }
+
   if (!next)
     {
-      os_printk ("list-ref: Invalid index %d!\n", cnt);
+      os_printk ("%s:%d, %s: Invalid index %d!\n", __FILE__, __LINE__,
+                 __FUNCTION__, lst_idx);
       panic ("");
       // FIXME: implement throw
       // throw ();
