@@ -100,9 +100,17 @@ static inline void vm_stack_check (vm_t vm)
 #define POP_U32()     POPx (u32_t, sizeof (u32_t))
 #define TOP_U32()     TOPx (u32_t, sizeof (u32_t))
 
+#define PUSH_U64(obj) PUSHx (u64_t, sizeof (u64_t), obj)
+#define POP_U64()     POPx (u64_t, sizeof (u64_t))
+#define TOP_U64()     TOPx (u64_t, sizeof (u64_t))
+
 #define PUSH_U16(obj) PUSHx (u16_t, sizeof (u16_t), obj)
 #define POP_U16()     POPx (u16_t, sizeof (u16_t))
 #define TOP_U16()     TOPx (u16_t, sizeof (u16_t))
+
+#define PUSH_CLOSURE(obj) PUSHx (closure_t, sizeof (closure_t), obj)
+#define POP_CLOSURE()     POPx (closure_t, sizeof (closure_t))
+#define TOP_CLOSURE()     TOPx (closure_t, sizeof (closure_t))
 
 /* NOTE:
  * 1. frame[0] is return address, frame[1] is the last fp, so the actual offset
@@ -155,8 +163,7 @@ static inline void vm_stack_check (vm_t vm)
           {                                                                    \
             fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
           }                                                                    \
-        if (false == vm->attr.tail_rec)                                        \
-          closure = up ? fp_to_closure (fp) : vm->closure;                     \
+        closure = (closure_t) (vm->stack + fp + FPS - sizeof (closure_t));     \
         if (closure)                                                           \
           {                                                                    \
             if (offset >= closure->frame_size)                                 \
@@ -216,21 +223,17 @@ static inline void vm_stack_check (vm_t vm)
     }                    \
   while (0)
 
-#define PROC_CALL(offset)                                   \
-  do                                                        \
-    {                                                       \
-      if (IS_SHADOW_FRAME ())                               \
-        {                                                   \
-          COPY_SHADOW_FRAME ();                             \
-        }                                                   \
-      else if (vm->closure && (false == vm->attr.tail_rec)) \
-        {                                                   \
-          save_closure (vm->fp, vm->closure);               \
-        }                                                   \
-      vm->closure = NULL;                                   \
-      vm->local = vm->fp + FPS;                             \
-      JUMP (offset);                                        \
-    }                                                       \
+#define PROC_CALL(offset)       \
+  do                            \
+    {                           \
+      if (IS_SHADOW_FRAME ())   \
+        {                       \
+          COPY_SHADOW_FRAME (); \
+        }                       \
+      vm->closure = NULL;       \
+      vm->local = vm->fp + FPS; \
+      JUMP (offset);            \
+    }                           \
   while (0)
 
 /* Convention:
@@ -244,6 +247,8 @@ static inline void vm_stack_check (vm_t vm)
  | last_fp  |
  +----------+
  | attr     |
+ +----------+
+ | closure  |
  +----------+---> local
  | local 0  |
  +----------+
@@ -286,6 +291,7 @@ static inline void vm_stack_check (vm_t vm)
             PUSH_REG (NORMAL_JUMP);                                  \
             PUSH_REG (sp ? (vm->fp ? vm->fp : NO_PREV_FP) : vm->fp); \
             PUSH (vm->attr.all);                                     \
+            PUSH_CLOSURE (vm->closure);                              \
             vm->attr.tail_rec = false;                               \
             vm->attr.shadow = 0;                                     \
             vm->fp = vm->sp - FPS;                                   \
@@ -349,79 +355,24 @@ static inline void vm_stack_check (vm_t vm)
     }                                                                \
   while (0)
 
-typedef struct ClosureStack
-{
-  SLIST_ENTRY (ClosureStack) next;
-  reg_t fp;
-  closure_t closure;
-} __packed ClosureStack, *closure_stack_t;
-
-typedef SLIST_HEAD (ClosureStackHead, ClosureStack) closure_stack_head_t;
-
-static closure_stack_head_t closure_stack;
-
-static inline closure_t fp_to_closure (reg_t fp)
-{
-  closure_stack_t cs = NULL;
-  closure_t closure = NULL;
-
-  SLIST_FOREACH (cs, &closure_stack, next)
-  {
-    if (fp == cs->fp)
-      {
-        closure = cs->closure;
-        break;
-      }
-  }
-
-  return closure;
-}
-
-static inline closure_t pop_closure (vm_t vm)
-{
-  closure_stack_t cs = SLIST_FIRST (&closure_stack);
-  closure_t closure = NULL;
-
-  reg_t last_fp = *((reg_t *)(vm->stack + vm->fp + sizeof (reg_t)));
-
-  if (cs && last_fp == cs->fp)
-    {
-      closure = cs->closure;
-      SLIST_REMOVE_HEAD (&closure_stack, next);
-      os_free (cs);
-    }
-
-  return closure;
-}
-
-static inline void save_closure (reg_t fp, closure_t closure)
-{
-  closure_stack_t cs
-    = (closure_stack_t)os_malloc (sizeof (struct ClosureStack));
-
-  cs->closure = closure;
-  cs->fp = fp;
-  SLIST_INSERT_HEAD (&closure_stack, cs, next);
-}
-
 /* NOTE:
  * ret is a special primitive that implies it's the tail call.
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()                                                \
-  do                                                             \
-    {                                                            \
-      Object ret = POP_OBJ ();                                   \
-      vm->sp = vm->fp + FPS;                                     \
-      vm->attr.all = POP ();                                     \
-      vm->fp = POP_REG ();                                       \
-      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);              \
-      vm->pc = POP_REG ();                                       \
-      vm->local = vm->fp + FPS;                                  \
-      PUSH_OBJ (ret);                                            \
-      vm->closure = vm->attr.tail_rec ? NULL : pop_closure (vm); \
-    }                                                            \
+#define RESTORE()                                   \
+  do                                                \
+    {                                               \
+      Object ret = POP_OBJ ();                      \
+      vm->sp = vm->fp + FPS;                        \
+      vm->closure = POP_CLOSURE ();                 \
+      vm->attr.all = POP ();                        \
+      vm->fp = POP_REG ();                          \
+      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp); \
+      vm->pc = POP_REG ();                          \
+      vm->local = vm->fp + FPS;                     \
+      PUSH_OBJ (ret);                               \
+    }                                               \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \
@@ -494,11 +445,6 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
     }
 
   closure->local = vm->local;
-
-  if (false == vm->attr.tail_rec)
-    {
-      save_closure (vm->fp, closure);
-    }
   vm->closure = closure;
   JUMP (entry);
 }

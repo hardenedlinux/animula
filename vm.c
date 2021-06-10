@@ -162,6 +162,7 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_REG (vm->pc);
         PUSH_REG (vm->fp);
         PUSH (vm->attr.all);
+        PUSH_CLOSURE (vm->closure);
         vm->fp = vm->sp - FPS;
         vm->local = vm->sp;
         SLIST_FOREACH (node, head, next)
@@ -224,6 +225,7 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_REG (vm->pc);
         PUSH_REG (vm->fp);
         PUSH (vm->attr.all);
+        PUSH_CLOSURE (vm->closure);
         vm->fp = vm->sp - FPS;
         vm->local = vm->fp + FPS;
         SLIST_FOREACH (node, head, next)
@@ -1014,8 +1016,6 @@ void vm_init (vm_t vm)
   vm->data = NULL;
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
   vm->globals = NULL;
-
-  SLIST_INIT (&closure_stack);
 }
 
 void vm_clean (vm_t vm)
@@ -1206,14 +1206,15 @@ void vm_run (vm_t vm)
        */
       /* printf ("bound: %d\n", bound); */
       /* getchar (); */
-      /* for (u32_t i = 0; i < bound / 8; i++) */
+      /* // for (u32_t i = 0; i < bound / 8; i++) */
       /* for (u32_t i = 0; i < 5; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, fp+FPS=%d, type = %d, value = %d\n",
-       */
-      /*                vm->local, vm->fp + FPS + i * 8, obj->attr.type, */
-      /*                (imm_int_t)obj->value); */
+      /*     os_printk ( */
+      /*       "obj: local = %d, offset=%d, local_sp=%d, type = %d, value =
+       * %d\n", */
+      /*       vm->local, i, vm->fp + FPS + i * 8, obj->attr.type, */
+      /*       (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
       /* getchar (); */

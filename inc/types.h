@@ -230,7 +230,6 @@ typedef union ieee754_float
 #ifndef PC_SIZE
 #  define PC_SIZE 2
 #  if (4 == PC_SIZE)
-#    define PUSH_REG    PUSH_U32
 #    define POP_REG     POP_U32
 #    define TOP_REG     TOP_U32
 #    define NORMAL_JUMP 0xFFFFFFFF
@@ -249,8 +248,10 @@ typedef u16_t reg_t;
 #  endif
 #endif
 
-// Frame Pre-store Size = sizeof(pc) + sizeof(fp) + sizeof(attr)
-#define FPS (2 * PC_SIZE + 1)
+/* Frame Pre-store Size =
+ * sizeof(pc) + sizeof(fp) + sizeof(attr) + sizeof(closure_t)
+ */
+#define FPS (2 * PC_SIZE + 1 + sizeof (closure_t))
 
 static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 {
