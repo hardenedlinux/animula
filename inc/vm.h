@@ -159,12 +159,12 @@ static inline void vm_stack_check (vm_t vm)
       }                                                                        \
     else                                                                       \
       {                                                                        \
-        for (int i = 0; i < up; i++)                                           \
+        for (int i = 0; i <= up; i++)                                          \
           {                                                                    \
             fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
           }                                                                    \
         closure = (closure_t) (vm->stack + fp + FPS - sizeof (closure_t));     \
-        if (closure)                                                           \
+        if (closure && closure->frame_size)                                    \
           {                                                                    \
             if (offset >= closure->frame_size)                                 \
               {                                                                \
