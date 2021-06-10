@@ -16,6 +16,7 @@
  */
 
 #include "primitives.h"
+#include "type_conversion.h"
 #ifdef LAMBDACHIP_ZEPHYR
 // #  include <string.h> // memncpy
 #  include <drivers/gpio.h>

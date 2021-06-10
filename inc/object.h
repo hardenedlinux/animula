@@ -129,6 +129,35 @@ static inline bool is_unspecified (object_t obj)
     }                                                                       \
   while (0)
 
+#  define MAX_REAL_DENOMINATOR 0xFFFF
+#  define MIN_REAL_DENOMINATOR -65535
+#  define MAX_REAL_NUMERATOR   0xFFFF
+#  define MIN_REAL_NUMERATOR   -65535
+
+#  define VALIDATE_NUMERATOR(x)                                             \
+    do                                                                      \
+      {                                                                     \
+        if (x < MIN_REAL_NUMERATOR || x > MAX_REAL_NUMERATOR)               \
+          {                                                                 \
+            os_printk ("%s:%d, %s: NUMERATOR not in range: %d\n", __FILE__, \
+                       __LINE__, __FUNCTION__, x);                          \
+            panic ("");                                                     \
+          }                                                                 \
+      }                                                                     \
+    while (0)
+
+#  define VALIDATE_DENOMINATOR(x)                                             \
+    do                                                                        \
+      {                                                                       \
+        if (x < MIN_REAL_DENOMINATOR || x > MAX_REAL_DENOMINATOR || x == 0)   \
+          {                                                                   \
+            os_printk ("%s:%d, %s: DENOMINATOR not in range: %d\n", __FILE__, \
+                       __LINE__, __FUNCTION__, x);                            \
+            panic ("");                                                       \
+          }                                                                   \
+      }                                                                       \
+    while (0)
+
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
 
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
