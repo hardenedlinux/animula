@@ -487,7 +487,9 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
     }
   else
     {
-      assert (-1 && "device type not defined, cannot handle");
+      os_printk ("device type not defined, cannot handle", __FILE__, __LINE__,
+                 __FUNCTION__);
+      panic ("");
     }
 
   // os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
