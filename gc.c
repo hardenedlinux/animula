@@ -55,6 +55,9 @@ static void free_object (object_t obj)
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
 
+  if (PERMANENT_OBJ == obj->attr.gc)
+    return;
+
   switch (obj->attr.type)
     {
     case imm_int:
@@ -83,9 +86,12 @@ static void free_object (object_t obj)
 
         SLIST_FOREACH (node, head, next)
         {
+          printf ("111\n");
           os_free ((void *)prev);
           prev = node;
+          printf ("222\n");
           free_object ((object_t)node->obj);
+          printf ("333\n");
         }
 
         os_free (prev); // free the last node
