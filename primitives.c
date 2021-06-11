@@ -31,7 +31,15 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 {
   if (x->attr.type == imm_int && y->attr.type == imm_int)
     {
-      ret->value = (void *)((imm_int_t)x->value + (imm_int_t)y->value); // good
+      s64_t result = ((s64_t)x->value + (s64_t)y->value);
+      s32_t result2 = 0xFFFFFFFF & result;
+      if (result2 != result)
+        {
+          os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
+                     __FILE__, __LINE__, __PRETTY_FUNCTION__, result, result2);
+          panic ("");
+        }
+      ret->value = (void *)result2;
       ret->attr.type = imm_int;
     }
   else
@@ -83,7 +91,15 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 {
   if (x->attr.type == imm_int && y->attr.type == imm_int)
     {
-      ret->value = (void *)((imm_int_t)x->value - (imm_int_t)y->value); // good
+      s64_t result = ((s64_t)x->value - (s64_t)y->value);
+      s32_t result2 = 0xFFFFFFFF & result;
+      if (result2 != result)
+        {
+          os_printk ("%s:%d, %s: Substraction overflow or underflow %lld, %d\n",
+                     __FILE__, __LINE__, __PRETTY_FUNCTION__, result, result2);
+          panic ("");
+        }
+      ret->value = (void*)result2;
       ret->attr.type = imm_int;
     }
   else
