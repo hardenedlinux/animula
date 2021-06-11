@@ -27,16 +27,109 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 // primitives implementation
 
-static inline imm_int_t _int_add (imm_int_t x, imm_int_t y)
+static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  // os_printk ("%d + %d = %d\n", x, y, x + y);
-  return x + y;
+  if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      ret->value = (void *)((imm_int_t)x->value + (imm_int_t)y->value); // good
+      ret->attr.type = imm_int;
+    }
+  else
+    {
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+      real_t a;
+      real_t b;
+      if (x->attr.type == real)
+        {
+          memcpy (&(a), &(x->value), 4);
+        }
+      else if ((x->attr.type == imm_int))
+        {
+          a.f = (float)(imm_int_t) (x->value);
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     x->attr.type);
+          panic ("");
+        }
+      if (y->attr.type == real)
+        {
+          memcpy (&(b), &(y->value), 4);
+        }
+      else if ((y->attr.type == imm_int))
+        {
+          b.f = (float)(imm_int_t) (y->value);
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     y->attr.type);
+          panic ("");
+        }
+      float c = a.f + b.f;
+      ret->attr.type = real;
+      memcpy (&(ret->value), &c, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+    }
+  return ret;
 }
 
-static inline imm_int_t _int_sub (imm_int_t x, imm_int_t y)
+static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  /* os_printk ("%d - %d = %d\n", x, y, x - y); */
-  return x - y;
+  if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      ret->value = (void *)((imm_int_t)x->value - (imm_int_t)y->value); // good
+      ret->attr.type = imm_int;
+    }
+  else
+    {
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+      real_t a;
+      if (x->attr.type == real)
+        {
+          memcpy (&(a), &(x->value), 4);
+        }
+      else if ((x->attr.type == imm_int))
+        {
+          a.f = (float)(imm_int_t) (x->value);
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     x->attr.type);
+          panic ("");
+        }
+
+      real_t b;
+      if (y->attr.type == real)
+        {
+          memcpy (&(b), &(y->value), 4);
+        }
+      else if ((y->attr.type == imm_int))
+        {
+          b.f = (float)(imm_int_t) (y->value);
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     y->attr.type);
+          panic ("");
+        }
+      float c = a.f - b.f;
+      ret->attr.type = real;
+      memcpy (&(ret->value), &c, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+    }
+  return ret;
 }
 
 static inline imm_int_t _int_mul (imm_int_t x, imm_int_t y)

@@ -164,6 +164,16 @@ static void call_prim (vm_t vm, pn_t pn)
     case int_add:
     case int_sub:
     case int_mul:
+      {
+        func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
+        size_t size = sizeof (struct Object);
+        Object o2 = POP_OBJ ();
+        Object o1 = POP_OBJ ();
+        Object ret = {.attr = {.type = none, .gc = 0}, .value = NULL};
+        ret = *(fn (vm, &ret, &o1, &o2));
+        PUSH_OBJ (ret);
+        break;
+      }
     case int_modulo:
     case int_remainder:
       {
