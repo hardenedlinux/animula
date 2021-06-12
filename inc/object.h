@@ -105,58 +105,58 @@ static inline bool is_unspecified (object_t obj)
     }                                     \
   while (0)
 
-#define VALIDATE(obj, t)                                           \
-  do                                                               \
-    {                                                              \
-      if ((t) != (obj)->attr.type)                                 \
-        {                                                          \
-          os_printk ("%s: Invalid type, expect %d, but it's %d\n", \
-                     __PRETTY_FUNCTION__, t, (obj)->attr.type);    \
-          panic ("");                                              \
-        }                                                          \
-    }                                                              \
+#define VALIDATE(obj, t)                                                     \
+  do                                                                         \
+    {                                                                        \
+      if ((t) != (obj)->attr.type)                                           \
+        {                                                                    \
+          os_printk ("%s:%d, %s: Invalid type, expect %d, but it's %d\n",    \
+                     __FILE__, __LINE__, __FUNCTION__, t, (obj)->attr.type); \
+          panic ("");                                                        \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
-#define VALIDATE_STRING(obj)                                                \
+#define VALIDATE_STRING(obj)                                                  \
+  do                                                                          \
+    {                                                                         \
+      if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type))   \
+        {                                                                     \
+          os_printk ("%s:%d, %s: Invalid type, expect string, but it's %d\n", \
+                     __FILE__, __LINE__, __FUNCTION__, (obj)->attr.type);     \
+          panic ("");                                                         \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+#define MAX_REAL_DENOMINATOR 0xFFFF
+#define MIN_REAL_DENOMINATOR -65535
+#define MAX_REAL_NUMERATOR   0xFFFF
+#define MIN_REAL_NUMERATOR   -65535
+
+#define VALIDATE_NUMERATOR(x)                                             \
+  do                                                                      \
+    {                                                                     \
+      if (x < MIN_REAL_NUMERATOR || x > MAX_REAL_NUMERATOR)               \
+        {                                                                 \
+          os_printk ("%s:%d, %s: NUMERATOR not in range: %d\n", __FILE__, \
+                     __LINE__, __FUNCTION__, x);                          \
+          panic ("");                                                     \
+        }                                                                 \
+    }                                                                     \
+  while (0)
+
+#define VALIDATE_DENOMINATOR(x)                                             \
   do                                                                        \
     {                                                                       \
-      if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type)) \
+      if (x < MIN_REAL_DENOMINATOR || x > MAX_REAL_DENOMINATOR || x == 0)   \
         {                                                                   \
-          os_printk ("%s: Invalid type, expect string, but it's %d\n",      \
-                     __PRETTY_FUNCTION__, (obj)->attr.type);                \
+          os_printk ("%s:%d, %s: DENOMINATOR not in range: %d\n", __FILE__, \
+                     __LINE__, __FUNCTION__, x);                            \
           panic ("");                                                       \
         }                                                                   \
     }                                                                       \
   while (0)
-
-#  define MAX_REAL_DENOMINATOR 0xFFFF
-#  define MIN_REAL_DENOMINATOR -65535
-#  define MAX_REAL_NUMERATOR   0xFFFF
-#  define MIN_REAL_NUMERATOR   -65535
-
-#  define VALIDATE_NUMERATOR(x)                                             \
-    do                                                                      \
-      {                                                                     \
-        if (x < MIN_REAL_NUMERATOR || x > MAX_REAL_NUMERATOR)               \
-          {                                                                 \
-            os_printk ("%s:%d, %s: NUMERATOR not in range: %d\n", __FILE__, \
-                       __LINE__, __FUNCTION__, x);                          \
-            panic ("");                                                     \
-          }                                                                 \
-      }                                                                     \
-    while (0)
-
-#  define VALIDATE_DENOMINATOR(x)                                             \
-    do                                                                        \
-      {                                                                       \
-        if (x < MIN_REAL_DENOMINATOR || x > MAX_REAL_DENOMINATOR || x == 0)   \
-          {                                                                   \
-            os_printk ("%s:%d, %s: DENOMINATOR not in range: %d\n", __FILE__, \
-                       __LINE__, __FUNCTION__, x);                            \
-            panic ("");                                                       \
-          }                                                                   \
-      }                                                                       \
-    while (0)
 
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
 

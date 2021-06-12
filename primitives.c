@@ -36,7 +36,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       if (result2 != result)
         {
           os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
-                     __FILE__, __LINE__, __PRETTY_FUNCTION__, result, result2);
+                     __FILE__, __LINE__, __FUNCTION__, result, result2);
           panic ("");
         }
       ret->value = (void *)result2;
@@ -58,7 +58,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
                      x->attr.type);
           panic ("");
         }
@@ -73,7 +73,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
                      y->attr.type);
           panic ("");
         }
@@ -96,10 +96,10 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
       if (result2 != result)
         {
           os_printk ("%s:%d, %s: Substraction overflow or underflow %lld, %d\n",
-                     __FILE__, __LINE__, __PRETTY_FUNCTION__, result, result2);
+                     __FILE__, __LINE__, __FUNCTION__, result, result2);
           panic ("");
         }
-      ret->value = (void*)result2;
+      ret->value = (void *)result2;
       ret->attr.type = imm_int;
     }
   else
@@ -117,7 +117,7 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
                      x->attr.type);
           panic ("");
         }
@@ -134,7 +134,7 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __PRETTY_FUNCTION__, imm_int, real,
+                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
                      y->attr.type);
           panic ("");
         }
