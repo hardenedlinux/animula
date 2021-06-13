@@ -72,3 +72,25 @@ void convert_rational_to_imm_int_if_denominator_is_1 (object_t v)
   v->value = (void *)(sign * n);
   return;
 }
+
+void convert_rational_to_float (object_t v)
+{
+  if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
+    {
+      os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                 __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_pos,
+                 v->attr.type);
+      panic ("");
+    }
+  int sign = (v->attr.type == rational_pos) ? 1 : -1;
+  imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
+  imm_int_t d = ((imm_int_t)v->value) & 0xFFFF;
+  float a = sign * c;
+  float b = a / d;
+  v->attr.type = real;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+  memcpy (&(v->value), &b, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+}

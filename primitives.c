@@ -154,6 +154,20 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           // convert to float
+          convert_rational_to_float (x);
+          convert_rational_to_float (y);
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+          float a;
+          float b;
+          memcpy (&a, &(x->value), 4);
+          memcpy (&b, &(y->value), 4);
+          b = a / b;
+          ret->attr.type = real;
+          memcpy (&(ret->value), &b, 4);
+
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
         }
       // gcd
       u16_t dd;
@@ -175,6 +189,20 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           // convert to float
+          convert_rational_to_float (x);
+          convert_rational_to_float (y);
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+          float a;
+          float b;
+          memcpy (&a, &(x->value), 4);
+          memcpy (&b, &(y->value), 4);
+          b = a / b;
+          ret->attr.type = real;
+          memcpy (&(ret->value), &b, 4);
+
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
         }
 
       // ret->attr.type == (numerator>0)?rational_pos:rational_neg;
