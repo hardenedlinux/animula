@@ -78,7 +78,7 @@ void convert_rational_to_float (object_t v)
   if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
     {
       os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                 __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_pos,
+                 __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_neg,
                  v->attr.type);
       panic ("");
     }

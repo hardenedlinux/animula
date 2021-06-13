@@ -237,63 +237,34 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 
 static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  if (x->attr.type == imm_int && y->attr.type == imm_int)
+  if (y->attr.type == real)
     {
-      s64_t result = ((s64_t)x->value - (s64_t)y->value);
-      s32_t result2 = 0xFFFFFFFF & result;
-      if (result2 != result)
-        {
-          os_printk ("%s:%d, %s: Substraction overflow or underflow %lld, %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, result, result2);
-          panic ("");
-        }
-      ret->value = (void *)result2;
-      ret->attr.type = imm_int;
+      float a;
+      memcpy (&a, &(y->value), 4);
+      a = -a;
+      memcpy (&(y->value), &a, 4);
+    }
+  else if (y->attr.type == rational_pos)
+    {
+      y->attr.type = rational_neg;
+    }
+  else if (y->attr.type == rational_neg)
+    {
+      y->attr.type = rational_pos;
+    }
+  else if (y->attr.type == imm_int)
+    {
+      y->value = (void *)(((imm_int_t) (y->value)) * -1);
     }
   else
     {
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-      real_t a;
-      if (x->attr.type == real)
-        {
-          memcpy (&(a), &(x->value), 4);
-        }
-      else if ((x->attr.type == imm_int))
-        {
-          a.f = (float)(imm_int_t) (x->value);
-        }
-      else
-        {
-          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
-                     x->attr.type);
-          panic ("");
-        }
-
-      real_t b;
-      if (y->attr.type == real)
-        {
-          memcpy (&(b), &(y->value), 4);
-        }
-      else if ((y->attr.type == imm_int))
-        {
-          b.f = (float)(imm_int_t) (y->value);
-        }
-      else
-        {
-          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
-                     y->attr.type);
-          panic ("");
-        }
-      float c = a.f - b.f;
-      ret->attr.type = real;
-      memcpy (&(ret->value), &c, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+      os_printk (
+        "%s:%d, %s: Invalid type, expect %d, %d, %d or %d, but it's %d\n",
+        __FILE__, __LINE__, __FUNCTION__, real, rational_pos, rational_neg,
+        imm_int, y->attr.type);
+      panic ("");
     }
-  return ret;
+  return _int_add (vm, ret, x, y);
 }
 
 static inline imm_int_t _int_mul (imm_int_t x, imm_int_t y)
