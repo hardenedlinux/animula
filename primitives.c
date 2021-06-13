@@ -29,20 +29,13 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  if (x->attr.type == imm_int && y->attr.type == imm_int)
+  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
     {
-      s64_t result = ((s64_t)x->value + (s64_t)y->value);
-      s32_t result2 = 0xFFFFFFFF & result;
-      if (result2 != result)
-        {
-          os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, result, result2);
-          panic ("");
-        }
-      ret->value = (void *)result2;
-      ret->attr.type = imm_int;
     }
-  else
+  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+    {
+    }
+  else if (x->attr.type == real || y->attr.type == real)
     {
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
       real_t a;
@@ -51,9 +44,16 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         {
           memcpy (&(a), &(x->value), 4);
         }
-      else if ((x->attr.type == imm_int))
+      else if (x->attr.type == imm_int)
         {
           a.f = (float)(imm_int_t) (x->value);
+        }
+      else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
+        {
+          a.f = (float)(imm_int_t) (x->value);
+          int sign = rational_pos ? 1 : -1;
+          a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
+                / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
       else
         {
@@ -62,9 +62,17 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
                      x->attr.type);
           panic ("");
         }
+
       if (y->attr.type == real)
         {
           memcpy (&(b), &(y->value), 4);
+        }
+      else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
+        {
+          a.f = (float)(imm_int_t) (x->value);
+          int sign = rational_pos ? 1 : -1;
+          a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
+                / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
       else if ((y->attr.type == imm_int))
         {
@@ -84,6 +92,64 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 #  error "BIG_ENDIAN not provided"
 #endif
     }
+  else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
+           || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+    {
+      if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+        {
+          if (y->attr.type == imm_int)
+            {
+              convert_imm_int_to_rational (&y);
+            }
+          else
+            {
+              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
+                         __FUNCTION__, y->attr.type);
+              panic ("");
+            }
+        }
+      if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+        {
+          if (x->attr.type == imm_int)
+            {
+              convert_imm_int_to_rational (&x);
+            }
+          else
+            {
+              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
+                         __FUNCTION__, x->attr.type);
+              panic ("");
+            }
+        }
+      imm_int_t xd, xn, yd, yn, x_sign, y_sign;
+      xd = ((imm_int_t) (x->value) >> 16) & 0xFFFFFFFF;
+      xn = ((imm_int_t) (x->value) & 0xFFFFFFFF);
+      x_sign = (x->attr.type == rational_pos) ? 1 : -1;
+      yd = ((imm_int_t) (y->value) >> 16) & 0xFFFFFFFF;
+      yn = ((imm_int_t) (y->value) & 0xFFFFFFFF);
+      y_sign = (y->attr.type == rational_pos) ? 1 : -1;
+    }
+  else if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      s64_t result = ((s64_t)x->value + (s64_t)y->value);
+      s32_t result2 = 0xFFFFFFFF & result;
+      if (result2 != result)
+        {
+          os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
+                     __FILE__, __LINE__, __FUNCTION__, result, result2);
+          panic ("");
+        }
+      ret->value = (void *)result2;
+      ret->attr.type = imm_int;
+    }
+  else
+    {
+      os_printk (
+        "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
+        __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
+      panic ("");
+    }
+
   return ret;
 }
 
