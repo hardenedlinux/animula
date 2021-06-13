@@ -22,6 +22,7 @@
 #  include <drivers/gpio.h>
 #  include <vos/drivers/gpio.h>
 #endif /* LAMBDACHIP_ZEPHYR */
+#include "lib.h"
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
@@ -44,16 +45,16 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         {
           memcpy (&(a), &(x->value), 4);
         }
-      else if (x->attr.type == imm_int)
-        {
-          a.f = (float)(imm_int_t) (x->value);
-        }
       else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
           a.f = (float)(imm_int_t) (x->value);
           int sign = rational_pos ? 1 : -1;
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
+        }
+      else if (x->attr.type == imm_int)
+        {
+          a.f = (float)(imm_int_t) (x->value);
         }
       else
         {
@@ -97,9 +98,12 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
     {
       if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
         {
-          if (y->attr.type == imm_int)
+          if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
             {
-              convert_imm_int_to_rational (&y);
+            }
+          else if (y->attr.type == imm_int)
+            {
+              convert_imm_int_to_rational (y);
             }
           else
             {
@@ -110,9 +114,12 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
         {
-          if (x->attr.type == imm_int)
+          if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
             {
-              convert_imm_int_to_rational (&x);
+            }
+          else if (x->attr.type == imm_int)
+            {
+              convert_imm_int_to_rational (x);
             }
           else
             {
@@ -121,13 +128,58 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
               panic ("");
             }
         }
-      imm_int_t xd, xn, yd, yn, x_sign, y_sign;
-      xd = ((imm_int_t) (x->value) >> 16) & 0xFFFFFFFF;
-      xn = ((imm_int_t) (x->value) & 0xFFFFFFFF);
+      s64_t xd, xn, yd, yn, x_sign, y_sign;
+      s64_t denominator, numerator, common_divisir;
+      xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
+      xd = ((imm_int_t) (x->value) & 0xFFFF);
       x_sign = (x->attr.type == rational_pos) ? 1 : -1;
-      yd = ((imm_int_t) (y->value) >> 16) & 0xFFFFFFFF;
-      yn = ((imm_int_t) (y->value) & 0xFFFFFFFF);
+      yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
+      yd = ((imm_int_t) (y->value) & 0xFFFF);
       y_sign = (y->attr.type == rational_pos) ? 1 : -1;
+
+      // a/b+c/d = (a*d+b*c)/(b*d)
+      denominator = xd * yd; // safe, s32 * s32 is s64
+      // denominator = xn*yn; // safe
+      // safe, s32 * s32 + s32 * s32 is s64
+      numerator = xn * yd * x_sign + yn * xd * y_sign;
+
+      // only 32 bit is used, no overflow
+      if (((numerator & 0xFFFFFFFF00000000) == 0)
+          || ((numerator & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000))
+        {
+          common_divisir = gcd (denominator, numerator);
+          denominator /= common_divisir;
+          numerator /= common_divisir;
+        }
+      else
+        {
+          // convert to float
+        }
+      // gcd
+      u16_t dd;
+      imm_int_t vv;
+      // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
+      // check if only 16 bit LSB is effective
+      // BOOL abs(int) cannot hold arguments with the type of s64_t
+      if ((((denominator & 0xFFFFFFFFFFFF0000) == 0)
+           || ((denominator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000))
+          && (((denominator & 0xFFFFFFFFFFFF0000) == 0)
+              || ((denominator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000)))
+        {
+          u16_t dd = denominator & 0xffff;
+          u16_t nn = numerator & 0xffff;
+          // value of shift left is correct with signed int
+          ret->value = (void *)((numerator << 16) | denominator);
+          ret->attr.type = (numerator > 0) ? rational_pos : rational_neg;
+        }
+      else
+        {
+          // convert to float
+        }
+
+      // ret->attr.type == (numerator>0)?rational_pos:rational_neg;
+      // ret->value == ()
+      return ret;
     }
   else if (x->attr.type == imm_int && y->attr.type == imm_int)
     {
@@ -141,6 +193,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       ret->value = (void *)result2;
       ret->attr.type = imm_int;
+      return ret;
     }
   else
     {
@@ -148,6 +201,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
         __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
       panic ("");
+      return ret;
     }
 
   return ret;
