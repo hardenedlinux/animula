@@ -175,16 +175,21 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
       // check if only 16 bit LSB is effective
       // BOOL abs(int) cannot hold arguments with the type of s64_t
-      if ((((denominator & 0xFFFFFFFFFFFF0000) == 0)
-           || ((denominator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000))
+      if ((((numerator & 0xFFFFFFFFFFFF0000) == 0)
+           || ((numerator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000))
           && (((denominator & 0xFFFFFFFFFFFF0000) == 0)
               || ((denominator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000)))
         {
-          u16_t dd = denominator & 0xffff;
-          u16_t nn = numerator & 0xffff;
+          int sign = (denominator < 0) ? -1 : 1;
+          sign = sign * ((numerator < 0) ? -1 : 1);
+
+          // u16_t dd = abs (denominator) & 0xffff;
+          // u16_t nn = abs (numerator) & 0xffff;
+          u16_t dd = ((denominator < 0) ? -1 : 1) * denominator;
+          u16_t nn = ((numerator < 0) ? -1 : 1) * numerator;
           // value of shift left is correct with signed int
-          ret->value = (void *)((numerator << 16) | denominator);
-          ret->attr.type = (numerator > 0) ? rational_pos : rational_neg;
+          ret->value = (void *)((nn << 16) | dd);
+          ret->attr.type = (sign > 0) ? rational_pos : rational_neg;
         }
       else
         {
@@ -213,14 +218,27 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
     {
       s64_t result = ((s64_t)x->value + (s64_t)y->value);
       s32_t result2 = 0xFFFFFFFF & result;
-      if (result2 != result)
+      float result3;
+      if (result2 != result) // if overflow
         {
-          os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, result, result2);
-          panic ("");
+          // os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
+          //            __FILE__, __LINE__, __FUNCTION__, result, result2);
+          // panic ("");
+          result3 = (float)result;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+
+          memcpy (&(ret->value), &result3, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+          // ret->value = (void *)result2;
+          ret->attr.type = real;
         }
-      ret->value = (void *)result2;
-      ret->attr.type = imm_int;
+      else
+        {
+          ret->value = (void *)result2;
+          ret->attr.type = imm_int;
+        }
       return ret;
     }
   else
