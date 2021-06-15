@@ -47,13 +47,13 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
-          a.f = (float)(imm_int_t) (x->value);
           int sign = rational_pos ? 1 : -1;
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
       else if (x->attr.type == imm_int)
         {
+          // FIXME: may lose precision
           a.f = (float)(imm_int_t) (x->value);
         }
       else
@@ -70,7 +70,6 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
-          a.f = (float)(imm_int_t) (x->value);
           int sign = rational_pos ? 1 : -1;
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
@@ -259,14 +258,19 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
   return ret;
 }
 
+
 static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 {
   if (y->attr.type == real)
     {
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
       float a;
       memcpy (&a, &(y->value), 4);
       a = -a;
       memcpy (&(y->value), &a, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
     }
   else if (y->attr.type == rational_pos)
     {
@@ -278,6 +282,7 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
     }
   else if (y->attr.type == imm_int)
     {
+      // FIXME:side effect
       y->value = (void *)(((imm_int_t) (y->value)) * -1);
     }
   else
@@ -291,9 +296,242 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
   return _int_add (vm, ret, x, y);
 }
 
-static inline imm_int_t _int_mul (imm_int_t x, imm_int_t y)
+static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  return x * y;
+  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+    {
+    }
+  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+    {
+    }
+  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+    {
+    }
+  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+    {
+    }
+  else if (x->attr.type == real || y->attr.type == real)
+    {
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+      real_t a;
+      real_t b;
+      if (x->attr.type == real)
+        {
+          memcpy (&(a), &(x->value), 4);
+        }
+      else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
+        {
+          int sign = rational_pos ? 1 : -1;
+          a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
+                / (float)((imm_int_t) (x->value) & 0xFFFF);
+        }
+      else if (x->attr.type == imm_int)
+        {
+          // FIXME: may lose precision
+          a.f = (float)(imm_int_t) (x->value);
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
+                     x->attr.type);
+          panic ("");
+        }
+
+      if (y->attr.type == real)
+        {
+          memcpy (&(b), &(y->value), 4);
+        }
+      else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
+        {
+          int sign = rational_pos ? 1 : -1;
+          b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
+                / (float)((imm_int_t) (x->value) & 0xFFFF);
+        }
+      else if ((y->attr.type == imm_int))
+        {
+          // FIXME: may lose precision
+          b.f = (float)(imm_int_t) (y->value);
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
+                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
+                     y->attr.type);
+          panic ("");
+        }
+      float c = a.f * b.f;
+      ret->attr.type = real;
+      memcpy (&(ret->value), &c, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+    }
+  else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
+           || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+    {
+      if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+        {
+          if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+            {
+            }
+          else if (y->attr.type == imm_int)
+            {
+              // side effect
+              // FIXME: if integer canont convert to rational
+              convert_imm_int_to_rational (y);
+            }
+          else
+            {
+              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
+                         __FUNCTION__, y->attr.type);
+              panic ("");
+            }
+        }
+      if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+        {
+          if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+            {
+            }
+          else if (x->attr.type == imm_int)
+            {
+              // side effect
+              // FIXME: if integer canont convert to rational
+              convert_imm_int_to_rational (x);
+            }
+          else
+            {
+              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
+                         __FUNCTION__, x->attr.type);
+              panic ("");
+            }
+        }
+      // TODO: check if s32 enough
+      s64_t xd, xn, yd, yn, x_sign, y_sign;
+      s64_t denominator, numerator, common_divisir;
+      xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
+      xd = ((imm_int_t) (x->value) & 0xFFFF);
+      x_sign = (x->attr.type == rational_pos) ? 1 : -1;
+      yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
+      yd = ((imm_int_t) (y->value) & 0xFFFF);
+      // FIXME: if integer canont convert to rational
+      y_sign = (y->attr.type == rational_pos) ? 1 : -1;
+
+      // a/b*c/d = (a*c)/(b*d)
+      denominator = xd * yd; // safe, s32 * s32 is s64
+      // safe, s32 * s32 + s32 * s32 is s64
+      // 65535*65535 = 2^32-2*65536+1
+      numerator = xn * x_sign * yn * y_sign;
+
+      // only 32 bit is used, no overflow
+      if (((numerator & 0xFFFFFFFF00000000) == 0)
+          || ((numerator & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000))
+        {
+          common_divisir = gcd (denominator, numerator);
+          denominator /= common_divisir;
+          numerator /= common_divisir;
+        }
+      else
+        {
+          // side effect
+          convert_rational_to_float (x);
+          // side effect
+          convert_rational_to_float (y);
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+          float a;
+          float b;
+          memcpy (&a, &(x->value), 4);
+          memcpy (&b, &(y->value), 4);
+          b = a / b;
+          ret->attr.type = real;
+          memcpy (&(ret->value), &b, 4);
+
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+        }
+      // gcd
+      u16_t dd;
+      imm_int_t vv;
+      // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
+      // check if only 16 bit LSB is effective
+      // BOOL abs(int) cannot hold arguments with the type of s64_t
+      if ((((numerator & 0xFFFFFFFFFFFF0000) == 0)
+           || ((numerator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000))
+          && (((denominator & 0xFFFFFFFFFFFF0000) == 0)
+              || ((denominator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000)))
+        {
+          int sign = (denominator < 0) ? -1 : 1;
+          sign = sign * ((numerator < 0) ? -1 : 1);
+
+          // u16_t dd = abs (denominator) & 0xffff;
+          // u16_t nn = abs (numerator) & 0xffff;
+          u16_t dd = ((denominator < 0) ? -1 : 1) * denominator;
+          u16_t nn = ((numerator < 0) ? -1 : 1) * numerator;
+          // value of shift left is correct with signed int
+          ret->value = (void *)((nn << 16) | dd);
+          ret->attr.type = (sign > 0) ? rational_pos : rational_neg;
+        }
+      else
+        {
+          // convert to float
+          convert_rational_to_float (x);
+          convert_rational_to_float (y);
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+          float a;
+          float b;
+          memcpy (&a, &(x->value), 4);
+          memcpy (&b, &(y->value), 4);
+          b = a * b;
+          ret->attr.type = real;
+          memcpy (&(ret->value), &b, 4);
+
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+        }
+
+      // ret->attr.type == (numerator>0)?rational_pos:rational_neg;
+      // ret->value == ()
+      return ret;
+    }
+  else if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      s64_t result = ((s64_t)x->value * (s64_t)y->value);
+      s32_t result2 = 0xFFFFFFFF & result;
+      float result3;
+      if (result2 != result) // if overflow
+        {
+          // os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
+          //            __FILE__, __LINE__, __FUNCTION__, result, result2);
+          // panic ("");
+          result3 = (float)result;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+
+          memcpy (&(ret->value), &result3, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+          // ret->value = (void *)result2;
+          ret->attr.type = real;
+        }
+      else
+        {
+          ret->value = (void *)result2;
+          ret->attr.type = imm_int;
+        }
+      return ret;
+    }
+  else
+    {
+      os_printk (
+        "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
+        __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
+      panic ("");
+      return ret;
+    }
+
+  return ret;
 }
 
 imm_int_t _int_modulo (imm_int_t x, imm_int_t y)
