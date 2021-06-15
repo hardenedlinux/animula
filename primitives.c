@@ -103,6 +103,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
             }
           else if (y->attr.type == imm_int)
             {
+              // side effect
+              // FIXME: if integer canont convert to rational
               convert_imm_int_to_rational (y);
             }
           else
@@ -119,6 +121,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
             }
           else if (x->attr.type == imm_int)
             {
+              // side effect
+              // FIXME: if integer canont convert to rational
               convert_imm_int_to_rational (x);
             }
           else
@@ -128,6 +132,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
               panic ("");
             }
         }
+      // TODO: check if s32 enough
       s64_t xd, xn, yd, yn, x_sign, y_sign;
       s64_t denominator, numerator, common_divisir;
       xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
@@ -153,8 +158,9 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          // convert to float
+          // side effect
           convert_rational_to_float (x);
+          // side effect
           convert_rational_to_float (y);
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
           float a;

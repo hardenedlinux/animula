@@ -27,17 +27,21 @@ void convert_imm_int_to_rational (object_t v)
   // static_assert (((void*) 0xFFFF0000 & (void*)1) == (void*) 0xFFFF0001));
   static_assert (((imm_int_t)0xFFFF0000 | (imm_int_t)1)
                  == (imm_int_t)0xFFFF0001);
+  if (n > 65535 || n < -65535)
+    {
+      os_printk ("%s:%d, %s: Out of range cannot convert %d to rational\n",
+                 __FILE__, __LINE__, __FUNCTION__, (imm_int_t)v->value);
+      panic ("");
+    }
   if (n > 0)
     {
       v->attr.type = rational_pos;
-      // v->value = (void *)((imm_int_t)v->value | 1);
       v->value = (void *)((((imm_int_t)v->value) << 16) | 1);
     }
   else // (n < 0)
     {
       v->attr.type = rational_neg;
       v->value = (void *)(((-1 * (imm_int_t)v->value) << 16) | 1);
-      // v->value = (void *)((imm_int_t)v->value | 1);
     }
   return;
 }
