@@ -48,6 +48,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
           int sign = rational_pos ? 1 : -1;
+          // FIXME: may lose precision
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
@@ -71,7 +72,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
           int sign = rational_pos ? 1 : -1;
-          a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
+          b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
       else if ((y->attr.type == imm_int))
@@ -133,7 +134,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       // TODO: check if s32 enough
       s64_t xd, xn, yd, yn, x_sign, y_sign;
-      s64_t denominator, numerator, common_divisir;
+      s64_t denominator, numerator, common_divisor;
       xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
       xd = ((imm_int_t) (x->value) & 0xFFFF);
       x_sign = (x->attr.type == rational_pos) ? 1 : -1;
@@ -151,9 +152,9 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       if (((numerator & 0xFFFFFFFF00000000) == 0)
           || ((numerator & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000))
         {
-          common_divisir = gcd (denominator, numerator);
-          denominator /= common_divisir;
-          numerator /= common_divisir;
+          common_divisor = gcd (denominator, numerator);
+          denominator /= common_divisor;
+          numerator /= common_divisor;
         }
       else
         {
@@ -166,17 +167,16 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
           float b;
           memcpy (&a, &(x->value), 4);
           memcpy (&b, &(y->value), 4);
-          b = a / b;
+          b = a + b;
           ret->attr.type = real;
           memcpy (&(ret->value), &b, 4);
 
 #else
 #  error "BIG_ENDIAN not provided"
 #endif
+          return ret;
         }
       // gcd
-      u16_t dd;
-      imm_int_t vv;
       // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
       // check if only 16 bit LSB is effective
       // BOOL abs(int) cannot hold arguments with the type of s64_t
@@ -322,6 +322,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
           int sign = rational_pos ? 1 : -1;
+          // FIXME: may lose precision
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
@@ -408,7 +409,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
         }
       // TODO: check if s32 enough
       s64_t xd, xn, yd, yn, x_sign, y_sign;
-      s64_t denominator, numerator, common_divisir;
+      s64_t denominator, numerator, common_divisor;
       xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
       xd = ((imm_int_t) (x->value) & 0xFFFF);
       x_sign = (x->attr.type == rational_pos) ? 1 : -1;
@@ -427,9 +428,9 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       if (((numerator & 0xFFFFFFFF00000000) == 0)
           || ((numerator & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000))
         {
-          common_divisir = gcd (denominator, numerator);
-          denominator /= common_divisir;
-          numerator /= common_divisir;
+          common_divisor = gcd (denominator, numerator);
+          denominator /= common_divisor;
+          numerator /= common_divisor;
         }
       else
         {
@@ -442,17 +443,15 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
           float b;
           memcpy (&a, &(x->value), 4);
           memcpy (&b, &(y->value), 4);
-          b = a / b;
+          b = a * b;
           ret->attr.type = real;
           memcpy (&(ret->value), &b, 4);
-
+          return ret;
 #else
 #  error "BIG_ENDIAN not provided"
 #endif
         }
       // gcd
-      u16_t dd;
-      imm_int_t vv;
       // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
       // check if only 16 bit LSB is effective
       // BOOL abs(int) cannot hold arguments with the type of s64_t
@@ -471,6 +470,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
           // value of shift left is correct with signed int
           ret->value = (void *)((nn << 16) | dd);
           ret->attr.type = (sign > 0) ? rational_pos : rational_neg;
+          return ret;
         }
       else
         {
