@@ -30,9 +30,6 @@ void cast_imm_int_to_rational (object_t v)
   imm_int_t n = (imm_int_t)v->value;
   VALIDATE_NUMERATOR (n);
 
-  // static_assert (((void*) 0xFFFF0000 & (void*)1) == (void*) 0xFFFF0001));
-  static_assert (((imm_int_t)0xFFFF0000 | (imm_int_t)1)
-                 == (imm_int_t)0xFFFF0001);
   if (n > 65535 || n < -65535)
     {
       os_printk ("%s:%d, %s: Out of range cannot convert %d to rational\n",
@@ -56,7 +53,6 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
 {
   imm_int_t d = 0;
   imm_int_t n = 0;
-  static_assert ((((imm_int_t)0xBAA50000 >> 16) & 0xFFFF) == (imm_int_t)0xBAA5);
   n = ((imm_int_t)v->value >> 16) & 0xFFFF;
   d = (imm_int_t)v->value & 0xFFFF;
   if (d != 1)
@@ -143,4 +139,12 @@ void cast_int_or_fractal_to_float (object_t v)
         __FILE__, __LINE__, __FUNCTION__, v->attr.type);
       panic ("");
     }
+}
+
+void bit_order_checking (void)
+{
+  static_assert ((((imm_int_t)BIT_ORDER_MASK >> 16) & 0xFFFF)
+                 == (imm_int_t)BIT_ORDER_MASK2);
+  static_assert (((imm_int_t)BIT_ORDER_MASK | (imm_int_t)1)
+                 == (imm_int_t)BIT_ORDER_MASK3);
 }
