@@ -70,100 +70,10 @@ static void call_prim (vm_t vm, pn_t pn)
         RESTORE ();
         break;
       }
-    case fract_div:
-      {
-        Object d = POP_OBJ ();
-        Object n = POP_OBJ ();
-
-        Object ret;
-        if (d.attr.type == imm_int && n.attr.type == imm_int)
-          {
-            imm_int_t dv = (imm_int_t)d.value;
-            imm_int_t nv = (imm_int_t)n.value;
-            imm_int_t g = gcd (dv, nv);
-
-            imm_int_t nn = nv / g;
-            imm_int_t dd = dv / g;
-            VALIDATE_NUMERATOR (nn);
-            VALIDATE_DENOMINATOR (dd);
-            ret.attr.type = (dd ^ nn) < 0 ? rational_neg : rational_pos;
-            uintptr_t v = (abs (nn) << 16) | abs (dd);
-            ret.value = (void *)v;
-          }
-        else // one of n or d is rational number
-          {
-            if (n.attr.type == imm_int)
-              {
-                convert_imm_int_to_rational (&n);
-              }
-            if (d.attr.type == imm_int)
-              {
-                convert_imm_int_to_rational (&d);
-              }
-
-            imm_int_t nn, dd, nd, dn, d_sign, n_sign;
-            if (n.attr.type == rational_pos)
-              {
-                static_assert ((((imm_int_t)0xFFFFFFFF) & 0xFFFF) == 0xFFFF);
-                nn = ((imm_int_t)n.value >> 16) & 0xFFFF;
-                nd = ((imm_int_t)n.value) & 0xFFFF;
-                n_sign = 1;
-              }
-            else if (n.attr.type == rational_neg)
-              {
-                nn = (((imm_int_t)n.value) >> 16) & 0xFFFF;
-                nd = ((imm_int_t) (n.value)) & 0xFFFF;
-                n_sign = -1;
-              }
-            else
-              {
-                os_printk ("%s:%d, %s: type error, type is %d!\n", __FILE__,
-                           __LINE__, __FUNCTION__, n.attr.type);
-                panic ("");
-              }
-            if (d.attr.type == rational_pos)
-              {
-                dn = ((imm_int_t)d.value >> 16) & 0xFFFF;
-                dd = (imm_int_t)d.value & 0xFFFF;
-                d_sign = 1;
-              }
-            else if (d.attr.type == rational_neg)
-              {
-                dn = (((imm_int_t) (d.value)) >> 16) & 0xFFFF;
-                dd = (imm_int_t) (d.value) & 0xFFFF;
-                d_sign = -1;
-              }
-            else
-              {
-                os_printk ("%s:%d, %s: type error, type is %d!\n", __FILE__,
-                           __LINE__, __FUNCTION__, d.attr.type);
-                panic ("");
-              }
-            imm_int_t a = nn * dd;
-            imm_int_t b = nd * dn;
-            imm_int_t common_divisor = gcd (a, b);
-            a = a / common_divisor;
-            b = b / common_divisor;
-            VALIDATE_NUMERATOR (a);
-            VALIDATE_DENOMINATOR (b);
-            void *v = (void *)((abs (a) << 16) | abs (b));
-            ret.value = v;
-            if (d_sign * n_sign > 0)
-              {
-                ret.attr.type = rational_pos;
-              }
-            else
-              {
-                ret.attr.type = rational_neg;
-              }
-          }
-        convert_rational_to_imm_int_if_denominator_is_1 (&ret);
-        PUSH_OBJ (ret);
-        break;
-      }
     case int_add:
     case int_sub:
     case int_mul:
+    case fract_div:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         size_t size = sizeof (struct Object);

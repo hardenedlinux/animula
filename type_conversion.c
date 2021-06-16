@@ -20,6 +20,12 @@
 
 void convert_imm_int_to_rational (object_t v)
 {
+  oattr t;
+  t.type = v->attr.type;
+  if ((t.type == rational_pos) || (t.type == rational_neg))
+    {
+      return;
+    }
   VALIDATE (v, imm_int);
   imm_int_t n = (imm_int_t)v->value;
   VALIDATE_NUMERATOR (n);
@@ -97,4 +103,44 @@ void convert_rational_to_float (object_t v)
 #else
 #  error "BIG_ENDIAN not provided"
 #endif
+}
+
+void convert_int_or_fractal_to_float (object_t v)
+{
+  // #warning("%s:%d, %s: side effect\n", __FILE__, __LINE__, __FUNCTION__);
+
+  oattr t;
+  t.type = v->attr.type;
+  // if (t.type == complex_inexact)
+  // {}
+  // else if (t.type == complex_exact)
+  // {}
+  if (t.type == real)
+    {
+      return;
+    }
+  else if ((t.type == rational_pos) || (t.type == rational_neg))
+    {
+      convert_rational_to_float (v);
+    }
+  else if (t.type == imm_int)
+    {
+      v->attr.type = real;
+      imm_int_t b = (imm_int_t) (v->value);
+      float a = (float)b;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+      memcpy (&(v->value), &a, 4);
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+      return;
+    }
+  else
+    {
+      os_printk (
+        "%s:%d, %s: Invalid type, expect imm_int, rationa  or real, but "
+        "it's %d\n",
+        __FILE__, __LINE__, __FUNCTION__, v->attr.type);
+      panic ("");
+    }
 }

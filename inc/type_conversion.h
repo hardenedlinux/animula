@@ -21,5 +21,6 @@
 void convert_imm_int_to_rational (object_t ret);
 void convert_rational_to_imm_int_if_denominator_is_1 (object_t v);
 void convert_rational_to_float (object_t v);
+void convert_int_or_fractal_to_float (object_t v);
 
 #endif /* __LAMBDACHIP_TYPE_CONVERSION_H__ */

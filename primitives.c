@@ -47,7 +47,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
-          int sign = rational_pos ? 1 : -1;
+          int sign = (x->attr.type == rational_pos) ? 1 : -1;
           // FIXME: may lose precision
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
@@ -71,7 +71,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
-          int sign = rational_pos ? 1 : -1;
+          int sign = (y->attr.type == rational_pos) ? 1 : -1;
           b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
@@ -283,7 +283,17 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
   else if (y->attr.type == imm_int)
     {
       // FIXME:side effect
-      y->value = (void *)(((imm_int_t) (y->value)) * -1);
+      if ((imm_int_t) (y->value) == -2147483648) // -1*2^31
+        {
+          os_printk (
+            "%s:%d, %s: Out of range, cannot calculate opposite number of %d\n",
+            __FILE__, __LINE__, __FUNCTION__, (imm_int_t) (y->value));
+          panic ("");
+        }
+      else
+        {
+          y->value = (void *)(((imm_int_t) (y->value)) * -1);
+        }
     }
   else
     {
@@ -321,7 +331,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
-          int sign = rational_pos ? 1 : -1;
+          int sign = (x->attr.type == rational_pos) ? 1 : -1;
           // FIXME: may lose precision
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
@@ -345,7 +355,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
-          int sign = rational_pos ? 1 : -1;
+          int sign = (y->attr.type == rational_pos) ? 1 : -1;
           b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
@@ -521,6 +531,159 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
           ret->attr.type = imm_int;
         }
       return ret;
+    }
+  else
+    {
+      os_printk (
+        "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
+        __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
+      panic ("");
+      return ret;
+    }
+
+  return ret;
+}
+
+static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
+{
+  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+    {
+    }
+  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+    {
+    }
+  else if (x->attr.type == real || y->attr.type == real)
+    {
+#ifndef LAMBDACHIP_LITTLE_ENDIAN
+#  error "BIG_ENDIAN not provided"
+#endif
+      float a;
+      float b;
+      convert_int_or_fractal_to_float (x);
+      convert_int_or_fractal_to_float (y);
+      memcpy (&a, &(x->value), sizeof (a));
+      memcpy (&b, &(y->value), sizeof (b));
+      if (b != 0.0f)
+        {
+          b = a / b;
+        }
+      else
+        {
+          os_printk ("%s:%d, %s: Div by 0 error!\n", __FILE__, __LINE__,
+                     __FUNCTION__);
+          panic ("");
+        }
+      memcpy (&(ret->value), &b, sizeof (b));
+      ret->attr.type = real;
+    }
+  else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
+           || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+    {
+      imm_int_t nx, dx, ny, dy, sign_x, sign_y, sign;
+      s64_t nn, dd, common_divisor64;
+
+      if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
+        {
+          nx = (((imm_int_t) (x->value)) >> 16) & 0xFFFF;
+          dx = ((imm_int_t) (x->value)) & 0xFFFF;
+          sign_x = (x->attr.type == rational_pos) ? 1 : -1;
+        }
+      else if (x->attr.type == imm_int)
+        {
+          nx = (imm_int_t) (x->value);
+          dx = 1;
+          sign_x = (nx >= 0) ? 1 : -1;
+          nx = abs (nx);
+        }
+      if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
+        {
+          ny = (((imm_int_t) (y->value)) >> 16) & 0xFFFF;
+          dy = ((imm_int_t) (y->value)) & 0xFFFF;
+          sign_y = (y->attr.type == rational_pos) ? 1 : -1;
+        }
+      else if (y->attr.type == imm_int)
+        {
+          ny = (imm_int_t) (y->value);
+          dy = 1;
+          sign_y = (ny >= 0) ? 1 : -1;
+          ny = abs (ny);
+        }
+      nn = nx * dy;
+      dd = dx * ny;
+      nn = abs64 (nn);
+      dd = abs64 (dd);
+      sign = sign_x * sign_y;
+      common_divisor64 = gcd64 (nn, dd);
+      nn = nn / common_divisor64;
+      dd = dd / common_divisor64;
+      if (dd == 0)
+        {
+          os_printk ("%s:%d, %s: Div by 0 error!\n", __FILE__, __LINE__,
+                     __FUNCTION__);
+          panic ("");
+        }
+      if (nn < MIN_REAL_DENOMINATOR || nn > MAX_REAL_DENOMINATOR
+          || dd < MIN_REAL_DENOMINATOR || dd > MAX_REAL_DENOMINATOR)
+        {
+          float a = (float)(nn * sign) / (float)dd;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+          memcpy (&(ret->value), &a, sizeof (a));
+          ret->attr.type = real;
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+        }
+      else // nn and dd are in range
+        {
+          ret->value = (void *)((nn << 16) | dd);
+          ret->attr.type = (sign >= 0) ? rational_pos : rational_neg;
+          convert_rational_to_imm_int_if_denominator_is_1 (ret);
+        }
+    }
+  else if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      imm_int_t n = (imm_int_t) (x->value);
+      imm_int_t d = (imm_int_t) (y->value);
+      imm_int_t sign = (n >= 0) ? 1 : -1;
+      sign = sign * ((d >= 0) ? 1 : -1);
+      n = abs (n);
+      d = abs (d);
+
+      if (d == 0)
+        {
+          os_printk ("%s:%d, %s: Div by 0 error!\n", __FILE__, __LINE__,
+                     __FUNCTION__);
+          panic ("");
+        }
+      imm_int_t common_divisor = gcd (n, d);
+      n = n / common_divisor;
+      d = d / common_divisor;
+
+      if (n < MIN_REAL_DENOMINATOR || n > MAX_REAL_DENOMINATOR
+          || d < MIN_REAL_DENOMINATOR || d > MAX_REAL_DENOMINATOR)
+        {
+          ret->attr.type = real;
+          float c = sign * (float)n / (float)d;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+          memcpy (&(ret->value), &c, sizeof (c));
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+          // return ret;
+        }
+      else
+        {
+          if (sign > 0)
+            {
+              ret->attr.type = rational_pos;
+            }
+          else
+            {
+              ret->attr.type = rational_neg;
+            }
+          ret->value = (void *)((n << 16) | d);
+          convert_rational_to_imm_int_if_denominator_is_1 (ret);
+        }
     }
   else
     {
@@ -1136,7 +1299,7 @@ void primitives_init (void)
   def_prim (2, "add", 2, (void *)_int_add);
   def_prim (3, "sub", 2, (void *)_int_sub);
   def_prim (4, "mul", 2, (void *)_int_mul);
-  def_prim (5, "fract_div", 2, NULL);
+  def_prim (5, "div", 2, (void *)_int_div);
   def_prim (6, "object_print", 1, (void *)_object_print);
   def_prim (7, "apply", 2, NULL);
   def_prim (8, "not", 1, (void *)_not);

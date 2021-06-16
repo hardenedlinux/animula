@@ -33,4 +33,34 @@ static inline imm_int_t gcd (imm_int_t u, imm_int_t v)
     ;
   return (uu + vv);
 }
+
+static inline s64_t gcd64 (s64_t u, s64_t v)
+{
+  s64_t uu = (u >= 0) ? u : (-1 * u);
+  s64_t vv = (v >= 0) ? v : (-1 * v);
+  while ((uu %= vv) && (vv %= uu))
+    ;
+  return (uu + vv);
+}
+
+static inline s64_t abs64 (s64_t x)
+{
+  if (x == -2147483648) // -1*2^31
+    {
+      os_printk (
+        "%s:%d, %s: Out of range, cannot calculate opposite number of %lld,\n",
+        __FILE__, __LINE__, __FUNCTION__, x);
+      panic ("");
+      return -x;
+    }
+  else if (x > 0)
+    {
+      return x;
+    }
+  else
+    {
+      return -x;
+    }
+}
+
 #endif // End of __LAMBDACHIP_LIB_H__
