@@ -356,8 +356,8 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
           int sign = (y->attr.type == rational_pos) ? 1 : -1;
-          b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
-                / (float)((imm_int_t) (x->value) & 0xFFFF);
+          b.f = sign * (float)(((imm_int_t) (y->value) >> 16) & 0xFFFF)
+                / (float)((imm_int_t) (y->value) & 0xFFFF);
         }
       else if ((y->attr.type == imm_int))
         {
@@ -480,6 +480,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
           // value of shift left is correct with signed int
           ret->value = (void *)((nn << 16) | dd);
           ret->attr.type = (sign > 0) ? rational_pos : rational_neg;
+          convert_rational_to_imm_int_if_denominator_is_1 (ret);
           return ret;
         }
       else
