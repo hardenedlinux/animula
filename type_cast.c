@@ -14,11 +14,11 @@
  *  License along with this program.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "type_conversion.h"
+#include "type_cast.h"
 #include "object.h"
 #include "os.h"
 
-void convert_imm_int_to_rational (object_t v)
+void cast_imm_int_to_rational (object_t v)
 {
   oattr t;
   t.type = v->attr.type;
@@ -52,7 +52,7 @@ void convert_imm_int_to_rational (object_t v)
   return;
 }
 
-void convert_rational_to_imm_int_if_denominator_is_1 (object_t v)
+void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
 {
   imm_int_t d = 0;
   imm_int_t n = 0;
@@ -83,7 +83,7 @@ void convert_rational_to_imm_int_if_denominator_is_1 (object_t v)
   return;
 }
 
-void convert_rational_to_float (object_t v)
+void cast_rational_to_float (object_t v)
 {
   if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
     {
@@ -105,7 +105,7 @@ void convert_rational_to_float (object_t v)
 #endif
 }
 
-void convert_int_or_fractal_to_float (object_t v)
+void cast_int_or_fractal_to_float (object_t v)
 {
   // #warning("%s:%d, %s: side effect\n", __FILE__, __LINE__, __FUNCTION__);
 
@@ -121,7 +121,7 @@ void convert_int_or_fractal_to_float (object_t v)
     }
   else if ((t.type == rational_pos) || (t.type == rational_neg))
     {
-      convert_rational_to_float (v);
+      cast_rational_to_float (v);
     }
   else if (t.type == imm_int)
     {

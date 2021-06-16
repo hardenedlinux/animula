@@ -1,5 +1,5 @@
-#ifndef __LAMBDACHIP_TYPE_CONVERSION_H__
-#define __LAMBDACHIP_TYPE_CONVERSION_H__
+#ifndef __LAMBDACHIP_TYPE_CAST_H__
+#define __LAMBDACHIP_TYPE_CAST_H__
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
@@ -18,9 +18,9 @@
  */
 #include "types.h"
 
-void convert_imm_int_to_rational (object_t ret);
-void convert_rational_to_imm_int_if_denominator_is_1 (object_t v);
-void convert_rational_to_float (object_t v);
-void convert_int_or_fractal_to_float (object_t v);
+void cast_imm_int_to_rational (object_t ret);
+void cast_rational_to_imm_int_if_denominator_is_1 (object_t v);
+void cast_rational_to_float (object_t v);
+void cast_int_or_fractal_to_float (object_t v);
 
-#endif /* __LAMBDACHIP_TYPE_CONVERSION_H__ */
+#endif /* __LAMBDACHIP_TYPE_CAST_H__ */

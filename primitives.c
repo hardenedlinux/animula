@@ -16,7 +16,7 @@
  */
 
 #include "primitives.h"
-#include "type_conversion.h"
+#include "type_cast.h"
 #ifdef LAMBDACHIP_ZEPHYR
 // #  include <string.h> // memncpy
 #  include <drivers/gpio.h>
@@ -105,7 +105,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
             {
               // side effect
               // FIXME: if integer canont convert to rational
-              convert_imm_int_to_rational (y);
+              cast_imm_int_to_rational (y);
             }
           else
             {
@@ -123,7 +123,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
             {
               // side effect
               // FIXME: if integer canont convert to rational
-              convert_imm_int_to_rational (x);
+              cast_imm_int_to_rational (x);
             }
           else
             {
@@ -159,9 +159,9 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           // side effect
-          convert_rational_to_float (x);
+          cast_rational_to_float (x);
           // side effect
-          convert_rational_to_float (y);
+          cast_rational_to_float (y);
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
           float a;
           float b;
@@ -199,8 +199,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           // convert to float
-          convert_rational_to_float (x);
-          convert_rational_to_float (y);
+          cast_rational_to_float (x);
+          cast_rational_to_float (y);
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
           float a;
           float b;
@@ -390,7 +390,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
             {
               // side effect
               // FIXME: if integer canont convert to rational
-              convert_imm_int_to_rational (y);
+              cast_imm_int_to_rational (y);
             }
           else
             {
@@ -408,7 +408,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
             {
               // side effect
               // FIXME: if integer canont convert to rational
-              convert_imm_int_to_rational (x);
+              cast_imm_int_to_rational (x);
             }
           else
             {
@@ -445,9 +445,9 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       else
         {
           // side effect
-          convert_rational_to_float (x);
+          cast_rational_to_float (x);
           // side effect
-          convert_rational_to_float (y);
+          cast_rational_to_float (y);
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
           float a;
           float b;
@@ -480,14 +480,14 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
           // value of shift left is correct with signed int
           ret->value = (void *)((nn << 16) | dd);
           ret->attr.type = (sign > 0) ? rational_pos : rational_neg;
-          convert_rational_to_imm_int_if_denominator_is_1 (ret);
+          cast_rational_to_imm_int_if_denominator_is_1 (ret);
           return ret;
         }
       else
         {
           // convert to float
-          convert_rational_to_float (x);
-          convert_rational_to_float (y);
+          cast_rational_to_float (x);
+          cast_rational_to_float (y);
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
           float a;
           float b;
@@ -560,8 +560,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
 #endif
       float a;
       float b;
-      convert_int_or_fractal_to_float (x);
-      convert_int_or_fractal_to_float (y);
+      cast_int_or_fractal_to_float (x);
+      cast_int_or_fractal_to_float (y);
       memcpy (&a, &(x->value), sizeof (a));
       memcpy (&b, &(y->value), sizeof (b));
       if (b != 0.0f)
@@ -638,7 +638,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
         {
           ret->value = (void *)((nn << 16) | dd);
           ret->attr.type = (sign >= 0) ? rational_pos : rational_neg;
-          convert_rational_to_imm_int_if_denominator_is_1 (ret);
+          cast_rational_to_imm_int_if_denominator_is_1 (ret);
         }
     }
   else if (x->attr.type == imm_int && y->attr.type == imm_int)
@@ -683,7 +683,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
               ret->attr.type = rational_neg;
             }
           ret->value = (void *)((n << 16) | d);
-          convert_rational_to_imm_int_if_denominator_is_1 (ret);
+          cast_rational_to_imm_int_if_denominator_is_1 (ret);
         }
     }
   else

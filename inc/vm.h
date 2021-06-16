@@ -456,6 +456,4 @@ void vm_restart (vm_t vm);
 void vm_run (vm_t vm);
 void vm_load_lef (vm_t vm, lef_t lef);
 void apply_proc (vm_t vm, object_t proc, object_t ret);
-void convert_imm_int_to_rational (object_t ret);
-void convert_rational_to_imm_int_if_denominator_is_1 (object_t v);
 #endif // End of __LAMBDACHIP_VM_H__
