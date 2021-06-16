@@ -45,7 +45,9 @@ static inline s64_t gcd64 (s64_t u, s64_t v)
 
 static inline s64_t abs64 (s64_t x)
 {
-  if (x == -2147483648) // -1*2^31
+  // due to the asymmetric nature of signed int, (s32_t)0xFFFFFFFF
+  // cannot convert to a valid s32_t integer. abs (0xFFFFFFFF) = 0x100000000
+  if (x == MIN_INT32)
     {
       os_printk (
         "%s:%d, %s: Out of range, cannot calculate opposite number of %lld,\n",
