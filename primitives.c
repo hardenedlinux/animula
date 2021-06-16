@@ -282,7 +282,7 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
   else if (y->attr.type == imm_int)
     {
       // FIXME:side effect
-      if ((imm_int_t) (y->value) == -2147483648) // -1*2^31
+      if ((imm_int_t) (y->value) == MIN_INT32) // -1*2^31
         {
           os_printk (
             "%s:%d, %s: Out of range, cannot calculate opposite number of %d\n",
