@@ -63,8 +63,7 @@ int zephyr_open (const char *pathname, int flags)
     }
   else // ret > 0
     {
-      os_printk ("Error, zephyr fs_open shall not return a positive value");
-      panic ("");
+      PANIC ("Error, zephyr fs_open shall not return a positive value");
       return ret;
     }
 }

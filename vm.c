@@ -294,7 +294,7 @@ static void call_prim (vm_t vm, pn_t pn)
             {
               os_printk ("apply: not an applicable object, type: %d\n",
                          proc.attr.type);
-              panic ("apply panic!\n");
+              PANIC ("apply panic!\n");
             }
           }
         break;
@@ -669,7 +669,7 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
     default:
       {
         os_printk ("Invalid bytecode %X\n", bc.all);
-        panic ("interp_single_encode panic!\n");
+        PANIC ("interp_single_encode panic!\n");
       }
     }
 }
@@ -739,7 +739,7 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
     default:
       {
         os_printk ("Invalid bytecode %X %X\n", bc.type, bc.data);
-        panic ("interp_double_encode panic!\n");
+        PANIC ("interp_double_encode panic!\n");
       }
     };
 }
@@ -750,7 +750,7 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
     {
     case VEC_REF:
       {
-        panic ("VEC_REf hasn't been implemented yet!");
+        PANIC ("VEC_REf hasn't been implemented yet!");
         // VM_DEBUG ("(vec-ref 0x%p %d)\n", vec, bc.bc3);
         // PUSH (vector_ref (vec, bc.bc2));
         break;
@@ -822,7 +822,7 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
     default:
       {
         os_printk ("Invalid bytecode %X, %X, %X\n", bc.bc1, bc.bc2, bc.bc3);
-        panic ("interp_triple_encode panic!\n");
+        PANIC ("interp_triple_encode panic!\n");
       }
     }
 }
@@ -833,7 +833,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
     {
     case VEC_SET:
       {
-        panic ("VEC_SET hasn't been implemented yet!");
+        PANIC ("VEC_SET hasn't been implemented yet!");
         /* vector_t vec = (vector_t)ss_read_u32 (bc.bc1); */
         /* object_t obj = (object_t)ss_read_u32 (bc.bc3); */
         /* VM_DEBUG ("(vec-set! 0x%p %d 0x%p)\n", vec, bc.bc2, obj); */
@@ -869,7 +869,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
       {
         os_printk ("Invalid bytecode %X, %X, %X, %X\n", bc.bc1, bc.bc2, bc.bc3,
                    bc.bc4);
-        panic ("interp_quadruple_encode panic!\n");
+        PANIC ("interp_quadruple_encode panic!\n");
       }
     }
 }
@@ -974,7 +974,7 @@ static void interp_special (vm_t vm, bytecode8_t bc)
     default:
       {
         os_printk ("Invalid special bytecode %X, %X\n", bc.type, bc.data);
-        panic ("interp_special_encode panic!\n");
+        PANIC ("interp_special_encode panic!\n");
       }
     }
 }
@@ -1138,7 +1138,7 @@ static encode_t pre_fetch (vm_t vm, bytecode8_t bytecode)
     }
 
   VM_DEBUG ("Invalid encode %x\n", bytecode.type);
-  panic ("BUG in pre_fetch: it's impossible to be here!");
+  PANIC ("BUG in pre_fetch: it's impossible to be here!");
   return -1;
 }
 
@@ -1184,7 +1184,7 @@ static void dispatch (vm_t vm, bytecode8_t bc)
     default:
       {
         os_printk ("Invalid bytecode type!\n");
-        panic ("vm_run panic!\n");
+        PANIC ("vm_run panic!\n");
       }
     };
 }

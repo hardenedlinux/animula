@@ -36,7 +36,7 @@ object_t _car (vm_t vm, object_t ret, object_t obj)
     default:
       {
         os_printk ("car: Invalid object type %d\n", obj->attr.type);
-        panic ("The program is down!\n");
+        PANIC ("The program is down!\n");
       }
     }
 
@@ -76,8 +76,7 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
       }
     default:
       {
-        os_printk ("cdr: Invalid object type %d\n", obj->attr.type);
-        panic ("");
+        PANIC ("cdr: Invalid object type %d\n", obj->attr.type);
       }
     }
 
@@ -141,9 +140,7 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
 
   if (cnt < 0)
     {
-      os_printk ("%s:%d, %s: Invalid index %d!\n", __FILE__, __LINE__,
-                 __FUNCTION__, lst_idx);
-      panic ("");
+      PANIC ("Invalid index %d!\n", lst_idx);
     }
 
   cnt++;
@@ -158,16 +155,12 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
 
   if (cnt > 0)
     {
-      os_printk ("%s:%d, %s: Invalid index %d!\n", __FILE__, __LINE__,
-                 __FUNCTION__, lst_idx);
-      panic ("");
+      PANIC ("Invalid index %d!\n", lst_idx);
     }
 
   if (!next)
     {
-      os_printk ("%s:%d, %s: Invalid index %d!\n", __FILE__, __LINE__,
-                 __FUNCTION__, lst_idx);
-      panic ("");
+      PANIC ("Invalid index %d!\n", lst_idx);
       // FIXME: implement throw
       // throw ();
     }
@@ -199,8 +192,7 @@ object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
 
   if (node->obj != val)
     {
-      os_printk ("list-set!: Invalid index %d!\n", cnt);
-      panic ("");
+      PANIC ("list-set!: Invalid index %d!\n", cnt);
       // FIXME: implement throw
       // throw ();
     }

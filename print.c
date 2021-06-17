@@ -198,7 +198,7 @@ void object_printer (const object_t obj)
     default:
       {
         os_printk ("object_print: Invalid object type %d\n", obj->attr.type);
-        panic ("VM stop!");
+        PANIC ("VM stop!");
       }
     }
 }

@@ -59,10 +59,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
-                     x->attr.type);
-          panic ("");
+          PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
+                 x->attr.type);
         }
 
       if (y->attr.type == real)
@@ -81,10 +79,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
-                     y->attr.type);
-          panic ("");
+          PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
+                 y->attr.type);
         }
       float c = a.f + b.f;
       ret->attr.type = real;
@@ -109,9 +105,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
             }
           else
             {
-              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
-                         __FUNCTION__, y->attr.type);
-              panic ("");
+              PANIC ("Type error, %d\n", y->attr.type);
             }
         }
       if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
@@ -127,9 +121,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
             }
           else
             {
-              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
-                         __FUNCTION__, x->attr.type);
-              panic ("");
+              PANIC ("Type error, %d\n", x->attr.type);
             }
         }
       // TODO: check if s32 enough
@@ -226,9 +218,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       float result3;
       if (result2 != result) // if overflow
         {
-          // os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
-          //            __FILE__, __LINE__, __FUNCTION__, result, result2);
-          // panic ("");
+          // PANIC ("Add overflow or underflow %lld, %d\n", result, result2);
           result3 = (float)result;
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
 
@@ -248,10 +238,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
     }
   else
     {
-      os_printk (
-        "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
-        __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
-      panic ("");
+      PANIC ("Type error, x->attr.type == %d && y->attr.type == %d\n",
+             x->attr.type, y->attr.type);
       return ret;
     }
 
@@ -284,10 +272,8 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
       // FIXME:side effect
       if ((imm_int_t) (y->value) == MIN_INT32) // -1*2^31
         {
-          os_printk (
-            "%s:%d, %s: Out of range, cannot calculate opposite number of %d\n",
-            __FILE__, __LINE__, __FUNCTION__, (imm_int_t) (y->value));
-          panic ("");
+          PANIC ("Out of range, cannot calculate opposite number of %d\n",
+                 (imm_int_t) (y->value));
         }
       else
         {
@@ -296,11 +282,8 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
     }
   else
     {
-      os_printk (
-        "%s:%d, %s: Invalid type, expect %d, %d, %d or %d, but it's %d\n",
-        __FILE__, __LINE__, __FUNCTION__, real, rational_pos, rational_neg,
-        imm_int, y->attr.type);
-      panic ("");
+      PANIC ("Invalid type, expect %d, %d, %d or %d, but it's %d\n", real,
+             rational_pos, rational_neg, imm_int, y->attr.type);
     }
   return _int_add (vm, ret, x, y);
 }
@@ -342,10 +325,8 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
-                     x->attr.type);
-          panic ("");
+          PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
+                 x->attr.type);
         }
 
       if (y->attr.type == real)
@@ -365,10 +346,8 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                     __FILE__, __LINE__, __FUNCTION__, imm_int, real,
-                     y->attr.type);
-          panic ("");
+          PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
+                 y->attr.type);
         }
       float c = a.f * b.f;
       ret->attr.type = real;
@@ -393,9 +372,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
             }
           else
             {
-              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
-                         __FUNCTION__, y->attr.type);
-              panic ("");
+              PANIC ("Type error, %d\n", y->attr.type);
             }
         }
       if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
@@ -411,9 +388,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
             }
           else
             {
-              os_printk ("%s:%d, %s: Type error, %d\n", __FILE__, __LINE__,
-                         __FUNCTION__, x->attr.type);
-              panic ("");
+              PANIC ("Type error, %d\n", x->attr.type);
             }
         }
       // TODO: check if s32 enough
@@ -512,9 +487,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       float result3;
       if (result2 != result) // if overflow
         {
-          // os_printk ("%s:%d, %s: Add overflow or underflow %lld, %d\n",
-          //            __FILE__, __LINE__, __FUNCTION__, result, result2);
-          // panic ("");
+          // PANIC ("Add overflow or underflow %lld, %d\n", result, result2);
           result3 = (float)result;
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
 
@@ -534,10 +507,8 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
     }
   else
     {
-      os_printk (
-        "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
-        __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
-      panic ("");
+      PANIC ("Type error, x->attr.type == %d && y->attr.type == %d\n",
+             x->attr.type, y->attr.type);
       return ret;
     }
 
@@ -569,9 +540,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk ("%s:%d, %s: Div by 0 error!\n", __FILE__, __LINE__,
-                     __FUNCTION__);
-          panic ("");
+          PANIC ("Div by 0 error!\n");
         }
       memcpy (&(ret->value), &b, sizeof (b));
       ret->attr.type = real;
@@ -605,11 +574,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk (
-            "%s:%d, %s: Invalid type, expect %d, %d or %d, but it's %d\n",
-            __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_neg,
-            imm_int, x->attr.type);
-          panic ("");
+          PANIC ("Invalid type, expect %d, %d or %d, but it's %d\n",
+                 rational_pos, rational_neg, imm_int, x->attr.type);
         }
       if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
@@ -626,11 +592,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
         }
       else
         {
-          os_printk (
-            "%s:%d, %s: Invalid type, expect %d, %d or %d, but it's %d\n",
-            __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_neg,
-            imm_int, x->attr.type);
-          panic ("");
+          PANIC ("Invalid type, expect %d, %d or %d, but it's %d\n",
+                 rational_pos, rational_neg, imm_int, x->attr.type);
         }
       nn = nx * dy;
       dd = dx * ny;
@@ -642,9 +605,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
       dd = dd / common_divisor64;
       if (dd == 0)
         {
-          os_printk ("%s:%d, %s: Div by 0 error!\n", __FILE__, __LINE__,
-                     __FUNCTION__);
-          panic ("");
+          PANIC ("Div by 0 error!\n");
         }
       if (nn < MIN_REAL_DENOMINATOR || nn > MAX_REAL_DENOMINATOR
           || dd < MIN_REAL_DENOMINATOR || dd > MAX_REAL_DENOMINATOR)
@@ -675,9 +636,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
 
       if (d == 0)
         {
-          os_printk ("%s:%d, %s: Div by 0 error!\n", __FILE__, __LINE__,
-                     __FUNCTION__);
-          panic ("");
+          PANIC ("Div by 0 error!\n");
         }
       imm_int_t common_divisor = gcd (n, d);
       n = n / common_divisor;
@@ -711,10 +670,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
     }
   else
     {
-      os_printk (
-        "%s:%d, %s: Type error, x->attr.type == %d && y->attr.type == %d\n",
-        __FILE__, __LINE__, __FUNCTION__, x->attr.type, y->attr.type);
-      panic ("");
+      PANIC ("Type error, x->attr.type == %d && y->attr.type == %d\n",
+             x->attr.type, y->attr.type);
       return ret;
     }
 
@@ -859,8 +816,7 @@ static bool _eqv (object_t a, object_t b)
       }
     default:
       {
-        os_printk ("eqv?: The type %d hasn't implemented yet\n", t1);
-        panic ("");
+        PANIC ("eqv?: The type %d hasn't implemented yet\n", t1);
       }
       // TODO-1
       /* case character: */
@@ -924,7 +880,7 @@ static bool _equal (object_t a, object_t b)
       }
     case vector:
       {
-        panic ("equal?: vector hasn't been implemented yet!\n");
+        PANIC ("equal?: vector hasn't been implemented yet!\n");
         /* TODO: iterate each element and call equal? */
         break;
       }
@@ -1293,9 +1249,7 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
 
   goto OK;
 PANIC:
-  os_printk ("BUG: Invalid symbol name %s!\n", str_buf);
-  panic ("");
-
+  PANIC ("BUG: Invalid symbol name %s!\n", str_buf);
 OK:
   return ret;
 }
@@ -1322,9 +1276,7 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
     }
   else
     {
-      os_printk ("%s:%d, %s: device type not defined, cannot handle", __FILE__,
-                 __LINE__, __FUNCTION__);
-      panic ("");
+      PANIC ("device type not defined, cannot handle");
     }
 
   // os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
@@ -1476,9 +1428,7 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
     {
       ret->attr.type = boolean;
       ret->value = &GLOBAL_REF (false_const);
-      // os_printk("%s, _os_i2c_write_list(): malloc error\n");
-      os_printk ("%s, %s: malloc error\n", __FILE__, __FUNCTION__);
-      panic ("");
+      PANIC ("Malloc failed!\n");
       return ret;
     }
 
@@ -1751,8 +1701,7 @@ char *prim_name (u16_t pn)
 #if defined LAMBDACHIP_DEBUG
   if (pn >= PRIM_MAX)
     {
-      VM_DEBUG ("Invalid prim number: %d\n", pn);
-      panic ("prim_name halt\n");
+      PANIC ("Invalid prim number: %d\nprim_name halt\n", pn);
     }
 
   return GLOBAL_REF (prim_table)[pn]->name;

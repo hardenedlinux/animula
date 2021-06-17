@@ -99,7 +99,7 @@ void create_symbol_table (symtab_t st)
     }
   else
     {
-      panic ("symbol.c:create_symbol_table(): malloc fail\n");
+      PANIC ("symbol.c:create_symbol_table(): malloc fail\n");
     }
 }
 

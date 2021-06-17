@@ -32,9 +32,8 @@ void cast_imm_int_to_rational (object_t v)
 
   if (n > 65535 || n < -65535)
     {
-      os_printk ("%s:%d, %s: Out of range cannot convert %d to rational\n",
-                 __FILE__, __LINE__, __FUNCTION__, (imm_int_t)v->value);
-      panic ("");
+      PANIC ("Out of range cannot convert %d to rational\n",
+             (imm_int_t)v->value);
     }
   if (n > 0)
     {
@@ -70,9 +69,7 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
     }
   else
     {
-      os_printk ("%s:%d, %s: TYPE_ERROR: type is %d\n", __FILE__, __LINE__,
-                 __FUNCTION__, v->attr.type);
-      panic ("");
+      PANIC ("TYPE_ERROR: type is %d\n", v->attr.type);
     }
   v->attr.type = imm_int;
   v->value = (void *)(sign * n);
@@ -83,10 +80,8 @@ void cast_rational_to_float (object_t v)
 {
   if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
     {
-      os_printk ("%s:%d, %s: Invalid type, expect %d or %d, but it's %d\n",
-                 __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_neg,
-                 v->attr.type);
-      panic ("");
+      PANIC ("Invalid type, expect %d or %d, but it's %d\n", rational_pos,
+             rational_neg, v->attr.type);
     }
   int sign = (v->attr.type == rational_pos) ? 1 : -1;
   imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
@@ -133,11 +128,8 @@ void cast_int_or_fractal_to_float (object_t v)
     }
   else
     {
-      os_printk (
-        "%s:%d, %s: Invalid type, expect imm_int, rationa  or real, but "
-        "it's %d\n",
-        __FILE__, __LINE__, __FUNCTION__, v->attr.type);
-      panic ("");
+      PANIC ("Invalid type, expect imm_int, rationa  or real, but it's %d\n",
+             v->attr.type);
     }
 }
 

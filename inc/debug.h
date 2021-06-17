@@ -22,6 +22,15 @@
 
 extern GLOBAL_DEF (bool, vm_verbose);
 
+#define PANIC(format, ...)                                  \
+  do                                                        \
+    {                                                       \
+      os_printk ("%s:%d %s: " format, __FILE__, __LINE__,   \
+                 __FUNCTION__ __VA_OPT__ (, ) __VA_ARGS__); \
+      panic ("");                                           \
+    }                                                       \
+  while (0)
+
 static inline void panic (const char *reason)
 {
   os_printk ("PANIC!\n");
