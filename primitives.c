@@ -258,7 +258,6 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
   return ret;
 }
 
-
 static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 {
   if (y->attr.type == real)
@@ -580,8 +579,16 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
   else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
            || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
     {
-      imm_int_t nx, dx, ny, dy, sign_x, sign_y, sign;
-      s64_t nn, dd, common_divisor64;
+      imm_int_t nx = 0;
+      imm_int_t dx = 0;
+      imm_int_t ny = 0;
+      imm_int_t dy = 0;
+      imm_int_t sign_x = 0;
+      imm_int_t sign_y = 0;
+      imm_int_t sign;
+      s64_t nn = 0;
+      s64_t dd = 0;
+      s64_t common_divisor64 = 0;
 
       if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
         {
@@ -596,6 +603,14 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
           sign_x = (nx >= 0) ? 1 : -1;
           nx = abs (nx);
         }
+      else
+        {
+          os_printk (
+            "%s:%d, %s: Invalid type, expect %d, %d or %d, but it's %d\n",
+            __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_neg,
+            imm_int, x->attr.type);
+          panic ("");
+        }
       if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
         {
           ny = (((imm_int_t) (y->value)) >> 16) & 0xFFFF;
@@ -608,6 +623,14 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
           dy = 1;
           sign_y = (ny >= 0) ? 1 : -1;
           ny = abs (ny);
+        }
+      else
+        {
+          os_printk (
+            "%s:%d, %s: Invalid type, expect %d, %d or %d, but it's %d\n",
+            __FILE__, __LINE__, __FUNCTION__, rational_pos, rational_neg,
+            imm_int, x->attr.type);
+          panic ("");
         }
       nn = nx * dy;
       dd = dx * ny;
@@ -1141,8 +1164,8 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
     }
   else
     {
-      os_printk ("device type not defined, cannot handle", __FILE__, __LINE__,
-                 __FUNCTION__);
+      os_printk ("%s:%d, %s: device type not defined, cannot handle", __FILE__,
+                 __LINE__, __FUNCTION__);
       panic ("");
     }
 
