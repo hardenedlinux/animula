@@ -143,8 +143,8 @@ void cast_int_or_fractal_to_float (object_t v)
 
 void bit_order_checking (void)
 {
-  assert ((((imm_int_t)BIT_ORDER_MASK >> 16) & 0xFFFF)
-          == (imm_int_t)BIT_ORDER_MASK2);
-  assert (((imm_int_t)BIT_ORDER_MASK | (imm_int_t)1)
-          == (imm_int_t)BIT_ORDER_MASK3);
+  STATIC_ASSERT ((((imm_int_t)BIT_ORDER_MASK >> 16) & 0xFFFF)
+                 == (imm_int_t)BIT_ORDER_MASK2);
+  STATIC_ASSERT (((imm_int_t)BIT_ORDER_MASK | (imm_int_t)1)
+                 == (imm_int_t)BIT_ORDER_MASK3);
 }

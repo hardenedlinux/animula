@@ -1,6 +1,6 @@
 #ifndef __LAMBDACHIP_OS_H__
 #define __LAMBDACHIP_OS_H__
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -28,11 +28,11 @@
 #  define __calloc calloc
 #  define __free   free
 #  include <string.h>
-#  define os_memset memset
-#  define os_memcpy memcpy
-#  define os_strlen strlen
-#  define os_abs    abs
-#  define static_assert BUILD_ASSERT
+#  define os_memset     memset
+#  define os_memcpy     memcpy
+#  define os_strlen     strlen
+#  define os_abs        abs
+#  define STATIC_ASSERT BUILD_ASSERT
 /* NOTE: The newlib in Zephyr doesn't support strnlen, unfortunately. */
 static inline size_t os_strnlen (const char *s, size_t n)
 {
@@ -85,10 +85,11 @@ int zephyr_stat (const char *path, struct fs_dirent *entry);
 #  if defined __x86_64__
 #    define ADDRESS_64
 #  endif
-#  define linux_open  open
-#  define linux_read  read
-#  define linux_close close
-#  define linux_stat  stat
+#  define linux_open       open
+#  define linux_read       read
+#  define linux_close      close
+#  define linux_stat       stat
+#  define STATIC_ASSERT(e) _Static_assert(e, "assert failed: " #  e)
 #else
 #  error "Please specify a platform!"
 #endif
