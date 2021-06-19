@@ -24,6 +24,8 @@
 #endif /* LAMBDACHIP_ZEPHYR */
 #include "lib.h"
 
+static bool _int_gt (object_t x, object_t y);
+
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 // primitives implementation
@@ -696,24 +698,94 @@ void _object_print (object_t obj)
 
 static bool _int_eq (object_t x, object_t y)
 {
-  VALIDATE (x, imm_int);
-  VALIDATE (y, imm_int);
-  // os_printk ("%p == %p is %d\n", x->value, y->value, x->value == y->value);
-  return (imm_int_t)x->value == (imm_int_t)y->value;
+  if (complex_inexact == x->attr.type || complex_exact == x->attr.type
+      || real == x->attr.type || rational_neg == x->attr.type
+      || rational_pos == x->attr.type || imm_int == x->attr.type)
+    {
+      if (y->attr.type == x->attr.type)
+        {
+          // the type of the value doesn't matter
+          if ((imm_int_t)x->value == (imm_int_t)y->value)
+            {
+              return true;
+            }
+        }
+    }
+  else
+    {
+      PANIC ("Comparing not supported type %d and %d\n", x->attr.type,
+             y->attr.type);
+    }
+  return false;
 }
 
 static bool _int_lt (object_t x, object_t y)
 {
-  VALIDATE (x, imm_int);
-  VALIDATE (y, imm_int);
-  return (imm_int_t)x->value < (imm_int_t)y->value;
+  if (false == (_int_eq (x, y)) && false == (_int_gt (x, y)))
+    {
+      return true;
+    }
+  return false;
 }
 
 static bool _int_gt (object_t x, object_t y)
 {
-  VALIDATE (x, imm_int);
-  VALIDATE (y, imm_int);
-  return (imm_int_t)x->value > (imm_int_t)y->value;
+  // if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
+  //   {
+  //   }
+  // else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
+  //   {
+  //   }
+  if (real == x->attr.type || real == y->attr.type)
+    {
+      cast_int_or_fractal_to_float (x);
+      cast_int_or_fractal_to_float (y);
+      float a = 0.0;
+      float b = 0.0;
+#ifdef LAMBDACHIP_LITTLE_ENDIAN
+      memcpy (&a, &(x->value), sizeof (a));
+      memcpy (&b, &(y->value), sizeof (b));
+      return a > b;
+#else
+#  error "BIG_ENDIAN not provided"
+#endif
+    }
+  else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
+           || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
+    {
+      cast_imm_int_to_rational (x);
+      cast_imm_int_to_rational (y);
+      s64_t x_n = 0;
+      s64_t x_d = 0;
+      s64_t x_sign = 0;
+      s64_t y_n = 0;
+      s64_t y_d = 0;
+      s64_t y_sign = 0;
+
+      x_n = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
+      x_d = ((imm_int_t) (x->value) & 0xFFFF);
+      x_sign = (rational_pos == x->attr.type) ? 1 : -1;
+      y_n = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
+      y_d = ((imm_int_t) (y->value) & 0xFFFF);
+      y_sign = (rational_pos == y->attr.type) ? 1 : -1;
+
+      x_n = x_sign * x_n * y_d;
+      y_n = y_sign * y_n * x_d;
+      return x_n > y_n;
+    }
+  else if (imm_int == x->attr.type && imm_int == y->attr.type)
+    {
+      return (imm_int_t)x->value > (imm_int_t)y->value;
+    }
+  else
+    {
+      PANIC ("Type not supported, x->attr.type = %d, y->attr.type = %d\n",
+             x->attr.type, y->attr.type);
+      return true;
+    }
+  PANIC ("Code should not run here, x->attr.type = %d, y->attr.type = %d\n",
+         x->attr.type, y->attr.type);
+  return true;
 }
 
 static bool _int_le (object_t x, object_t y)
