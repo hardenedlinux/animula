@@ -32,29 +32,29 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
-  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
     }
-  else if (x->attr.type == real || y->attr.type == real)
+  else if (real == x->attr.type || real == y->attr.type)
     {
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
       real_t a;
       real_t b;
-      if (x->attr.type == real)
+      if (real == x->attr.type)
         {
           memcpy (&(a), &(x->value), 4);
         }
-      else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
+      else if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
-          int sign = (x->attr.type == rational_pos) ? 1 : -1;
+          int sign = (rational_pos == x->attr.type) ? 1 : -1;
           // FIXME: may lose precision
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
-      else if (x->attr.type == imm_int)
+      else if (imm_int == x->attr.type)
         {
           // FIXME: may lose precision
           a.f = (float)(imm_int_t) (x->value);
@@ -65,17 +65,17 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
                  x->attr.type);
         }
 
-      if (y->attr.type == real)
+      if (real == y->attr.type)
         {
           memcpy (&(b), &(y->value), 4);
         }
-      else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
+      else if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
-          int sign = (y->attr.type == rational_pos) ? 1 : -1;
+          int sign = (rational_pos == y->attr.type) ? 1 : -1;
           b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
-      else if ((y->attr.type == imm_int))
+      else if ((imm_int == y->attr.type))
         {
           b.f = (float)(imm_int_t) (y->value);
         }
@@ -91,15 +91,15 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 #  error "BIG_ENDIAN not provided"
 #endif
     }
-  else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
-           || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+  else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
+           || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
     {
-      if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+      if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
         {
-          if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+          if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
             {
             }
-          else if (y->attr.type == imm_int)
+          else if (imm_int == y->attr.type)
             {
               // side effect
               // FIXME: if integer canont convert to rational
@@ -110,12 +110,12 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
               PANIC ("Type error, %d\n", y->attr.type);
             }
         }
-      if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+      if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
         {
-          if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+          if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
             {
             }
-          else if (x->attr.type == imm_int)
+          else if (imm_int == x->attr.type)
             {
               // side effect
               // FIXME: if integer canont convert to rational
@@ -131,10 +131,10 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       s64_t denominator, numerator, common_divisor;
       xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
       xd = ((imm_int_t) (x->value) & 0xFFFF);
-      x_sign = (x->attr.type == rational_pos) ? 1 : -1;
+      x_sign = (rational_pos == x->attr.type) ? 1 : -1;
       yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
       yd = ((imm_int_t) (y->value) & 0xFFFF);
-      y_sign = (y->attr.type == rational_pos) ? 1 : -1;
+      y_sign = (rational_pos == y->attr.type) ? 1 : -1;
 
       // a/b+c/d = (a*d+b*c)/(b*d)
       denominator = xd * yd; // safe, s32 * s32 is s64
@@ -213,7 +213,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
       // ret->value == ()
       return ret;
     }
-  else if (x->attr.type == imm_int && y->attr.type == imm_int)
+  else if (imm_int == x->attr.type && imm_int == y->attr.type)
     {
       s64_t result = ((s64_t)x->value + (s64_t)y->value);
       s32_t result2 = 0xFFFFFFFF & result;
@@ -250,7 +250,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
 
 static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  if (y->attr.type == real)
+  if (real == y->attr.type)
     {
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
       float a;
@@ -261,15 +261,15 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 #  error "BIG_ENDIAN not provided"
 #endif
     }
-  else if (y->attr.type == rational_pos)
+  else if (rational_pos == y->attr.type)
     {
       y->attr.type = rational_neg;
     }
-  else if (y->attr.type == rational_neg)
+  else if (rational_neg == y->attr.type)
     {
       y->attr.type = rational_pos;
     }
-  else if (y->attr.type == imm_int)
+  else if (imm_int == y->attr.type)
     {
       // FIXME:side effect
       if ((imm_int_t) (y->value) == MIN_INT32) // -1*2^31
@@ -292,35 +292,35 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
 
 static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
-  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
     }
-  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
-  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
     }
-  else if (x->attr.type == real || y->attr.type == real)
+  else if (real == x->attr.type || real == y->attr.type)
     {
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
       real_t a;
       real_t b;
-      if (x->attr.type == real)
+      if (real == x->attr.type)
         {
           memcpy (&(a), &(x->value), 4);
         }
-      else if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
+      else if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
-          int sign = (x->attr.type == rational_pos) ? 1 : -1;
+          int sign = (rational_pos == x->attr.type) ? 1 : -1;
           // FIXME: may lose precision
           a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (x->value) & 0xFFFF);
         }
-      else if (x->attr.type == imm_int)
+      else if (imm_int == x->attr.type)
         {
           // FIXME: may lose precision
           a.f = (float)(imm_int_t) (x->value);
@@ -331,17 +331,17 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
                  x->attr.type);
         }
 
-      if (y->attr.type == real)
+      if (real == y->attr.type)
         {
           memcpy (&(b), &(y->value), 4);
         }
-      else if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
+      else if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
-          int sign = (y->attr.type == rational_pos) ? 1 : -1;
+          int sign = (rational_pos == y->attr.type) ? 1 : -1;
           b.f = sign * (float)(((imm_int_t) (y->value) >> 16) & 0xFFFF)
                 / (float)((imm_int_t) (y->value) & 0xFFFF);
         }
-      else if ((y->attr.type == imm_int))
+      else if ((imm_int == y->attr.type))
         {
           // FIXME: may lose precision
           b.f = (float)(imm_int_t) (y->value);
@@ -358,15 +358,15 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
 #  error "BIG_ENDIAN not provided"
 #endif
     }
-  else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
-           || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+  else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
+           || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
     {
-      if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+      if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
         {
-          if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+          if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
             {
             }
-          else if (y->attr.type == imm_int)
+          else if (imm_int == y->attr.type)
             {
               // side effect
               // FIXME: if integer canont convert to rational
@@ -377,12 +377,12 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
               PANIC ("Type error, %d\n", y->attr.type);
             }
         }
-      if ((y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+      if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
         {
-          if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos))
+          if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
             {
             }
-          else if (x->attr.type == imm_int)
+          else if (imm_int == x->attr.type)
             {
               // side effect
               // FIXME: if integer canont convert to rational
@@ -398,11 +398,11 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       s64_t denominator, numerator, common_divisor;
       xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
       xd = ((imm_int_t) (x->value) & 0xFFFF);
-      x_sign = (x->attr.type == rational_pos) ? 1 : -1;
+      x_sign = (rational_pos == x->attr.type) ? 1 : -1;
       yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
       yd = ((imm_int_t) (y->value) & 0xFFFF);
       // FIXME: if integer canont convert to rational
-      y_sign = (y->attr.type == rational_pos) ? 1 : -1;
+      y_sign = (rational_pos == y->attr.type) ? 1 : -1;
 
       // a/b*c/d = (a*c)/(b*d)
       denominator = xd * yd; // safe, s32 * s32 is s64
@@ -482,7 +482,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
       // ret->value == ()
       return ret;
     }
-  else if (x->attr.type == imm_int && y->attr.type == imm_int)
+  else if (imm_int == x->attr.type && imm_int == y->attr.type)
     {
       s64_t result = ((s64_t)x->value * (s64_t)y->value);
       s32_t result2 = 0xFFFFFFFF & result;
@@ -519,13 +519,13 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
 
 static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
 {
-  if (x->attr.type == complex_inexact || y->attr.type == complex_inexact)
+  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
-  else if (x->attr.type == complex_exact || y->attr.type == complex_exact)
+  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
     }
-  else if (x->attr.type == real || y->attr.type == real)
+  else if (real == x->attr.type || real == y->attr.type)
     {
 #ifndef LAMBDACHIP_LITTLE_ENDIAN
 #  error "BIG_ENDIAN not provided"
@@ -547,8 +547,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
       memcpy (&(ret->value), &b, sizeof (b));
       ret->attr.type = real;
     }
-  else if ((x->attr.type == rational_neg) || (x->attr.type == rational_pos)
-           || (y->attr.type == rational_neg) || (y->attr.type == rational_pos))
+  else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
+           || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
     {
       imm_int_t nx = 0;
       imm_int_t dx = 0;
@@ -561,13 +561,13 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
       s64_t dd = 0;
       s64_t common_divisor64 = 0;
 
-      if ((x->attr.type == rational_pos) || (x->attr.type == rational_neg))
+      if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
           nx = (((imm_int_t) (x->value)) >> 16) & 0xFFFF;
           dx = ((imm_int_t) (x->value)) & 0xFFFF;
-          sign_x = (x->attr.type == rational_pos) ? 1 : -1;
+          sign_x = (rational_pos == x->attr.type) ? 1 : -1;
         }
-      else if (x->attr.type == imm_int)
+      else if (imm_int == x->attr.type)
         {
           nx = (imm_int_t) (x->value);
           dx = 1;
@@ -579,13 +579,13 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
           PANIC ("Invalid type, expect %d, %d or %d, but it's %d\n",
                  rational_pos, rational_neg, imm_int, x->attr.type);
         }
-      if ((y->attr.type == rational_pos) || (y->attr.type == rational_neg))
+      if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
           ny = (((imm_int_t) (y->value)) >> 16) & 0xFFFF;
           dy = ((imm_int_t) (y->value)) & 0xFFFF;
-          sign_y = (y->attr.type == rational_pos) ? 1 : -1;
+          sign_y = (rational_pos == y->attr.type) ? 1 : -1;
         }
-      else if (y->attr.type == imm_int)
+      else if (imm_int == y->attr.type)
         {
           ny = (imm_int_t) (y->value);
           dy = 1;
@@ -605,7 +605,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
       common_divisor64 = gcd64 (nn, dd);
       nn = nn / common_divisor64;
       dd = dd / common_divisor64;
-      if (dd == 0)
+      if (0 == dd)
         {
           PANIC ("Div by 0 error!\n");
         }
@@ -627,7 +627,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
           cast_rational_to_imm_int_if_denominator_is_1 (ret);
         }
     }
-  else if (x->attr.type == imm_int && y->attr.type == imm_int)
+  else if (imm_int == x->attr.type && imm_int == y->attr.type)
     {
       imm_int_t n = (imm_int_t) (x->value);
       imm_int_t d = (imm_int_t) (y->value);
@@ -636,7 +636,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
       n = abs (n);
       d = abs (d);
 
-      if (d == 0)
+      if (0 == d)
         {
           PANIC ("Div by 0 error!\n");
         }
@@ -1335,15 +1335,15 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
   super_device *p = translate_supper_dev_from_symbol (obj);
 
   // FIXME: flags for different pin shall be different
-  if (p->type == SUPERDEVICE_TYPE_GPIO_PIN)
+  if (SUPERDEVICE_TYPE_GPIO_PIN == p->type)
     {
       gpio_pin_configure (p->dev, p->gpio_pin, GPIO_OUTPUT_ACTIVE | LED0_FLAGS);
     }
-  else if (p->type == SUPERDEVICE_TYPE_I2C)
+  else if (SUPERDEVICE_TYPE_I2C == p->type)
     {
       i2c_configure (p->dev, 0);
     }
-  else if (p->type == SUPERDEVICE_TYPE_SPI)
+  else if (SUPERDEVICE_TYPE_SPI == p->type)
     {
     }
   else
@@ -1463,7 +1463,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
       obj_list_t bl = NEW_OBJ_LIST_NODE ();
       bl->obj = new_obj;
       bl->obj->value = (void *)rx_buf[i];
-      if (i == 0)
+      if (0 == i)
         {
           SLIST_INSERT_HEAD (&l->list, bl, next);
           iter = bl;
