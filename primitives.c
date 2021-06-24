@@ -30,8 +30,13 @@ GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
 // primitives implementation
 
-static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
+static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
+                                 object_t yy)
 {
+  Object x_ = *xx;
+  Object y_ = *yy;
+  object_t x = &x_;
+  object_t y = &y_;
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
@@ -248,8 +253,13 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t x, object_t y)
   return ret;
 }
 
-static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
+static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
+                                 object_t yy)
 {
+  Object x_ = *xx;
+  Object y_ = *yy;
+  object_t x = &x_;
+  object_t y = &y_;
   if (real == y->attr.type)
     {
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
@@ -290,8 +300,13 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t x, object_t y)
   return _int_add (vm, ret, x, y);
 }
 
-static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
+static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
+                                 object_t yy)
 {
+  Object x_ = *xx;
+  Object y_ = *yy;
+  object_t x = &x_;
+  object_t y = &y_;
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
@@ -517,8 +532,13 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t x, object_t y)
   return ret;
 }
 
-static inline object_t _int_div (vm_t vm, object_t ret, object_t x, object_t y)
+static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
+                                 object_t yy)
 {
+  Object x_ = *xx;
+  Object y_ = *yy;
+  object_t x = &x_;
+  object_t y = &y_;
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
     }
