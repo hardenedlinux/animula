@@ -1449,7 +1449,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   super_device *p = translate_supper_dev_from_symbol (dev);
 
   imm_int_t len_list = (imm_int_t)length->value;
-  uint8_t *rx_buf = (uint8_t *)os_malloc (len_list);
+  uint8_t *rx_buf = (uint8_t *)GC_MALLOC (len_list);
   if (!rx_buf)
     {
       ret->attr.type = boolean;
@@ -1462,7 +1462,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   if (status != 0)
     {
       ret = &GLOBAL_REF (false_const);
-      free (rx_buf);
+      os_free (rx_buf);
       rx_buf = (void *)NULL;
       return ret;
     }
@@ -1515,7 +1515,7 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
   len_p = _list_length (vm, len_p, lst);
   imm_int_t len_list = (imm_int_t)len_p->value;
 
-  uint8_t *tx_buf = (uint8_t *)os_malloc (len_list);
+  uint8_t *tx_buf = (uint8_t *)GC_MALLOC (len_list);
   if (!tx_buf)
     {
       ret->attr.type = boolean;
@@ -1670,7 +1670,7 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   obj_list_head_t *send_buffer_head = LIST_OBJECT_HEAD (send_buffer);
   obj_list_t send_buffer_node = SLIST_FIRST (send_buffer_head);
 
-  u8_t *send_buffer_array = (u8_t *)os_malloc ((imm_int_t) (len_ptr->value));
+  u8_t *send_buffer_array = (u8_t *)GC_MALLOC ((imm_int_t) (len_ptr->value));
   if (!send_buffer_array)
     {
       ret = &GLOBAL_REF (false_const);
