@@ -62,8 +62,16 @@ static void free_object (object_t obj)
     {
     case imm_int:
     case character:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case boolean:
+    case null_obj:
+    case none:
+    case string:
       {
         // simple object, we don't need to free its value
+        // no need to free string
         break;
       }
     case symbol:
