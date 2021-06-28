@@ -66,8 +66,8 @@ static ActiveRootNode *arn_alloc (void)
 {
   if (PRE_ARN == _arn.index)
     {
-      os_printk ("GC: We're doomed! Did you set a too small PRE_ARN?");
-      panic ("Try to set PRE_ARN larger!");
+      PANIC ("GC: We're doomed! Did you set a too small PRE_ARN?"
+             "Try to set PRE_ARN larger!");
     }
 
   return _arn.arn[_arn.index++];
@@ -81,8 +81,8 @@ static void pre_allocate_obj_list_nodes (void)
 
       if (NULL == _oln.oln[i])
         {
-          os_printk ("GC: We're doomed! Did you set a too large PRE_OLN?");
-          panic ("Try to set PRE_OLN smaller!");
+          PANIC ("GC: We're doomed! Did you set a too large PRE_OLN?"
+                 "Try to set PRE_OLN smaller!");
         }
       _oln.cnt++;
     }
