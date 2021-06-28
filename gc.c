@@ -74,7 +74,7 @@ static ActiveRootNode *arn_alloc (void)
 
 static void pre_allocate_obj_list_nodes (void)
 {
-  for (int i = 0; i < PRE_ARN; i++)
+  for (int i = 0; i < PRE_OLN; i++)
     {
       _oln.oln[i] = (obj_list_t)os_malloc (sizeof (ObjectList));
 
@@ -134,6 +134,9 @@ static void obj_list_node_recycle (obj_list_t node)
 
   _oln.cnt++;
 }
+
+static void active_nodes_clean (void) {}
+static void obj_list_nodes_clean (void) {}
 
 static void free_object (object_t obj)
 {
@@ -592,4 +595,10 @@ void gc_init (void)
   SLIST_INIT (&pair_free_list);
   SLIST_INIT (&closure_free_list);
   SLIST_INIT (&procedure_free_list);
+}
+
+void gc_clean (void)
+{
+  active_nodes_clean ();
+  obj_list_nodes_clean ();
 }
