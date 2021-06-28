@@ -166,7 +166,7 @@ void object_printer (const object_t obj)
     case real:
       {
         real_t r = {.v = (uintptr_t)obj->value};
-        os_printk ("float: %f", r.f);
+        os_printk ("%f", r.f);
         break;
       }
     case rational_pos:
