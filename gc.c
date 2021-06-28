@@ -180,13 +180,13 @@ static void pre_allocate_active_nodes (void)
 
 static ActiveRootNode *arn_alloc ()
 {
-  if (_arn.index < 0)
+  if (PRE_ARN == _arn.index)
     {
       os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
       panic ("Try to set PRE_ARN smaller!");
     }
 
-  return _arn.arn[_arn.index--];
+  return _arn.arn[_arn.index++];
 }
 
 static inline void insert (ActiveRootNode *an)
