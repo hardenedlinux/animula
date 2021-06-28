@@ -122,6 +122,12 @@ struct Pre_ARN
   ActiveRootNode *arn[PRE_ARN];
 };
 
+struct Pre_OLN
+{
+  int index;
+  obj_list_t oln[PRE_OLN];
+};
+
 static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
 {
   return ((uintptr_t)b->value - (uintptr_t)a->value);

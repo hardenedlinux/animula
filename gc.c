@@ -159,6 +159,7 @@ static void recycle_object (gobj_t type, object_t obj)
 }
 
 static struct Pre_ARN _arn = {0};
+static struct Pre_OLN _oln = {0};
 
 static void pre_allocate_active_nodes (void)
 {
@@ -178,7 +179,7 @@ static void pre_allocate_active_nodes (void)
             PRE_ARN * sizeof (ActiveRootNode));
 }
 
-static ActiveRootNode *arn_alloc ()
+static ActiveRootNode *arn_alloc (void)
 {
   if (PRE_ARN == _arn.index)
     {
@@ -187,6 +188,35 @@ static ActiveRootNode *arn_alloc ()
     }
 
   return _arn.arn[_arn.index++];
+}
+
+static void pre_allocate_obj_list_nodes (void)
+{
+  for (int i = 0; i < PRE_ARN; i++)
+    {
+      _oln.oln[i] = (obj_list_t)os_malloc (sizeof (ObjectList));
+
+      if (NULL == _oln.oln[i])
+        {
+          os_printk ("GC: We're doomed! Did you set a too large PRE_OLN?");
+          panic ("Try to set PRE_OLN smaller!");
+        }
+    }
+
+  _oln.index = 0;
+  VM_DEBUG ("PRE_OLN: %d, pre-allocate %d bytes.\n", PRE_OLN,
+            PRE_OLN * sizeof (ObjectList));
+}
+
+static obj_list_t oln_alloc (void)
+{
+  if (PRE_OLN == _oln.index)
+    {
+      os_printk ("GC: We're doomed! Did you set a too large PRE_OLN?");
+      panic ("Try to set PRE_OLN smaller!");
+    }
+
+  return _oln.oln[_oln.index++];
 }
 
 static inline void insert (ActiveRootNode *an)
@@ -393,7 +423,7 @@ void gc_clean_cache (void)
 void gc_book (gobj_t type, object_t obj)
 {
 
-  obj_list_t node = (obj_list_t)os_malloc (sizeof (ObjectList));
+  obj_list_t node = oln_alloc ();
 
   if (!node)
     panic ("GC: We're doomed! There're even no RAMs for GC!\n");
@@ -520,6 +550,8 @@ void gc_try_to_recycle (void)
 void gc_init (void)
 {
   pre_allocate_active_nodes ();
+  pre_allocate_obj_list_nodes ();
+
   SLIST_INIT (&obj_free_list);
   SLIST_INIT (&list_free_list);
   SLIST_INIT (&vector_free_list);
