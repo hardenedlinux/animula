@@ -237,8 +237,7 @@ static void free_object (object_t obj)
       }
     default:
       {
-        os_printk ("free_object: Invalid type %d!\n", obj->attr.type);
-        panic ("");
+        PANIC ("free_object: Invalid type %d!\n", obj->attr.type);
       }
     }
 
