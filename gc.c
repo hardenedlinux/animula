@@ -180,7 +180,7 @@ static void pre_allocate_active_nodes (void)
 
 static ActiveRootNode *arn_alloc ()
 {
-  if (0 == _arn.index)
+  if (_arn.index < 0)
     {
       os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
       panic ("Try to set PRE_ARN smaller!");
