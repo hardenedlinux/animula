@@ -67,8 +67,7 @@ void *os_malloc (size_t size)
 
   if (NULL == ptr)
     {
-      os_printk ("Failed to allocate memory!\n");
-      panic ("BUG in os_malloc\n");
+      VM_DEBUG ("Failed to allocate memory!\n");
     }
 
   return ptr;
@@ -80,8 +79,7 @@ void *os_calloc (size_t n, size_t size)
 
   if (NULL == ptr)
     {
-      os_printk ("Failed to allocate memory!\n");
-      panic ("BUG in os_calloc\n");
+      VM_DEBUG ("Failed to allocate memory!\n");
     }
 
   return ptr;
