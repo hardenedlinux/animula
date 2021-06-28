@@ -18,6 +18,7 @@
  */
 
 #include "debug.h"
+#include "gc.h"
 #include "memory.h"
 #include "os.h"
 #include "primitives.h"

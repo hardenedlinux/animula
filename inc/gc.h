@@ -116,6 +116,12 @@ struct ActiveRootNode
   void *value;
 };
 
+struct Pre_ARN
+{
+  int index;
+  ActiveRootNode *arn[PRE_ARN];
+};
+
 static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
 {
   return ((uintptr_t)b->value - (uintptr_t)a->value);

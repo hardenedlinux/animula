@@ -34,6 +34,7 @@ vm_t lambdachip_init (void)
   // NOTE: The allocated vm object will never be freed.
   vm_init (vm);
   stdio_init ();
+  gc_init ();
   return vm;
 }
 

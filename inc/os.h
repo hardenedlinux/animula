@@ -131,4 +131,8 @@ int zephyr_stat (const char *path, struct fs_dirent *entry);
     }                       \
   while (0)
 
+#ifndef PRE_ARN
+#  define PRE_ARN 100
+#endif
+
 #endif // End of __LAMBDACHIP_OS_H__

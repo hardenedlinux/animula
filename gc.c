@@ -40,16 +40,6 @@ static obj_list_head_t pair_free_list;
 static obj_list_head_t closure_free_list;
 static obj_list_head_t procedure_free_list;
 
-void gc_init (void)
-{
-  SLIST_INIT (&obj_free_list);
-  SLIST_INIT (&list_free_list);
-  SLIST_INIT (&vector_free_list);
-  SLIST_INIT (&pair_free_list);
-  SLIST_INIT (&closure_free_list);
-  SLIST_INIT (&procedure_free_list);
-}
-
 static void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
@@ -94,12 +84,9 @@ static void free_object (object_t obj)
 
         SLIST_FOREACH (node, head, next)
         {
-          printf ("111\n");
           os_free ((void *)prev);
           prev = node;
-          printf ("222\n");
           free_object ((object_t)node->obj);
-          printf ("333\n");
         }
 
         os_free (prev); // free the last node
@@ -171,6 +158,37 @@ static void recycle_object (gobj_t type, object_t obj)
     }
 }
 
+static struct Pre_ARN _arn = {0};
+
+static void pre_allocate_active_nodes (void)
+{
+  for (int i = 0; i < PRE_ARN; i++)
+    {
+      _arn.arn[i] = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
+
+      if (NULL == _arn.arn[i])
+        {
+          os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
+          panic ("Try to set PRE_ARN smaller!");
+        }
+    }
+
+  _arn.index = 0;
+  VM_DEBUG ("PRE_ARN: %d, pre-allocate %d bytes.\n", PRE_ARN,
+            PRE_ARN * sizeof (ActiveRootNode));
+}
+
+static ActiveRootNode *arn_alloc ()
+{
+  if (0 == _arn.index)
+    {
+      os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
+      panic ("Try to set PRE_ARN smaller!");
+    }
+
+  return _arn.arn[_arn.index--];
+}
+
 static inline void insert (ActiveRootNode *an)
 {
   RB_INSERT (ActiveRoot, &ActiveRootHead, an);
@@ -229,25 +247,12 @@ static void active_root_insert (object_t obj)
       }
     default:
       {
-        ActiveRootNode *van
-          = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
-
-        if (!van)
-          {
-            panic ("GC: We're doomed! There're even no RAMs for GC!\n");
-          }
-
+        ActiveRootNode *van = arn_alloc ();
         van->value = obj->value;
       }
     }
 
-  ActiveRootNode *an = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
-
-  if (!an)
-    {
-      panic ("GC: We're doomed! There're even no RAMs for GC!\n");
-    }
-
+  ActiveRootNode *an = arn_alloc ();
   an->value = (void *)obj;
   insert (an);
 }
@@ -284,16 +289,9 @@ static void build_active_root (const gc_info_t gci)
 
 static void clean_active_root ()
 {
-  ActiveRootNode *node = NULL;
-  ActiveRootNode *prev = NULL;
-
-  RB_FOREACH (node, ActiveRoot, &ActiveRootHead)
-  {
-    os_free ((void *)prev);
-    prev = node;
-  }
-
-  os_free ((void *)prev);
+  _arn.index = 0;
+  RB_HEAD (ActiveRoot, ActiveRootNode)
+  ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
 }
 
 static void collect (size_t *count, gobj_t type, obj_list_head_t *head,
@@ -517,4 +515,15 @@ void gc_try_to_recycle (void)
    * Closures are not fixed size object, so we have to free it.
    */
   FORCE_FREE_OBJECTS (&closure_free_list);
+}
+
+void gc_init (void)
+{
+  pre_allocate_active_nodes ();
+  SLIST_INIT (&obj_free_list);
+  SLIST_INIT (&list_free_list);
+  SLIST_INIT (&vector_free_list);
+  SLIST_INIT (&pair_free_list);
+  SLIST_INIT (&closure_free_list);
+  SLIST_INIT (&procedure_free_list);
 }
