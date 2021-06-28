@@ -96,8 +96,7 @@ static obj_list_t oln_alloc (void)
 
   if (0 == _oln.cnt)
     {
-      os_printk ("GC: We're doomed! Did you set a too small PRE_OLN?");
-      panic ("Try to set PRE_OLN larger!");
+      return NULL;
     }
 
   for (int i = 0; i < PRE_OLN; i++)
@@ -460,7 +459,7 @@ void gc_clean_cache (void)
 void gc_book (gobj_t type, object_t obj)
 {
 
-  obj_list_t node = oln_alloc ();
+  obj_list_t node = OLN_ALLOC ();
 
   if (!node)
     panic ("GC: We're doomed! There're even no RAMs for GC!\n");

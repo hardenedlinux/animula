@@ -37,6 +37,20 @@
     }                                                                      \
   while (0)
 
+#define OLN_ALLOC()         \
+  ({                        \
+    obj_list_t ret = NULL;  \
+    do                      \
+      {                     \
+        ret = oln_alloc (); \
+        if (ret)            \
+          break;            \
+        GC ();              \
+      }                     \
+    while (1);              \
+    ret;                    \
+  })
+
 #define GC_MALLOC(size)                 \
   ({                                    \
     void *ret = NULL;                   \
