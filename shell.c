@@ -104,9 +104,30 @@ static int serial_load (int argc, char **argv, vm_t vm)
 
   if (run)
     {
+      uint32_t start_time0;
+      uint32_t stop_time0;
+      uint32_t cycles_spent;
+      uint64_t nanoseconds_spent;
+
       vm_load_lef (vm, lef);
       free_lef (lef);
+#ifdef LAMBDACHIP_ZEPHYR
+      start_time0 = k_cycle_get_32 ();
+#endif /* LAMBDACHIP_ZEPHYR */
       vm_run (vm);
+#ifdef LAMBDACHIP_ZEPHYR
+      stop_time0 = k_cycle_get_32 ();
+      cycles_spent = stop_time0 - start_time0;
+      nanoseconds_spent = k_cyc_to_ns_floor64 (cycles_spent);
+
+      printk ("cycles_spent      = %d\n", cycles_spent);        // 28800231
+      printk ("nanoseconds_spent = %lld\n", nanoseconds_spent); // 300002406
+
+      // affects by CONFIG_SYS_CLOCK_TICKS_PER_SEC
+      printk ("start_time0       = %d ns\n", start_time0); // 910108
+      printk ("stop_time0        = %d ns\n", stop_time0);  // 29710362
+#endif /* LAMBDACHIP_ZEPHYR */
+
       vm_init_environment (vm);
     }
 
