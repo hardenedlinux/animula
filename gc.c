@@ -40,6 +40,101 @@ static obj_list_head_t pair_free_list;
 static obj_list_head_t closure_free_list;
 static obj_list_head_t procedure_free_list;
 
+static struct Pre_ARN _arn = {0};
+static struct Pre_OLN _oln = {0};
+
+static void pre_allocate_active_nodes (void)
+{
+  for (int i = 0; i < PRE_ARN; i++)
+    {
+      _arn.arn[i] = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
+
+      if (NULL == _arn.arn[i])
+        {
+          os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
+          panic ("Try to set PRE_ARN smaller!");
+        }
+    }
+
+  _arn.index = 0;
+  VM_DEBUG ("PRE_ARN: %d, pre-allocate %d bytes.\n", PRE_ARN,
+            PRE_ARN * sizeof (ActiveRootNode));
+}
+
+static ActiveRootNode *arn_alloc (void)
+{
+  if (PRE_ARN == _arn.index)
+    {
+      os_printk ("GC: We're doomed! Did you set a too small PRE_ARN?");
+      panic ("Try to set PRE_ARN larger!");
+    }
+
+  return _arn.arn[_arn.index++];
+}
+
+static void pre_allocate_obj_list_nodes (void)
+{
+  for (int i = 0; i < PRE_ARN; i++)
+    {
+      _oln.oln[i] = (obj_list_t)os_malloc (sizeof (ObjectList));
+
+      if (NULL == _oln.oln[i])
+        {
+          os_printk ("GC: We're doomed! Did you set a too large PRE_OLN?");
+          panic ("Try to set PRE_OLN smaller!");
+        }
+      _oln.cnt++;
+    }
+
+  VM_DEBUG ("PRE_OLN: %d, cnt: %d, pre-allocate %d bytes.\n", PRE_OLN, _oln.cnt,
+            PRE_OLN * sizeof (ObjectList));
+}
+
+static obj_list_t oln_alloc (void)
+{
+  obj_list_t ret = NULL;
+
+  if (0 == _oln.cnt)
+    {
+      os_printk ("GC: We're doomed! Did you set a too small PRE_OLN?");
+      panic ("Try to set PRE_OLN larger!");
+    }
+
+  for (int i = 0; i < PRE_OLN; i++)
+    {
+      ret = _oln.oln[i];
+
+      if (NULL != ret)
+        {
+          _oln.oln[i] = NULL;
+          break;
+        }
+    }
+
+  if (NULL == ret)
+    {
+      os_printk ("BUG: there's no obj_list node, but cnt is %d\n", _oln.cnt);
+      panic ("Maybe it's not recycled correctly?");
+    }
+
+  _oln.cnt--;
+  return ret;
+}
+
+static void obj_list_node_recycle (obj_list_t node)
+{
+  for (int i = 0; i < PRE_OLN; i++)
+    {
+      if (NULL == _oln.oln[i])
+        {
+          _oln.oln[i] = node;
+          break;
+        }
+    }
+
+  _oln.cnt++;
+}
+
 static void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
@@ -156,67 +251,6 @@ static void recycle_object (gobj_t type, object_t obj)
         panic ("recycle_object is down!");
       }
     }
-}
-
-static struct Pre_ARN _arn = {0};
-static struct Pre_OLN _oln = {0};
-
-static void pre_allocate_active_nodes (void)
-{
-  for (int i = 0; i < PRE_ARN; i++)
-    {
-      _arn.arn[i] = (ActiveRootNode *)os_malloc (sizeof (ActiveRootNode));
-
-      if (NULL == _arn.arn[i])
-        {
-          os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
-          panic ("Try to set PRE_ARN smaller!");
-        }
-    }
-
-  _arn.index = 0;
-  VM_DEBUG ("PRE_ARN: %d, pre-allocate %d bytes.\n", PRE_ARN,
-            PRE_ARN * sizeof (ActiveRootNode));
-}
-
-static ActiveRootNode *arn_alloc (void)
-{
-  if (PRE_ARN == _arn.index)
-    {
-      os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
-      panic ("Try to set PRE_ARN smaller!");
-    }
-
-  return _arn.arn[_arn.index++];
-}
-
-static void pre_allocate_obj_list_nodes (void)
-{
-  for (int i = 0; i < PRE_ARN; i++)
-    {
-      _oln.oln[i] = (obj_list_t)os_malloc (sizeof (ObjectList));
-
-      if (NULL == _oln.oln[i])
-        {
-          os_printk ("GC: We're doomed! Did you set a too large PRE_OLN?");
-          panic ("Try to set PRE_OLN smaller!");
-        }
-    }
-
-  _oln.index = 0;
-  VM_DEBUG ("PRE_OLN: %d, pre-allocate %d bytes.\n", PRE_OLN,
-            PRE_OLN * sizeof (ObjectList));
-}
-
-static obj_list_t oln_alloc (void)
-{
-  if (PRE_OLN == _oln.index)
-    {
-      os_printk ("GC: We're doomed! Did you set a too large PRE_OLN?");
-      panic ("Try to set PRE_OLN smaller!");
-    }
-
-  return _oln.oln[_oln.index++];
 }
 
 static inline void insert (ActiveRootNode *an)

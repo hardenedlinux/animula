@@ -124,7 +124,7 @@ struct Pre_ARN
 
 struct Pre_OLN
 {
-  int index;
+  int cnt;
   obj_list_t oln[PRE_OLN];
 };
 
@@ -199,7 +199,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
           {                                              \
             SLIST_REMOVE (head, node, ObjectList, next); \
             os_free (node->obj);                         \
-            os_free (node);                              \
+            obj_list_node_recycle (node);                \
             break;                                       \
           }                                              \
       }                                                  \
