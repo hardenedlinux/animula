@@ -222,7 +222,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
             SLIST_REMOVE (head, prev, ObjectList, next); \
             free_object ((object_t)prev->obj);           \
             prev->obj = NULL;                            \
-            os_free (prev);                              \
+            obj_list_node_recycle (prev);                \
             prev = NULL;                                 \
           }                                              \
         if (force || (0 == node->obj->attr.gc))          \
@@ -244,4 +244,5 @@ void gc_book (gobj_t type, object_t obj);
 void gc_try_to_recycle (void);
 bool is_oln_available (void);
 obj_list_t oln_alloc (void);
+void gc_clean (void);
 #endif // End of __LAMBDACHIP_GC_H__

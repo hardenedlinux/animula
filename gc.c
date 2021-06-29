@@ -139,8 +139,27 @@ bool is_oln_available (void)
   return (0 != _oln.cnt);
 }
 
-static void active_nodes_clean (void) {}
-static void obj_list_nodes_clean (void) {}
+static void active_nodes_clean (void)
+{
+  for (int i = 0; i < PRE_ARN; i++)
+    {
+      os_free (_arn.arn[i]);
+    }
+
+  _arn.index = 0;
+  VM_DEBUG ("ARN clean!\n");
+}
+
+static void obj_list_nodes_clean (void)
+{
+  for (int i = 0; i < PRE_OLN; i++)
+    {
+      os_free (_oln.oln[i]);
+    }
+
+  _oln.cnt = 0;
+  VM_DEBUG ("OLN clean!\n");
+}
 
 static void free_object (object_t obj)
 {

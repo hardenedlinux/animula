@@ -43,6 +43,7 @@ void lambdachip_clean (vm_t vm)
   vm_clean (vm);
   primitives_clean ();
   stdio_clean ();
+  gc_clean ();
 }
 
 vm_t lambdachip_start (lef_loader_t lef_loader)
@@ -61,7 +62,6 @@ vm_t lambdachip_start (lef_loader_t lef_loader)
       vm_load_lef (vm, lef);
       vm_run (vm);
       free_lef (lef);
-      lambdachip_clean (vm);
     }
   else
     {
