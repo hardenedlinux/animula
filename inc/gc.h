@@ -37,20 +37,6 @@
     }                                                                      \
   while (0)
 
-#define OLN_ALLOC()         \
-  ({                        \
-    obj_list_t ret = NULL;  \
-    do                      \
-      {                     \
-        ret = oln_alloc (); \
-        if (ret)            \
-          break;            \
-        GC ();              \
-      }                     \
-    while (1);              \
-    ret;                    \
-  })
-
 #define GC_MALLOC(size)                 \
   ({                                    \
     void *ret = NULL;                   \
@@ -65,33 +51,37 @@
     ret;                                \
   })
 
-#define NEW_OBJ(type)                       \
-  ({                                        \
-    object_t obj = NULL;                    \
-    do                                      \
-      {                                     \
-        obj = lambdachip_new_object (type); \
-        if (obj)                            \
-          break;                            \
-        GC ();                              \
-      }                                     \
-    while (1);                              \
-    obj->attr.gc = 1;                       \
-    obj;                                    \
+#define NEW_OBJ(type)                        \
+  ({                                         \
+    object_t obj = NULL;                     \
+    do                                       \
+      {                                      \
+        while (false == is_oln_available ()) \
+          {                                  \
+            GC ();                           \
+          }                                  \
+        obj = lambdachip_new_object (type);  \
+        if (obj)                             \
+          break;                             \
+        GC ();                               \
+      }                                      \
+    while (1);                               \
+    obj->attr.gc = 1;                        \
+    obj;                                     \
   })
 
-#define NEW_OBJ_LIST()        \
-  ({                          \
-    obj_list_t ol = NULL;     \
-    do                        \
-      {                       \
-        ol = new_obj_list (); \
-        if (ol)               \
-          break;              \
-        GC ();                \
-      }                       \
-    while (1);                \
-    ol;                       \
+#define NEW_OBJ_LIST()     \
+  ({                       \
+    obj_list_t ol = NULL;  \
+    do                     \
+      {                    \
+        ol = oln_alloc (); \
+        if (ol)            \
+          break;           \
+        GC ();             \
+      }                    \
+    while (1);             \
+    ol;                    \
   })
 
 #define NEW(type)                       \
@@ -252,4 +242,6 @@ void gc_clean_cache (void);
 void *gc_pool_malloc (gobj_t type);
 void gc_book (gobj_t type, object_t obj);
 void gc_try_to_recycle (void);
+bool is_oln_available (void);
+obj_list_t oln_alloc (void);
 #endif // End of __LAMBDACHIP_GC_H__

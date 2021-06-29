@@ -90,7 +90,7 @@ static void pre_allocate_obj_list_nodes (void)
             PRE_OLN * sizeof (ObjectList));
 }
 
-static obj_list_t oln_alloc (void)
+obj_list_t oln_alloc (void)
 {
   obj_list_t ret = NULL;
 
@@ -132,6 +132,11 @@ static void obj_list_node_recycle (obj_list_t node)
     }
 
   _oln.cnt++;
+}
+
+bool is_oln_available (void)
+{
+  return (0 != _oln.cnt);
 }
 
 static void active_nodes_clean (void) {}
@@ -459,10 +464,12 @@ void gc_clean_cache (void)
 void gc_book (gobj_t type, object_t obj)
 {
 
-  obj_list_t node = OLN_ALLOC ();
+  obj_list_t node = oln_alloc ();
 
   if (!node)
-    panic ("GC: We're doomed! There're even no RAMs for GC!\n");
+    {
+      panic ("gc_book: We're doomed! There're even no RAMs for GC!\n");
+    }
 
   node->obj = obj;
 

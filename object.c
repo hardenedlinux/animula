@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020
+/*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -57,11 +57,6 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   closure->arity = arity;
 
   return closure;
-}
-
-obj_list_t new_obj_list (void)
-{
-  return (obj_list_t)os_malloc (sizeof (ObjectList));
 }
 
 list_t lambdachip_new_list (void)

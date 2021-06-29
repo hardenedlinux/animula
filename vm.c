@@ -165,7 +165,7 @@ static void call_prim (vm_t vm, pn_t pn)
         SLIST_FOREACH (node, head, next)
         {
           object_t ret = NEW_OBJ (0);
-          obj_list_t new_node = new_obj_list ();
+          obj_list_t new_node = NEW_OBJ_LIST ();
           new_node->obj = ret;
           vm->sp = vm->local;
           PUSH_OBJ (k);
