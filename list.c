@@ -55,13 +55,13 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
 
         if (next_node)
           {
-            object_t new_obj = NEW_OBJ (list);
+            ret->attr.gc = 0;
+            ret->attr.type = list;
             list_t l = NEW (list);
             SLIST_INIT (&l->list);
-            new_obj->value = (void *)l;
-            obj_list_head_t *new_head = LIST_OBJECT_HEAD (new_obj);
+            ret->value = (void *)l;
+            obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);
             new_head->slh_first = next_node;
-            *ret = *new_obj;
           }
         else
           {
@@ -92,7 +92,7 @@ object_t _cons (vm_t vm, object_t ret, object_t a, object_t b)
       {
         ret->attr.type = list;
         list_t lst = NEW (list);
-        obj_list_t ol = NEW_OBJ_LIST ();
+        obj_list_t ol = NEW_OBJ_LIST_NODE ();
         SLIST_INSERT_HEAD (&lst->list, ol, next);
         ret->value = (void *)lst;
         break;
@@ -232,7 +232,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
        */
       SLIST_FOREACH (node, h1, next)
       {
-        obj_list_t new_node = NEW_OBJ_LIST ();
+        obj_list_t new_node = NEW_OBJ_LIST_NODE ();
         new_node->obj = node->obj;
 
         if (!prev)
@@ -249,7 +249,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
 
       SLIST_FOREACH (node, h2, next)
       {
-        obj_list_t new_node = NEW_OBJ_LIST ();
+        obj_list_t new_node = NEW_OBJ_LIST_NODE ();
         new_node->obj = node->obj;
         SLIST_INSERT_AFTER (prev, new_node, next);
         prev = new_node;

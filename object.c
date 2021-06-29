@@ -50,90 +50,107 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
       return NULL;
     }
 
-  gc_book (gc_closure, (void *)closure);
-
   closure->frame_size = frame_size;
   closure->entry = entry;
   closure->arity = arity;
+  closure->attr.gc = 1;
+  closure->attr.type = closure_on_heap;
 
   return closure;
 }
 
+obj_list_t lambdachip_new_obj_list_node (void)
+{
+  CREATE_NEW_OBJ (obj_list_t, obj_list_node, ObjectList);
+}
+
 list_t lambdachip_new_list (void)
 {
-  CREATE_NEW_OBJ (list_t, gc_list, List);
+  CREATE_NEW_OBJ (list_t, list, List);
 }
 
 vector_t lambdachip_new_vector (void)
 {
-  CREATE_NEW_OBJ (vector_t, gc_vector, Vector);
+  CREATE_NEW_OBJ (vector_t, vector, Vector);
 }
 
 pair_t lambdachip_new_pair (void)
 {
-  CREATE_NEW_OBJ (pair_t, gc_pair, Pair);
+  CREATE_NEW_OBJ (pair_t, pair, Pair);
 }
 
 closure_t lambdachip_new_closure (void)
 {
-  CREATE_NEW_OBJ (closure_t, gc_closure, Closure);
+  CREATE_NEW_OBJ (closure_t, closure_on_heap, Closure);
 }
 
-object_t lambdachip_new_object (u8_t type)
+void *lambdachip_new_inner_object (object_t object, u8_t type, bool unbooked)
 {
-  object_t object = (object_t)gc_pool_malloc (gc_object);
-
-  if (!object)
-    {
-      object = (object_t)os_malloc (sizeof (Object));
-
-      if (!object)
-        return NULL;
-    }
-
-  object->value = NULL;
+  void *value = NULL;
 
   switch (type)
     {
+    case string:
+      {
+        // no need to book
+        break;
+      }
     case list:
       {
-        object->value = (void *)lambdachip_new_list ();
-        gc_book (gc_list, (void *)object);
+        value = (void *)lambdachip_new_list ();
         break;
       }
     case pair:
       {
-        object->value = (void *)lambdachip_new_pair ();
-        gc_book (gc_pair, (void *)object);
+        value = (void *)lambdachip_new_pair ();
         break;
       }
     case closure_on_heap:
       {
-        object->value = (void *)lambdachip_new_closure ();
-        gc_book (gc_closure, (void *)object);
+        value = (void *)lambdachip_new_closure ();
         break;
       }
     case vector:
       {
-        object->value = (void *)lambdachip_new_vector ();
-        gc_book (gc_vector, (void *)object);
+        value = (void *)lambdachip_new_vector ();
         break;
       }
-      /* case string: */
-      /*   { */
-      /*     object->value = (void *)new_string (); */
-      /*     break; */
-      /*   } */
-
       // gc_malloc
       // gc_free
       // mutable string, mutable string->value = malloc()
     default:
       {
-        gc_book (gc_vector, (void *)object);
+        break;
       }
     }
 
+  if (false == unbooked)
+    gc_book (type, (void *)object, NULL);
+
+  return value;
+}
+
+object_t lambdachip_new_object (u8_t type, bool unbooked)
+{
+  bool from_pool = true;
+  object_t object = NULL;
+
+  if (unbooked == type)
+    goto unbooked;
+
+  object = (object_t)gc_pool_malloc (0);
+
+unbooked:
+  if (!object)
+    {
+      object = (object_t)os_malloc (sizeof (Object));
+
+      // Alloc failed, return NULL to trigger GC
+      if (!object)
+        return NULL;
+    }
+
+  object->value = lambdachip_new_inner_object (object, type, unbooked);
   object->attr.type = type;
   object->attr.gc = 1;
   return object;

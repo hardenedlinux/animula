@@ -51,65 +51,65 @@
     ret;                                \
   })
 
-#define NEW_OBJ(type)                        \
-  ({                                         \
-    object_t obj = NULL;                     \
-    do                                       \
-      {                                      \
-        while (false == is_oln_available ()) \
-          {                                  \
-            GC ();                           \
-          }                                  \
-        obj = lambdachip_new_object (type);  \
-        if (obj)                             \
-          break;                             \
-        GC ();                               \
-      }                                      \
-    while (1);                               \
-    obj->attr.gc = 1;                        \
-    obj;                                     \
+#define NEW_OBJ(type)                                  \
+  ({                                                   \
+    object_t obj = NULL;                               \
+    do                                                 \
+      {                                                \
+        while (false == is_oln_available ())           \
+          {                                            \
+            GC ();                                     \
+          }                                            \
+        if (unbooked == type)                          \
+          {                                            \
+            obj = lambdachip_new_object (0, true);     \
+          }                                            \
+        else                                           \
+          {                                            \
+            obj = lambdachip_new_object (type, false); \
+          }                                            \
+        if (obj)                                       \
+          break;                                       \
+        GC ();                                         \
+      }                                                \
+    while (1);                                         \
+    obj;                                               \
   })
 
-#define NEW_OBJ_LIST()     \
-  ({                       \
-    obj_list_t ol = NULL;  \
-    do                     \
-      {                    \
-        ol = oln_alloc (); \
-        if (ol)            \
-          break;           \
-        GC ();             \
-      }                    \
-    while (1);             \
-    ol;                    \
+#define NEW_UNBOOKED_OBJ() NEW_OBJ (unbooked)
+
+#define NEW_OBJ_LIST_NODE()                   \
+  ({                                          \
+    obj_list_t ol = NULL;                     \
+    do                                        \
+      {                                       \
+        ol = lambdachip_new_obj_list_node (); \
+        if (ol)                               \
+          {                                   \
+            gc_oln_book (ol);                 \
+            break;                            \
+          }                                   \
+        GC ();                                \
+      }                                       \
+    while (1);                                \
+    ol;                                       \
   })
 
-#define NEW(type)                       \
-  ({                                    \
-    type##_t obj = NULL;                \
-    do                                  \
-      {                                 \
-        obj = lambdachip_new_##type (); \
-        if (obj)                        \
-          break;                        \
-        GC ();                          \
-      }                                 \
-    while (1);                          \
-    obj->attr.gc = 1;                   \
-    obj;                                \
+#define NEW(t)                       \
+  ({                                 \
+    t##_t obj = NULL;                \
+    do                               \
+      {                              \
+        obj = lambdachip_new_##t (); \
+        if (obj)                     \
+          break;                     \
+        GC ();                       \
+      }                              \
+    while (1);                       \
+    obj->attr.type = (t);            \
+    obj->attr.gc = 1;                \
+    obj;                             \
   })
-
-typedef enum gc_obj_type
-{
-  gc_object,
-  gc_pair,
-  gc_vector,
-  gc_continuation,
-  gc_list,
-  gc_closure,
-  gc_procedure,
-  gc_obj_list
-} gobj_t;
 
 typedef struct ActiveRoot ActiveRoot;
 typedef struct ActiveRootNode ActiveRootNode;
@@ -144,7 +144,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   {
     /* NOTE: when it's free, gc is 0.
      */
-    if (!node->obj->attr.gc)
+    if (FREE_OBJ == node->obj->attr.gc)
       {
         // os_printk ("pool obj %p gc is %d\n", node->obj, node->obj->attr.gc);
         node->obj->attr.gc = 1; // allocated, as the 1st generation
@@ -168,41 +168,41 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
 /*   return node; */
 /* } */
 
-#define MALLOC_OBJ_FROM_POOL(lst)                 \
-  do                                              \
-    {                                             \
-      obj_list_t node = get_free_obj_node (&lst); \
-      if (node)                                   \
-        ret = node->obj;                          \
-    }                                             \
+#define MALLOC_OBJ_FROM_POOL(lst)                   \
+  do                                                \
+    {                                               \
+      obj_list_t node = get_free_obj_node (&(lst)); \
+      if (node)                                     \
+        ret = node->obj;                            \
+    }                                               \
   while (0)
 
 #define RECYCLE_OBJ(lst)                  \
   do                                      \
     {                                     \
-      SLIST_FOREACH (node, &lst, next)    \
+      obj_list_t node = NULL;             \
+      SLIST_FOREACH (node, &(lst), next)  \
       {                                   \
         if (node->obj == obj)             \
           {                               \
             ((object_t)obj)->attr.gc = 0; \
-            return;                       \
+            break;                        \
           }                               \
       }                                   \
     }                                     \
   while (0)
 
-#define NEXT_FP() (*((u32_t *)(stack + fp + 4)))
-
-#define FREE_OBJECT(head, obj)                           \
+#define FREE_OBJECT(head, o)                             \
   do                                                     \
     {                                                    \
       obj_list_t node = NULL;                            \
-      SLIST_FOREACH (node, head, next)                   \
+      SLIST_FOREACH (node, (head), next)                 \
       {                                                  \
-        if (node->obj == obj)                            \
+        if (node->obj == (o))                            \
           {                                              \
             SLIST_REMOVE (head, node, ObjectList, next); \
             os_free (node->obj);                         \
+            node->obj = NULL;                            \
             obj_list_node_recycle (node);                \
             break;                                       \
           }                                              \
@@ -210,37 +210,42 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                                    \
   while (0)
 
-#define __FREE_OBJECTS(head, force)                      \
-  do                                                     \
-    {                                                    \
-      obj_list_t node = NULL;                            \
-      obj_list_t prev = NULL;                            \
-      SLIST_FOREACH (node, head, next)                   \
-      {                                                  \
-        if (prev)                                        \
-          {                                              \
-            SLIST_REMOVE (head, prev, ObjectList, next); \
-            free_object ((object_t)prev->obj);           \
-            prev->obj = NULL;                            \
-            obj_list_node_recycle (prev);                \
-            prev = NULL;                                 \
-          }                                              \
-        if (force || (0 == node->obj->attr.gc))          \
-          {                                              \
-            prev = node;                                 \
-          }                                              \
-      }                                                  \
-    }                                                    \
+#define __FREE_OBJECTS(head, force)             \
+  do                                            \
+    {                                           \
+      obj_list_t node = NULL;                   \
+      SLIST_FOREACH (node, (head), next)        \
+      {                                         \
+        if (force || (0 == node->obj->attr.gc)) \
+          {                                     \
+            free_object ((object_t)node->obj);  \
+          }                                     \
+      }                                         \
+    }                                           \
   while (0)
 
 #define FREE_OBJECTS(head)       __FREE_OBJECTS (head, false)
 #define FORCE_FREE_OBJECTS(head) __FREE_OBJECTS (head, true)
 
+#define FREE_LIST_PRINT(head)                               \
+  do                                                        \
+    {                                                       \
+      obj_list_t node = NULL;                               \
+      os_printk ("--------------------------\n");           \
+      SLIST_FOREACH (node, (head), next)                    \
+      {                                                     \
+        os_printk ("node: %p, obj: %p\n", node, node->obj); \
+      }                                                     \
+      os_printk ("--------------------------\n");           \
+    }                                                       \
+  while (0)
+
 void gc_init (void);
 bool gc (const gc_info_t gci);
 void gc_clean_cache (void);
-void *gc_pool_malloc (gobj_t type);
-void gc_book (gobj_t type, object_t obj);
+void *gc_pool_malloc (otype_t type);
+void gc_oln_book (obj_list_t node);
+void gc_book (otype_t type, object_t obj, obj_list_t node);
 void gc_try_to_recycle (void);
 bool is_oln_available (void);
 obj_list_t oln_alloc (void);

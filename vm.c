@@ -31,6 +31,7 @@ static void handle_optional_args (vm_t vm, object_t proc)
     {
       object_t new_obj = NEW_OBJ (0);
       *new_obj = POP_OBJ ();
+      new_obj->attr.gc = 1; // don't forget to reset gc to 1
       obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
       bl->obj = new_obj;
       SLIST_INSERT_HEAD (head, bl, next);
@@ -165,7 +166,7 @@ static void call_prim (vm_t vm, pn_t pn)
         SLIST_FOREACH (node, head, next)
         {
           object_t ret = NEW_OBJ (0);
-          obj_list_t new_node = NEW_OBJ_LIST ();
+          obj_list_t new_node = NEW_OBJ_LIST_NODE ();
           new_node->obj = ret;
           vm->sp = vm->local;
           PUSH_OBJ (k);
@@ -457,10 +458,12 @@ static object_t generate_object (vm_t vm, object_t obj)
 
         object_t cdr = NEW_OBJ (0);
         *cdr = POP_OBJ ();
+        cdr->attr.gc = 1; // don't forget to reset gc to 1
         p->cdr = cdr;
 
         object_t car = NEW_OBJ (0);
         *car = POP_OBJ ();
+        car->attr.gc = 1; // don't forget to reset gc to 1
         p->car = car;
 
         break;
@@ -477,10 +480,10 @@ static object_t generate_object (vm_t vm, object_t obj)
 
         for (u16_t i = 0; i < size; i++)
           {
-            // object_t new_obj = NEW_OBJ (0);
             object_t new_obj = NEW_OBJ (0);
             *new_obj = POP_OBJ ();
-            obj_list_t bl = NEW_OBJ_LIST ();
+            new_obj->attr.gc = 1; // don't forget to reset gc to 1
+            obj_list_t bl = NEW_OBJ_LIST_NODE ();
             bl->obj = new_obj;
             SLIST_INSERT_HEAD (&l->list, bl, next);
           }
@@ -501,6 +504,7 @@ static object_t generate_object (vm_t vm, object_t obj)
           {
             object_t new_obj = NEW_OBJ (0);
             *new_obj = POP_OBJ ();
+            new_obj->attr.gc = 1; // don't forget to reset gc to 1
             v->vec[i] = new_obj;
           }
         break;
@@ -850,8 +854,9 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         reg_t entry = ((bc.bc3 << 8) | bc.bc4);
         VM_DEBUG ("(closure-on-heap %d %d 0x%x)\n", arity, size, entry);
         closure_t closure = create_closure (vm, arity, size, entry);
-        Object obj = {.attr = {.type = closure_on_heap, .gc = 1},
+        Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
                       .value = (closure_t)closure};
+        gc_book (closure_on_heap, &obj, NULL);
         PUSH_OBJ (obj);
         break;
       }

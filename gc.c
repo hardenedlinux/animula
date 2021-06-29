@@ -34,6 +34,7 @@ static RB_HEAD (ActiveRoot, ActiveRootNode)
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
 static obj_list_head_t obj_free_list;
+static obj_list_head_t oln_free_list;
 static obj_list_head_t list_free_list;
 static obj_list_head_t vector_free_list;
 static obj_list_head_t pair_free_list;
@@ -106,6 +107,7 @@ obj_list_t oln_alloc (void)
       if (NULL != ret)
         {
           _oln.oln[i] = NULL;
+          _oln.cnt--;
           break;
         }
     }
@@ -116,7 +118,6 @@ obj_list_t oln_alloc (void)
       panic ("Maybe it's not recycled correctly?");
     }
 
-  _oln.cnt--;
   return ret;
 }
 
@@ -127,11 +128,10 @@ static void obj_list_node_recycle (obj_list_t node)
       if (NULL == _oln.oln[i])
         {
           _oln.oln[i] = node;
+          _oln.cnt++;
           break;
         }
     }
-
-  _oln.cnt++;
 }
 
 bool is_oln_available (void)
@@ -155,9 +155,17 @@ static void obj_list_nodes_clean (void)
   for (int i = 0; i < PRE_OLN; i++)
     {
       os_free (_oln.oln[i]);
+      _oln.cnt--;
     }
 
-  _oln.cnt = 0;
+  if (0 != _oln.cnt)
+    {
+      os_printk (
+        "obj_list_nodes_clean: "
+        "the cnt (%d) is not 0, maybe there's potential bug somewhere!\n",
+        _oln.cnt);
+      panic ("");
+    }
   VM_DEBUG ("OLN clean!\n");
 }
 
@@ -165,7 +173,6 @@ static void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
-
   if (PERMANENT_OBJ == obj->attr.gc)
     return;
 
@@ -180,13 +187,10 @@ static void free_object (object_t obj)
     case null_obj:
     case none:
     case string:
+    case symbol:
       {
         // simple object, we don't need to free its value
         // no need to free string
-        break;
-      }
-    case symbol:
-      {
         // symbol should never be recycled
         break;
       }
@@ -194,24 +198,29 @@ static void free_object (object_t obj)
       {
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
-        FREE_OBJECT (&pair_free_list, obj->value);
+        FREE_OBJECT (&pair_free_list, (object_t)obj->value);
         break;
       }
     case list:
       {
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
-        obj_list_head_t *head = (obj_list_head_t *)obj->value;
+        obj_list_head_t *head = &((list_t)obj->value)->list;
 
         SLIST_FOREACH (node, head, next)
         {
-          os_free ((void *)prev);
+          if (prev)
+            {
+              SLIST_REMOVE (head, prev, ObjectList, next);
+              free_object ((object_t)prev->obj);
+              prev->obj = NULL;
+              obj_list_node_recycle (prev);
+            }
           prev = node;
-          free_object ((object_t)node->obj);
         }
 
-        os_free (prev); // free the last node
-        FREE_OBJECT (&list_free_list, obj->value);
+        obj_list_node_recycle (prev); // free the last node
+        FREE_OBJECT (&list_free_list, (object_t)obj->value);
         break;
       }
     case continuation:
@@ -221,8 +230,9 @@ static void free_object (object_t obj)
         break;
       }
     case closure_on_heap:
+    case closure_on_stack:
       {
-        FREE_OBJECT (&closure_free_list, obj->value);
+        FREE_OBJECT (&closure_free_list, (object_t)obj);
         break;
       }
     default:
@@ -232,48 +242,60 @@ static void free_object (object_t obj)
       }
     }
 
-  FREE_OBJECT (&obj_free_list, obj);
+  if (0 != obj->attr.gc)
+    {
+      FREE_OBJECT (&obj_free_list, obj);
+    }
 }
 
-static void recycle_object (gobj_t type, object_t obj)
+static void recycle_object (object_t obj)
 {
-  obj_list_t node = NULL;
-
-  switch (type)
+  switch (obj->attr.type)
     {
-    case gc_object:
+    case imm_int:
+    case character:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case boolean:
+    case null_obj:
+    case none:
+    case string:
+    case symbol:
       {
         RECYCLE_OBJ (obj_free_list);
         break;
       }
-    case gc_list:
+    case list:
       {
         RECYCLE_OBJ (list_free_list);
         break;
       }
-    case gc_pair:
+    case pair:
       {
         RECYCLE_OBJ (pair_free_list);
         break;
       }
-    case gc_vector:
+    case vector:
       {
         RECYCLE_OBJ (vector_free_list);
         break;
       }
-    case gc_closure:
+    case closure_on_heap:
+    case closure_on_stack:
       {
-        RECYCLE_OBJ (closure_free_list);
+        // closures don't need to recycle
+        FORCE_FREE_OBJECTS (&closure_free_list);
         break;
       }
-    case gc_procedure:
+    case procedure:
       {
         RECYCLE_OBJ (procedure_free_list);
         break;
       }
     default:
       {
-        os_printk ("Invalid object type %d\n", type);
+        os_printk ("Invalid object type %d\n", obj->attr.type);
         panic ("recycle_object is down!");
       }
     }
@@ -375,6 +397,10 @@ static void build_active_root (const gc_info_t gci)
       u8_t obj_cnt = (sp - local) / sizeof (Object);
       active_root_insert_frame (stack, local, obj_cnt);
     }
+
+  /* FIXME: The closure captured heap-allocated object should be in
+   *        active_root too.
+   */
 }
 
 static void clean_active_root ()
@@ -384,8 +410,7 @@ static void clean_active_root ()
   ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
 }
 
-static void collect (size_t *count, gobj_t type, obj_list_head_t *head,
-                     bool hurt)
+static void collect (size_t *count, obj_list_head_t *head, bool hurt)
 {
   obj_list_t node = NULL;
 
@@ -426,7 +451,7 @@ static void collect (size_t *count, gobj_t type, obj_list_head_t *head,
 
     if (FREE_OBJ == node->obj->attr.gc)
       {
-        recycle_object (type, node->obj);
+        recycle_object (node->obj);
         *count++;
       }
   }
@@ -446,11 +471,12 @@ bool gc (const gc_info_t gci)
 
   size_t count = 0;
 try_collect:
-  collect (&count, gc_object, &obj_free_list, gci->hurt);
-  collect (&count, gc_list, &list_free_list, gci->hurt);
-  collect (&count, gc_vector, &vector_free_list, gci->hurt);
-  collect (&count, gc_pair, &pair_free_list, gci->hurt);
-  collect (&count, gc_closure, &closure_free_list, gci->hurt);
+  collect (&count, &obj_free_list, gci->hurt);
+  collect (&count, &list_free_list, gci->hurt);
+  collect (&count, &vector_free_list, gci->hurt);
+  collect (&count, &pair_free_list, gci->hurt);
+  collect (&count, &closure_free_list, gci->hurt);
+  collect (&count, &procedure_free_list, gci->hurt);
 
   if (0 == count && false == gci->hurt)
     {
@@ -471,6 +497,25 @@ try_collect:
   return false;
 }
 
+// For list node container
+static void oln_free_list_clean (void)
+{
+  obj_list_t prev = NULL;
+  obj_list_t node = NULL;
+
+  SLIST_FOREACH (node, &oln_free_list, next)
+  {
+    if (prev)
+      {
+        SLIST_REMOVE (&oln_free_list, prev, ObjectList, next);
+        os_free (prev);
+      }
+    prev = node;
+  }
+
+  os_free (prev);
+}
+
 void gc_clean_cache (void)
 {
   FORCE_FREE_OBJECTS (&obj_free_list);
@@ -478,12 +523,19 @@ void gc_clean_cache (void)
   FORCE_FREE_OBJECTS (&vector_free_list);
   FORCE_FREE_OBJECTS (&pair_free_list);
   FORCE_FREE_OBJECTS (&closure_free_list);
+  FORCE_FREE_OBJECTS (&procedure_free_list);
+  oln_free_list_clean ();
 }
 
-void gc_book (gobj_t type, object_t obj)
+void gc_oln_book (obj_list_t node)
 {
+  SLIST_INSERT_HEAD (&oln_free_list, node, next);
+}
 
-  obj_list_t node = oln_alloc ();
+void gc_book (otype_t type, object_t obj, obj_list_t node)
+{
+  if (!node)
+    node = oln_alloc ();
 
   if (!node)
     {
@@ -494,40 +546,56 @@ void gc_book (gobj_t type, object_t obj)
 
   switch (type)
     {
-    case gc_object:
+    case imm_int:
+    case character:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case boolean:
+    case null_obj:
+    case none:
+    case string:
+    case symbol:
       {
         SLIST_INSERT_HEAD (&obj_free_list, node, next);
         break;
       }
-    case gc_list:
+    case list:
       {
         SLIST_INSERT_HEAD (&list_free_list, node, next);
         break;
       }
-    case gc_pair:
+    case pair:
       {
         SLIST_INSERT_HEAD (&pair_free_list, node, next);
         break;
       }
-    case gc_vector:
+    case vector:
       {
         SLIST_INSERT_HEAD (&vector_free_list, node, next);
         break;
       }
-    case gc_closure:
+    case closure_on_heap:
+    case closure_on_stack:
       {
+        node->obj = obj->value;
         SLIST_INSERT_HEAD (&closure_free_list, node, next);
+        break;
+      }
+    case procedure:
+      {
+        SLIST_INSERT_HEAD (&procedure_free_list, node, next);
         break;
       }
     default:
       {
-        os_printk ("Invalid object type %d\n", type);
+        os_printk ("Invalid object type %d\n", obj->attr.type);
         panic ("gc_book is down!");
       }
     }
 }
 
-void *gc_pool_malloc (gobj_t type)
+void *gc_pool_malloc (otype_t type)
 {
   /* NOTE:
    * Object pool design is based on the facts:
@@ -545,27 +613,42 @@ void *gc_pool_malloc (gobj_t type)
 
   switch (type)
     {
-    case gc_object:
+    case imm_int:
+    case character:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case boolean:
+    case null_obj:
+    case none:
+    case string:
+    case symbol:
       {
         MALLOC_OBJ_FROM_POOL (obj_free_list);
         break;
       }
-    case gc_list:
+    case obj_list_node:
+      {
+        // Don't cache oln
+        break;
+      }
+    case list:
+      {
+        MALLOC_OBJ_FROM_POOL (list_free_list);
+        break;
+      }
+    case pair:
       {
         MALLOC_OBJ_FROM_POOL (pair_free_list);
         break;
       }
-    case gc_pair:
-      {
-        MALLOC_OBJ_FROM_POOL (pair_free_list);
-        break;
-      }
-    case gc_vector:
+    case vector:
       {
         MALLOC_OBJ_FROM_POOL (vector_free_list);
         break;
       }
-    case gc_closure:
+    case closure_on_heap:
+    case closure_on_stack:
       {
         panic ("BUG: closures are not allocated from pool!\n");
         break;
@@ -602,11 +685,13 @@ void gc_try_to_recycle (void)
   simple_collect (&list_free_list);
   simple_collect (&vector_free_list);
   simple_collect (&pair_free_list);
+  simple_collect (&procedure_free_list);
 
   /* NOTE:
    * Closures are not fixed size object, so we have to free it.
    */
   FORCE_FREE_OBJECTS (&closure_free_list);
+  oln_free_list_clean ();
 }
 
 void gc_init (void)
@@ -615,6 +700,7 @@ void gc_init (void)
   pre_allocate_obj_list_nodes ();
 
   SLIST_INIT (&obj_free_list);
+  SLIST_INIT (&oln_free_list);
   SLIST_INIT (&list_free_list);
   SLIST_INIT (&vector_free_list);
   SLIST_INIT (&pair_free_list);

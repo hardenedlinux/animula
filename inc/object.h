@@ -100,7 +100,6 @@ static inline bool is_unspecified (object_t obj)
         {                                 \
           o = (t)os_malloc (sizeof (to)); \
         }                                 \
-      o->attr.gc = 1;                     \
       return o;                           \
     }                                     \
   while (0)
@@ -163,9 +162,11 @@ static inline bool is_unspecified (object_t obj)
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
 
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
+obj_list_t lambdachip_new_obj_list_node (void);
 list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);
-object_t lambdachip_new_object (u8_t type);
+void *lambdachip_new_inner_object (object_t object, u8_t type, bool unbooked);
+object_t lambdachip_new_object (u8_t type, bool unbooked);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

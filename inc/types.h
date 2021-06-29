@@ -58,6 +58,7 @@ typedef enum obj_encoding
 
 typedef enum obj_type
 {
+  unbooked = -1,
   imm_int = 0,
   arbi_int = 1,
   keyword = 2,
@@ -82,7 +83,9 @@ typedef enum obj_type
 
   boolean = 61,
   null_obj = 62,
-  none = 63
+  none = 63,
+
+  obj_list_node = 127
 } otype_t;
 
 #if defined ADDRESS_64
@@ -251,7 +254,8 @@ typedef u16_t reg_t;
 /* Frame Pre-store Size =
  * sizeof(pc) + sizeof(fp) + sizeof(attr) + sizeof(closure_t)
  */
-#define FPS (2 * PC_SIZE + 1 + sizeof (closure_t))
+#define FPS       (2 * PC_SIZE + 1 + sizeof (closure_t))
+#define NEXT_FP() (*((u32_t *)(stack + fp + PC_SIZE)))
 
 static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 {
