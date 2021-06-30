@@ -340,6 +340,7 @@ static void call_prim (vm_t vm, pn_t pn)
     case list_to_string:
     case car:
     case cdr:
+    case is_null:
       {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o = POP_OBJ ();
