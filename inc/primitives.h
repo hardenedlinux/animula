@@ -77,6 +77,7 @@ typedef enum prim_num
   prim_i2c_read_byte = 38,
   prim_i2c_write_byte = 39,
   is_null = 40,
+  is_pair = 41,
 
   do_not_forget_modify_PRIM_MAX = 63
 } pn_t;

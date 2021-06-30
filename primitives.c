@@ -979,6 +979,34 @@ static object_t prim_is_null (vm_t vm, object_t ret, object_t l)
   return ret;
 }
 
+static object_t prim_is_pair (vm_t vm, object_t ret, object_t l)
+{
+  if (list == l->attr.type)
+    {
+      // if (eq l '()) return #f
+      list_t lst = (list_t)l->value;
+      obj_list_head_t *head = LIST_OBJECT_HEAD (l);
+      obj_list_t node = SLIST_FIRST (head);
+      if (node)
+        {
+          ret = &GLOBAL_REF (true_const);
+        }
+      else
+        {
+          ret = &GLOBAL_REF (false_const);
+        }
+    }
+  else if (pair == l->attr.type)
+    {
+      ret = &GLOBAL_REF (true_const);
+    }
+  else
+    {
+      ret = &GLOBAL_REF (false_const);
+    }
+  return ret;
+}
+
 #ifdef LAMBDACHIP_ZEPHYR
 
 extern GLOBAL_DEF (super_device, super_dev_led0);
@@ -1389,6 +1417,7 @@ void primitives_init (void)
   def_prim (38, "i2c_read_byte", 3, (void *)_os_i2c_read_byte);
   def_prim (39, "i2c_write_byte", 4, (void *)_os_i2c_write_byte);
   def_prim (40, "null?", 1, (void *)prim_is_null);
+  def_prim (41, "pair?", 1, (void *)prim_is_pair);
 
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 
