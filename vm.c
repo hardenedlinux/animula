@@ -1120,7 +1120,7 @@ static encode_t pre_fetch (vm_t vm, bytecode8_t bytecode)
     {
       return SINGLE;
     }
-  if (DOUBLE_ENCODE (bytecode))
+  else if (DOUBLE_ENCODE (bytecode))
     {
       return DOUBLE;
     }
