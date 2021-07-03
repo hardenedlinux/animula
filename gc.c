@@ -314,6 +314,8 @@ static inline bool exist (object_t obj)
 
 static void active_root_insert (object_t obj)
 {
+  printf ("obj: %p\n", obj);
+
   if (exist (obj))
     return;
 
@@ -337,7 +339,7 @@ static void active_root_insert (object_t obj)
     case list:
       {
         obj_list_t node = NULL;
-        obj_list_head_t *head = (obj_list_head_t *)obj->value;
+        obj_list_head_t *head = &((list_t)obj->value)->list;
 
         SLIST_FOREACH (node, head, next)
         {
