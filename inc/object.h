@@ -166,7 +166,7 @@ obj_list_t lambdachip_new_obj_list_node (void);
 list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);
-void *lambdachip_new_inner_object (object_t object, u8_t type, bool unbooked);
-object_t lambdachip_new_object (u8_t type, bool unbooked);
+void *lambdachip_new_inner_object (object_t object, u8_t type);
+object_t lambdachip_new_object (u8_t type);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

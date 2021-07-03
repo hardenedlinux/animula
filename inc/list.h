@@ -21,10 +21,6 @@
 #include "qlist.h"
 #include "types.h"
 
-#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
-
-#define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
-
 object_t _car (vm_t vm, object_t ret, object_t obj);
 object_t _cdr (vm_t vm, object_t ret, object_t obj);
 object_t _cons (vm_t vm, object_t ret, object_t a, object_t b);

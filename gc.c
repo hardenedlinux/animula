@@ -169,7 +169,7 @@ static void obj_list_nodes_clean (void)
   VM_DEBUG ("OLN clean!\n");
 }
 
-static void free_object (object_t obj)
+void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
@@ -205,7 +205,7 @@ static void free_object (object_t obj)
       {
         obj_list_t node = NULL;
         obj_list_t prev = NULL;
-        obj_list_head_t *head = &((list_t)obj->value)->list;
+        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
 
         SLIST_FOREACH (node, head, next)
         {
@@ -215,11 +215,18 @@ static void free_object (object_t obj)
               free_object ((object_t)prev->obj);
               prev->obj = NULL;
               obj_list_node_recycle (prev);
+              prev = NULL;
             }
           prev = node;
         }
 
-        obj_list_node_recycle (prev); // free the last node
+        if (prev)
+          {
+            SLIST_REMOVE (head, prev, ObjectList, next);
+            free_object ((object_t)prev->obj);
+            prev->obj = NULL;
+            obj_list_node_recycle (prev);
+          }
         FREE_OBJECT (&list_free_list, (object_t)obj->value);
         break;
       }
@@ -241,10 +248,7 @@ static void free_object (object_t obj)
       }
     }
 
-  if (0 != obj->attr.gc)
-    {
-      FREE_OBJECT (&obj_free_list, obj);
-    }
+  FREE_OBJECT (&obj_free_list, obj);
 }
 
 static void recycle_object (object_t obj)
@@ -319,13 +323,6 @@ static void active_root_insert (object_t obj)
 
   switch (obj->attr.type)
     {
-    case imm_int:
-    case primitive:
-    case string:
-      {
-        // Self-contain object
-        break;
-      }
     case pair:
       {
         pair_t p = (pair_t)obj->value;
@@ -351,10 +348,15 @@ static void active_root_insert (object_t obj)
       }
     default:
       {
+        // Non-collection:
+
         /* procedure */
         /* closure_on_heap */
         /* closure_on_stack */
         /* mut_string */
+        /* imm_int */
+        /* primitive */
+        /* string */
         break;
       }
     }
@@ -368,7 +370,7 @@ static void active_root_insert_frame (u8_t *stack, u32_t local, u8_t cnt)
 {
   for (u8_t i = 0; i < cnt; i++)
     {
-      object_t obj = (object_t) (stack + local);
+      object_t obj = (object_t) (stack + local + i * sizeof (Object));
 
       if (!obj)
         panic ("active_root_insert_frame: Invalid object address!");
@@ -385,21 +387,32 @@ static void build_active_root (const gc_info_t gci)
   u8_t *stack = gci->stack;
   u32_t fp = gci->fp;
   u32_t sp = gci->sp;
+  bool run = true;
 
   for (; fp; sp = fp, fp = NEXT_FP ())
     {
       u32_t local = fp + FPS;
       u8_t obj_cnt = (sp - local) / sizeof (Object);
       active_root_insert_frame (stack, local, obj_cnt);
-    }
 
-  /* FIXME: The closure captured heap-allocated object should be in
-   *        active_root too.
-   */
+      /* NOTE: The closure captured heap-allocated object should be in
+       *        active_root too.
+       */
+      closure_t closure = (closure_t) (stack + fp + FPS - sizeof (closure_t));
+      if (closure && closure->frame_size)
+        {
+          for (int i = 0; i < closure->frame_size; i++)
+            {
+              object_t obj = (&((object_t) (stack + closure->local))[i]);
+              active_root_insert (obj);
+            }
+        }
+    }
 }
 
 static void clean_active_root ()
 {
+  /* NOTE: Don't waste time to clean one by one. */
   _arn.index = 0;
   RB_HEAD (ActiveRoot, ActiveRootNode)
   ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
@@ -452,6 +465,16 @@ static void collect (size_t *count, obj_list_head_t *head, bool hurt)
   }
 }
 
+static void sweep ()
+{
+  FREE_OBJECTS (&obj_free_list);
+  FREE_OBJECTS (&list_free_list);
+  FREE_OBJECTS (&vector_free_list);
+  FREE_OBJECTS (&pair_free_list);
+  FREE_OBJECTS (&closure_free_list);
+  FREE_OBJECTS (&procedure_free_list);
+}
+
 bool gc (const gc_info_t gci)
 {
   /* TODO:
@@ -488,8 +511,9 @@ try_collect:
       goto try_collect;
     }
 
+  sweep ();
   clean_active_root ();
-  return false;
+  return true;
 }
 
 // For list node container
@@ -527,10 +551,9 @@ void gc_oln_book (obj_list_t node)
   SLIST_INSERT_HEAD (&oln_free_list, node, next);
 }
 
-void gc_book (otype_t type, object_t obj, obj_list_t node)
+void gc_book (otype_t type, object_t obj)
 {
-  if (!node)
-    node = oln_alloc ();
+  obj_list_t node = oln_alloc ();
 
   if (!node)
     {

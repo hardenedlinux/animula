@@ -65,7 +65,7 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
           }
         else
           {
-            ret = &GLOBAL_REF (null_const);
+            *ret = GLOBAL_REF (null_const);
           }
         break;
       }
@@ -136,36 +136,32 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
   obj_list_t node = NULL;
   imm_int_t cnt = (imm_int_t)idx->value;
   imm_int_t lst_idx = cnt;
-  obj_list_t next = NULL;
 
   if (cnt < 0)
     {
       PANIC ("Invalid index %d!\n", lst_idx);
     }
 
-  cnt++;
   SLIST_FOREACH (node, head, next)
   {
     if (!cnt)
       break;
-
-    next = node;
     cnt--;
   }
 
-  if (cnt > 0)
+  if (cnt < 0)
     {
-      PANIC ("Invalid index %d!\n", lst_idx);
+      PANIC ("BUG: wrong counter, %d!\n", lst_idx);
     }
 
-  if (!next)
+  if (!node)
     {
       PANIC ("Invalid index %d!\n", lst_idx);
       // FIXME: implement throw
       // throw ();
     }
 
-  *ret = *(next->obj);
+  *ret = *(node->obj);
   return ret;
 }
 
@@ -197,8 +193,10 @@ object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
       // throw ();
     }
 
-  return &GLOBAL_REF (none_const);
+  *ret = GLOBAL_REF (none_const);
+  return ret;
 }
+
 object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
 {
   VALIDATE (l1, list);

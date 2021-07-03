@@ -257,6 +257,10 @@ typedef u16_t reg_t;
 #define FPS       (2 * PC_SIZE + 1 + sizeof (closure_t))
 #define NEXT_FP() (*((reg_t *)(stack + fp + PC_SIZE)))
 
+#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
+
+#define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
+
 static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 {
   u8_t buf[sizeof (uintptr_t)] = {0};

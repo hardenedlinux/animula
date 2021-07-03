@@ -849,7 +849,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         closure_t closure = create_closure (vm, arity, size, entry);
         Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
                       .value = (closure_t)closure};
-        gc_book (closure_on_heap, &obj, NULL);
+        gc_book (closure_on_heap, &obj);
         PUSH_OBJ (obj);
         break;
       }
@@ -1210,20 +1210,23 @@ void vm_run (vm_t vm)
       /* u32_t bound */
       /*   = vm->sp ? (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)) : 0;
        */
-      /* printf ("bound: %d\n", bound); */
-      /* getchar (); */
+
       /* // for (u32_t i = 0; i < bound / 8; i++) */
       /* for (u32_t i = 0; i < 5; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
       /*     os_printk ( */
-      /*       "obj: local = %d, offset=%d, local_sp=%d, type = %d, value =
-       * %d\n", */
+      /*       "obj: local = %d, offset=%d, local_sp=%d, type = %d, value =" */
+      /*       "% d\n ", */
       /*       vm->local, i, vm->fp + FPS + i * 8, obj->attr.type, */
       /*       (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
       /* getchar (); */
+
+      /* printf ("TOS: "); */
+      /* object_printer (&TOP_OBJ ()); */
+      /* printf ("\n"); */
 
       if (!vm->sp)
         {

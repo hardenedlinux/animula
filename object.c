@@ -84,17 +84,28 @@ closure_t lambdachip_new_closure (void)
   CREATE_NEW_OBJ (closure_t, closure_on_heap, Closure);
 }
 
-void *lambdachip_new_inner_object (object_t object, u8_t type, bool unbooked)
+object_t lambdachip_new_object (u8_t type)
 {
+  bool from_pool = true;
+  bool has_inner_obj = true;
+  bool new_alloc = false;
+  object_t object = NULL;
   void *value = NULL;
+
+  object = (object_t)gc_pool_malloc (0);
+
+  if (!object)
+    {
+      object = (object_t)os_malloc (sizeof (Object));
+      new_alloc = true;
+
+      // Alloc failed, return NULL to trigger GC
+      if (!object)
+        return NULL;
+    }
 
   switch (type)
     {
-    case string:
-      {
-        // no need to book
-        break;
-      }
     case list:
       {
         value = (void *)lambdachip_new_list ();
@@ -115,43 +126,26 @@ void *lambdachip_new_inner_object (object_t object, u8_t type, bool unbooked)
         value = (void *)lambdachip_new_vector ();
         break;
       }
-      // gc_malloc
-      // gc_free
-      // mutable string, mutable string->value = malloc()
     default:
       {
+        has_inner_obj = false;
         break;
       }
     }
 
-  if (false == unbooked)
-    gc_book (type, (void *)object, NULL);
-
-  return value;
-}
-
-object_t lambdachip_new_object (u8_t type, bool unbooked)
-{
-  bool from_pool = true;
-  object_t object = NULL;
-
-  if (unbooked == type)
-    goto unbooked;
-
-  object = (object_t)gc_pool_malloc (0);
-
-unbooked:
-  if (!object)
+  if (has_inner_obj && !value)
     {
-      object = (object_t)os_malloc (sizeof (Object));
-
-      // Alloc failed, return NULL to trigger GC
-      if (!object)
-        return NULL;
+      // The inner object wasn't successfully allocated, return NULL for GC
+      free_object (object);
+      return NULL;
     }
 
-  object->value = lambdachip_new_inner_object (object, type, unbooked);
+  object->value = value;
   object->attr.type = type;
   object->attr.gc = 1;
+
+  if (!new_alloc)
+    gc_book (type, object);
+
   return object;
 }
