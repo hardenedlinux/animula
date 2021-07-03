@@ -30,10 +30,11 @@
 #define GC()                                                               \
   do                                                                       \
     {                                                                      \
-      os_printk ("oh GC?!\n");                                             \
+      os_printk ("GC was triggered!\n");                                   \
       GCInfo gci                                                           \
         = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack, .hurt = false}; \
       gc (&gci);                                                           \
+      os_printk ("GC finished!\n");                                        \
     }                                                                      \
   while (0)
 
@@ -134,7 +135,8 @@ struct Pre_OLN
 
 static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
 {
-  return ((uintptr_t)b->value - (uintptr_t)a->value);
+  // NOTE: Don't use uintptr_t for minus comparison
+  return ((intptr_t)b->value - (intptr_t)a->value);
 }
 
 static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)

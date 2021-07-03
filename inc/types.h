@@ -255,7 +255,7 @@ typedef u16_t reg_t;
  * sizeof(pc) + sizeof(fp) + sizeof(attr) + sizeof(closure_t)
  */
 #define FPS       (2 * PC_SIZE + 1 + sizeof (closure_t))
-#define NEXT_FP() (*((u32_t *)(stack + fp + PC_SIZE)))
+#define NEXT_FP() (*((reg_t *)(stack + fp + PC_SIZE)))
 
 static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 {

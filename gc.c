@@ -314,8 +314,6 @@ static inline bool exist (object_t obj)
 
 static void active_root_insert (object_t obj)
 {
-  printf ("obj: %p\n", obj);
-
   if (exist (obj))
     return;
 
@@ -323,8 +321,7 @@ static void active_root_insert (object_t obj)
     {
     case imm_int:
     case primitive:
-    case procedure:
-    case mut_string:
+    case string:
       {
         // Self-contain object
         break;
@@ -352,16 +349,13 @@ static void active_root_insert (object_t obj)
         panic ("GC: Hey, did we support Vector now? If so, please fix me!\n");
         break;
       }
-    case string:
-      {
-        panic ("GC: You can only create mutable string, please use mut_string\n"
-               "me!\n");
-        break;
-      }
     default:
       {
-        ActiveRootNode *van = arn_alloc ();
-        van->value = obj->value;
+        /* procedure */
+        /* closure_on_heap */
+        /* closure_on_stack */
+        /* mut_string */
+        break;
       }
     }
 
@@ -372,7 +366,7 @@ static void active_root_insert (object_t obj)
 
 static void active_root_insert_frame (u8_t *stack, u32_t local, u8_t cnt)
 {
-  for (u8_t i = 0; i < cnt; local += sizeof (Object))
+  for (u8_t i = 0; i < cnt; i++)
     {
       object_t obj = (object_t) (stack + local);
 
