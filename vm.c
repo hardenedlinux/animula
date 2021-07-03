@@ -600,24 +600,6 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         PUSH_OBJ (*obj);
         break;
       }
-    case CALL_LOCAL:
-      {
-        VM_DEBUG ("(call-local %d)\n", bc.data);
-        object_t obj = (object_t)LOCAL (bc.data);
-        if (NEED_VARGS (obj))
-          handle_optional_args (vm, obj);
-        CALL (obj);
-        break;
-      }
-    case CALL_LOCAL_EXTEND:
-      {
-        VM_DEBUG ("(call-local %d)\n", bc.data + 16);
-        object_t obj = (object_t)LOCAL (bc.data + 16);
-        if (NEED_VARGS (obj))
-          handle_optional_args (vm, obj);
-        CALL (obj);
-        break;
-      }
     case FREE_REF:
       {
         u8_t frame = NEXT_DATA ();
@@ -647,13 +629,22 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         CALL (obj);
         break;
       }
-    case LOCAL_ASSIGN:
+    case CALL_LOCAL:
       {
-        u8_t offset_0 = NEXT_DATA ();
-        u8_t offset = ((bc.data << 8) | offset_0);
-        VM_DEBUG ("(assign-local %x)\n", offset);
-        object_t obj = (object_t)LOCAL (offset);
-        *obj = POP_OBJ ();
+        VM_DEBUG ("(call-local %d)\n", bc.data);
+        object_t obj = (object_t)LOCAL (bc.data);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
+        CALL (obj);
+        break;
+      }
+    case CALL_LOCAL_EXTEND:
+      {
+        VM_DEBUG ("(call-local %d)\n", bc.data + 16);
+        object_t obj = (object_t)LOCAL (bc.data + 16);
+        if (NEED_VARGS (obj))
+          handle_optional_args (vm, obj);
+        CALL (obj);
         break;
       }
     case FREE_ASSIGN:
@@ -663,6 +654,15 @@ static void interp_single_encode (vm_t vm, bytecode8_t bc)
         u8_t offset = ((bc.data << 2) | ((frame & 0b11000000) >> 6));
         VM_DEBUG ("(assign-free %x %d)\n", up, offset);
         object_t obj = (object_t)FREE_VAR (up, offset);
+        *obj = POP_OBJ ();
+        break;
+      }
+    case LOCAL_ASSIGN:
+      {
+        u8_t offset_0 = NEXT_DATA ();
+        u8_t offset = ((bc.data << 8) | offset_0);
+        VM_DEBUG ("(assign-local %x)\n", offset);
+        object_t obj = (object_t)LOCAL (offset);
         *obj = POP_OBJ ();
         break;
       }
@@ -702,14 +702,6 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
         CALL (obj);
         break;
       }
-    case GLOBAL_VAR_REF:
-      {
-        u8_t index = bc.bc2;
-        VM_DEBUG ("(global %d)\n", index);
-        object_t obj = &GLOBAL (index);
-        PUSH_OBJ (*obj);
-        break;
-      }
     case GLOBAL_VAR_ASSIGN:
       {
         u8_t index = bc.bc2;
@@ -724,6 +716,14 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
 #endif
         GLOBAL_ASSIGN (index, var);
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        break;
+      }
+    case GLOBAL_VAR_REF:
+      {
+        u8_t index = bc.bc2;
+        VM_DEBUG ("(global %d)\n", index);
+        object_t obj = &GLOBAL (index);
+        PUSH_OBJ (*obj);
         break;
       }
     case CALL_GLOBAL_VAR:
@@ -748,13 +748,6 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
 {
   switch (bc.type)
     {
-    case VEC_REF:
-      {
-        PANIC ("VEC_REf hasn't been implemented yet!");
-        // VM_DEBUG ("(vec-ref 0x%p %d)\n", vec, bc.bc3);
-        // PUSH (vector_ref (vec, bc.bc2));
-        break;
-      }
     case CALL_PROC:
       {
         u32_t offset = bc.data;
@@ -788,12 +781,11 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
         JUMP (offset);
         break;
       }
-    case GLOBAL_VAR_REF_EXTEND:
+    case VEC_REF:
       {
-        u32_t index = NEXT_DATA () + 256;
-        VM_DEBUG ("(global-assign %d)\n", index);
-        object_t obj = &GLOBAL (index);
-        PUSH_OBJ (*obj);
+        PANIC ("VEC_REf hasn't been implemented yet!");
+        // VM_DEBUG ("(vec-ref 0x%p %d)\n", vec, bc.bc3);
+        // PUSH (vector_ref (vec, bc.bc2));
         break;
       }
     case GLOBAL_VAR_ASSIGN_EXTEND:
@@ -807,6 +799,14 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
 #endif
         GLOBAL_ASSIGN (index, var);
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
+        break;
+      }
+    case GLOBAL_VAR_REF_EXTEND:
+      {
+        u32_t index = NEXT_DATA () + 256;
+        VM_DEBUG ("(global-assign %d)\n", index);
+        object_t obj = &GLOBAL (index);
+        PUSH_OBJ (*obj);
         break;
       }
     case CALL_GLOBAL_VAR_EXTEND:
@@ -840,18 +840,6 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         // vector_set (vec, bc.bc2, obj);
         break;
       }
-    case CLOSURE_ON_STACK:
-      {
-        u8_t size = (bc.bc2 & 0xFF);
-        u8_t arity = ((bc.bc2 & 0xFF00) >> 4);
-        reg_t entry = ((bc.bc3 << 8) | bc.bc4);
-        reg_t env = vm->sp + sizeof (Object); // skip closure object
-        VM_DEBUG ("(closure-on-stack %d 0x%x)\n", size, entry);
-        Object obj = {.attr = {.type = closure_on_stack, .gc = 0},
-                      .value = (void *)((env | (size << 10) | (entry << 16)))};
-        PUSH_OBJ (obj);
-        break;
-      }
     case CLOSURE_ON_HEAP:
       {
         u8_t size = (bc.bc2 & 0xF);
@@ -862,6 +850,18 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
                       .value = (closure_t)closure};
         gc_book (closure_on_heap, &obj, NULL);
+        PUSH_OBJ (obj);
+        break;
+      }
+    case CLOSURE_ON_STACK:
+      {
+        u8_t size = (bc.bc2 & 0xFF);
+        u8_t arity = ((bc.bc2 & 0xFF00) >> 4);
+        reg_t entry = ((bc.bc3 << 8) | bc.bc4);
+        reg_t env = vm->sp + sizeof (Object); // skip closure object
+        VM_DEBUG ("(closure-on-stack %d 0x%x)\n", size, entry);
+        Object obj = {.attr = {.type = closure_on_stack, .gc = 0},
+                      .value = (void *)((env | (size << 10) | (entry << 16)))};
         PUSH_OBJ (obj);
         break;
       }

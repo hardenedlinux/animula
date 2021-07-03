@@ -131,9 +131,9 @@
 #define LOCAL_REF         0b0000
 #define LOCAL_REF_EXTEND  0b0001
 #define FREE_REF          0b0010
+#define CALL_FREE         0b0011
 #define CALL_LOCAL        0b0100
 #define CALL_LOCAL_EXTEND 0b0101
-#define CALL_FREE         0b0011
 #define FREE_ASSIGN       0b0110
 #define LOCAL_ASSIGN      0b0111
 
