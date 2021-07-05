@@ -144,7 +144,7 @@ object_t lambdachip_new_object (u8_t type)
   object->attr.type = type;
   object->attr.gc = 1;
 
-  if (!new_alloc)
+  if (new_alloc)
     gc_book (type, object);
 
   return object;

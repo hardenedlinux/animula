@@ -233,6 +233,7 @@ typedef union ieee754_float
 #ifndef PC_SIZE
 #  define PC_SIZE 2
 #  if (4 == PC_SIZE)
+#    define PUSH_REG    PUSH_U32
 #    define POP_REG     POP_U32
 #    define TOP_REG     TOP_U32
 #    define NORMAL_JUMP 0xFFFFFFFF
@@ -419,15 +420,15 @@ typedef enum vm_state
 
 typedef struct LambdaVM
 {
-  u32_t pc; // program counter
-  u32_t sp; // stack pointer, move when objects pushed
-  u32_t fp; // last frame pointer, move when env was created
+  reg_t pc; // program counter
+  reg_t sp; // stack pointer, move when objects pushed
+  reg_t fp; // last frame pointer, move when env was created
   /* NOTE:
    * The prelude would pre-execute before the actual call, so the local frame
    * was hidden by prelude, that's why we need a `local' to record the actual
    * frame.
    */
-  u32_t local; // local frame
+  reg_t local; // local frame
   vm_state_t state;
   cont_t cc; // current continuation
   bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);

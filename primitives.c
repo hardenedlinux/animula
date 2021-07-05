@@ -1470,7 +1470,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   ret->attr.gc = 1;
   ret->value = (void *)l;
 
-  obj_list_t iter;
+  obj_list_t iter = NULL;
   for (imm_int_t i = 0; i < len_list; i++)
     {
       object_t new_obj = NEW_OBJ (0);

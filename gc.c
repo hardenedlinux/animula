@@ -387,13 +387,13 @@ static void build_active_root (const gc_info_t gci)
   // 2. Generate Active Root Tree
 
   u8_t *stack = gci->stack;
-  u32_t fp = gci->fp;
-  u32_t sp = gci->sp;
+  reg_t fp = gci->fp;
+  reg_t sp = gci->sp;
   bool run = true;
 
-  for (; fp; sp = fp, fp = NEXT_FP ())
+  for (; ((fp > 0) && (65535 != fp)); sp = fp, fp = NEXT_FP ())
     {
-      u32_t local = fp + FPS;
+      reg_t local = fp + FPS;
       u8_t obj_cnt = (sp - local) / sizeof (Object);
       active_root_insert_frame (stack, local, obj_cnt);
 
