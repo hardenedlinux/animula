@@ -75,6 +75,7 @@ static ActiveRootNode *arn_alloc (void)
              "Try to set PRE_ARN larger!");
     }
 
+  os_printk("*arn_alloc, _arn.index = %d\n", _arn.index);
   return _arn.arn[_arn.index++];
 }
 
