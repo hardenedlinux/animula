@@ -27,13 +27,15 @@
 #define GEN_1_OBJ     1
 #define FREE_OBJ      0
 
-#define GC()                                                               \
-  do                                                                       \
-    {                                                                      \
-      GCInfo gci                                                           \
-        = {.fp = vm->fp, .sp = vm->sp, .stack = vm->stack, .hurt = false}; \
-      gc (&gci);                                                           \
-    }                                                                      \
+#define GC()                                     \
+  do                                             \
+    {                                            \
+      GCInfo gci = {.fp = vm->fp,                \
+                    .sp = vm->sp,                \
+                    .stack = vm->stack,          \
+                    .hurt = LAMBDACHIP_GC_HURT}; \
+      gc (&gci);                                 \
+    }                                            \
   while (0)
 
 #define GC_MALLOC(size)                 \

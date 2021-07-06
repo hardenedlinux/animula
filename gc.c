@@ -490,15 +490,14 @@ bool gc (const gc_info_t gci)
   build_active_root (gci);
 
   size_t count = 0;
-try_collect:
-  collect (&count, &obj_free_list, gci->hurt);
-  collect (&count, &list_free_list, gci->hurt);
-  collect (&count, &vector_free_list, gci->hurt);
-  collect (&count, &pair_free_list, gci->hurt);
-  collect (&count, &closure_free_list, gci->hurt);
-  collect (&count, &procedure_free_list, gci->hurt);
+  collect (&count, &obj_free_list, false);
+  collect (&count, &list_free_list, false);
+  collect (&count, &vector_free_list, false);
+  collect (&count, &pair_free_list, false);
+  collect (&count, &closure_free_list, false);
+  collect (&count, &procedure_free_list, false);
 
-  if (0 == count && false == gci->hurt)
+  if (0 == count && gci->hurt)
     {
       /*
         NOTE: No memory and no freed object, hurtly collect to release all
@@ -509,8 +508,12 @@ try_collect:
                Do we have better approach to avoid big hurt?
                Or do we really need hurt collect in embedded system?
       */
-      gci->hurt = true;
-      goto try_collect;
+      collect (&count, &obj_free_list, gci->hurt);
+      collect (&count, &list_free_list, gci->hurt);
+      collect (&count, &vector_free_list, gci->hurt);
+      collect (&count, &pair_free_list, gci->hurt);
+      collect (&count, &closure_free_list, gci->hurt);
+      collect (&count, &procedure_free_list, gci->hurt);
     }
 
   sweep ();

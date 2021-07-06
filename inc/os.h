@@ -17,6 +17,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef LAMBDACHIP_GC_HURT
+#  define LAMBDACHIP_GC_HURT 0
+#endif
+
 #if defined LAMBDACHIP_ZEPHYR
 #  include <sys/printk.h>
 #  include <zephyr.h>
