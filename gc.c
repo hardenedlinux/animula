@@ -17,6 +17,11 @@
 
 #include "gc.h"
 
+#ifdef LAMBDACHIP_LINUX
+#  include <sys/time.h>
+
+#endif
+
 /* The GC in LambdaChip is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
 
@@ -487,7 +492,31 @@ bool gc (const gc_info_t gci)
    * 3. Free obj pool
    */
 
+#ifdef LAMBDACHIP_LINUX
+  const long long TICKS_PER_SECOND = 1000000L;
+  struct timeval tv;
+  struct timezone tz;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t cycles_spent;
+  uint64_t nanoseconds_spent;
+#endif
+
+#ifdef LAMBDACHIP_LINUX
+  gettimeofday (&tv, &tz);
+  long long t0 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t t0 = k_cycle_get_32 ();
+#endif
+
+  os_printk ("GC: start\n");
+
   build_active_root (gci);
+#ifdef LAMBDACHIP_LINUX
+  gettimeofday (&tv, &tz);
+  long long t1 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t t1 = k_cycle_get_32 ();
+#endif
 
   size_t count = 0;
   collect (&count, &obj_free_list, false);
@@ -496,6 +525,13 @@ bool gc (const gc_info_t gci)
   collect (&count, &pair_free_list, false);
   collect (&count, &closure_free_list, false);
   collect (&count, &procedure_free_list, false);
+
+#ifdef LAMBDACHIP_LINUX
+  gettimeofday (&tv, &tz);
+  long long t2 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t t2 = k_cycle_get_32 ();
+#endif
 
   if (0 == count && gci->hurt)
     {
@@ -516,8 +552,36 @@ bool gc (const gc_info_t gci)
       collect (&count, &procedure_free_list, gci->hurt);
     }
 
+#ifdef LAMBDACHIP_LINUX
+  gettimeofday (&tv, &tz);
+  long long t3 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t t3 = k_cycle_get_32 ();
+#endif
+
   sweep ();
+
+#ifdef LAMBDACHIP_LINUX
+  gettimeofday (&tv, &tz);
+  long long t4 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t t4 = k_cycle_get_32 ();
+#endif
   clean_active_root ();
+#ifdef LAMBDACHIP_LINUX
+  gettimeofday (&tv, &tz);
+  long long t5 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
+#elif defined(LAMBDACHIP_ZEPHYR)
+  uint32_t t5 = k_cycle_get_32 ();
+#endif
+
+#ifdef LAMBDACHIP_LINUX
+  printf ("%lld, %lld, %lld, %lld, %lld\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0,
+          t5 - t0);
+#elif defined(LAMBDACHIP_ZEPHYR)
+  printf ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0, t5 - t0);
+#endif
+
   return true;
 }
 
