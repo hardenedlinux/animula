@@ -1451,7 +1451,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
     {
       ret->attr.type = boolean;
       ret->value = &GLOBAL_REF (false_const);
-      os_printk ("%s, %s: malloc error\n", __FILE__, __FUNCTION__);
+      os_printk ("%s, %s: GC_MALLOC fail\n", __FILE__, __FUNCTION__);
       return ret;
     }
 
