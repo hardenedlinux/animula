@@ -1798,9 +1798,11 @@ prim_t get_prim (u16_t pn)
 
 void primitives_clean (void)
 {
-  for (int i = 0; i <= object_print; i++)
+  for (int i = 0; i < PRIM_MAX; i++)
     {
-      os_free (GLOBAL_REF (prim_table)[i]);
+      void *p = GLOBAL_REF (prim_table)[i];
+      if (p)
+        os_free (p);
       GLOBAL_REF (prim_table)[i] = NULL;
     }
 }

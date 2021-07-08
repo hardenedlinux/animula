@@ -145,6 +145,8 @@ static void call_prim (vm_t vm, pn_t pn)
       }
     case map:
       {
+        // FIXME: Fix the stack order for GC
+
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
@@ -166,7 +168,7 @@ static void call_prim (vm_t vm, pn_t pn)
         SLIST_FOREACH (node, head, next)
         {
           object_t ret = NEW_OBJ (0);
-          obj_list_t new_node = NEW_OBJ_LIST_NODE ();
+          obj_list_t new_node = NEW_LIST_NODE ();
           new_node->obj = ret;
           vm->sp = vm->local;
           PUSH_OBJ (k);
@@ -334,6 +336,10 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
         Object ret = CREATE_RET_OBJ ();
+        printf ("lst: ");
+        object_printer (&o1);
+        printf ("\n");
+
         PUSH_OBJ (*fn (vm, &ret, &o1, &o2));
         break;
       }
@@ -458,19 +464,23 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         VM_DEBUG ("(push-pair-object)\n");
         pair_t p = NEW (pair);
+        p->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         obj->attr.type = pair;
         obj->value = (void *)p;
+        PUSH_OBJ (*obj);
+        u32_t sp = vm->sp - sizeof (Object);
 
-        object_t cdr = NEW_OBJ (0);
-        *cdr = POP_OBJ ();
+        object_t cdr = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
+        *cdr = POP_OBJ_FROM (sp);
         cdr->attr.gc = 1; // don't forget to reset gc to 1
         p->cdr = cdr;
 
-        object_t car = NEW_OBJ (0);
-        *car = POP_OBJ ();
+        object_t car = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
+        *car = POP_OBJ_FROM (sp);
         car->attr.gc = 1; // don't forget to reset gc to 1
         p->car = car;
 
+        vm->sp = sp; // refix the pop offset
         break;
       }
     case list:
@@ -480,18 +490,35 @@ static object_t generate_object (vm_t vm, object_t obj)
         VM_DEBUG ("(push-list-object %d)\n", size);
         list_t l = NEW (list);
         SLIST_INIT (&l->list);
+        l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         obj->attr.type = list;
         obj->value = (void *)l;
 
+        /* NOTE:
+         * To safely created a List, we have ot consider that GC may happend
+         * unexpectedly.
+         * 1. We must save list-obj to avoid to be freed by GC.
+         * 2. The POP operation must be fixed to skip list-obj.
+         * 3. oln must be created and inserted before the object allocation.
+         */
+        PUSH_OBJ (*obj);
+        u32_t sp = vm->sp - sizeof (Object);
+
         for (u16_t i = 0; i < size; i++)
           {
-            object_t new_obj = NEW_OBJ (0);
-            *new_obj = POP_OBJ ();
-            new_obj->attr.gc = 1; // don't forget to reset gc to 1
-            obj_list_t bl = NEW_OBJ_LIST_NODE ();
-            bl->obj = new_obj;
+            // POP_OBJ_FROM (sp);
+            obj_list_t bl = NEW_LIST_NODE ();
+            // avoid crash in case GC was triggered here
+            bl->obj = (void *)0xDEADBEEF;
             SLIST_INSERT_HEAD (&l->list, bl, next);
+            object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
+            /* printf ("222\n"); */
+            *new_obj = POP_OBJ_FROM (sp);
+            // FIXME: What if it's global const?
+            new_obj->attr.gc = 1; // don't forget to reset gc to 1
+            bl->obj = new_obj;
           }
+        vm->sp = sp; // refix the pop offset
         break;
       }
     case vector:
@@ -500,18 +527,22 @@ static object_t generate_object (vm_t vm, object_t obj)
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-vector-object %d)\n", size);
         vector_t v = NEW (vector);
+        v->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         v->vec = (object_t *)GC_MALLOC (sizeof (Object) * size);
         v->size = size;
         obj->attr.type = vector;
         obj->value = (void *)v;
+        PUSH_OBJ (*obj);
+        u32_t sp = vm->sp - sizeof (Object);
 
         for (u16_t i = 0; i < size; i++)
           {
-            object_t new_obj = NEW_OBJ (0);
-            *new_obj = POP_OBJ ();
+            object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
+            *new_obj = POP_OBJ_FROM (sp);
             new_obj->attr.gc = 1; // don't forget to reset gc to 1
             v->vec[i] = new_obj;
           }
+        vm->sp = sp; // refix the pop offset
         break;
       }
     case real:
@@ -849,7 +880,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         closure_t closure = create_closure (vm, arity, size, entry);
         Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
                       .value = (closure_t)closure};
-        gc_book (closure_on_heap, &obj);
+        gc_book (closure_on_heap, &obj, true);
         PUSH_OBJ (obj);
         break;
       }
@@ -1020,24 +1051,23 @@ void vm_init (vm_t vm)
   os_memset (vm, 0, sizeof (struct LambdaVM));
   vm_init_environment (vm);
   vm->code = NULL;
-  vm->data = NULL;
   vm->stack = (u8_t *)os_malloc (GLOBAL_REF (VM_STKSEG_SIZE));
   vm->globals = NULL;
 }
 
 void vm_clean (vm_t vm)
 {
-  os_free (vm->code);
-  vm->code = NULL;
-
-  os_free (vm->data);
-  vm->data = NULL;
+  /* NOTE: vm->code will be free in LEF */
 
   os_free (vm->stack);
   vm->stack = NULL;
 
   os_free (vm->globals);
   vm->globals = NULL;
+
+  clean_symbol_table ();
+  os_free (vm);
+  vm = NULL;
 }
 
 void vm_init_globals (vm_t vm, lef_t lef)
@@ -1083,20 +1113,17 @@ void vm_init_globals (vm_t vm, lef_t lef)
 
 void vm_load_lef (vm_t vm, lef_t lef)
 {
-  GLOBAL_SET (VM_DATASEG_SIZE, lef->msize);
   GLOBAL_SET (VM_CODESEG_SIZE, lef->psize);
   GLOBAL_SET (VM_GLOBALSEG_SIZE, lef->gsize);
 
-  vm->data = (void *)os_malloc (lef->msize);
-  vm->code = (void *)os_malloc (lef->psize);
-
   create_symbol_table (&lef->symtab);
   // FIXME: not all mem section is data seg
-  os_memcpy (vm->data, LEF_MEM (lef), lef->msize);
 
+  printf ("init globals\n");
   vm_init_globals (vm, lef);
+  printf ("init globals done\n");
 
-  os_memcpy (vm->code, LEF_PROG (lef), lef->psize);
+  vm->code = LEF_PROG (lef);
   vm->pc = lef->entry;
 }
 

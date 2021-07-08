@@ -39,12 +39,10 @@ static RB_HEAD (ActiveRoot, ActiveRootNode)
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
 static obj_list_head_t obj_free_list;
-static obj_list_head_t oln_free_list;
 static obj_list_head_t list_free_list;
 static obj_list_head_t vector_free_list;
 static obj_list_head_t pair_free_list;
 static obj_list_head_t closure_free_list;
-static obj_list_head_t procedure_free_list;
 
 static struct Pre_ARN _arn = {0};
 static struct Pre_OLN _oln = {0};
@@ -75,13 +73,14 @@ static ActiveRootNode *arn_alloc (void)
              "Try to set PRE_ARN larger!");
     }
 
-  os_printk("*arn_alloc, _arn.index = %d\n", _arn.index);
+  os_printk ("*arn_alloc, _arn.index = %d\n", _arn.index);
   return _arn.arn[_arn.index++];
 }
 
 static void pre_allocate_obj_list_nodes (void)
 {
-  for (int i = 0; i < PRE_OLN; i++)
+  int i = 0;
+  for (; i < PRE_OLN; i++)
     {
       _oln.oln[i] = (obj_list_t)os_malloc (sizeof (ObjectList));
 
@@ -90,10 +89,10 @@ static void pre_allocate_obj_list_nodes (void)
           PANIC ("GC: We're doomed! Did you set a too large PRE_OLN?"
                  "Try to set PRE_OLN smaller!");
         }
-      _oln.cnt++;
     }
 
-  VM_DEBUG ("PRE_OLN: %d, cnt: %d, pre-allocate %d bytes.\n", PRE_OLN, _oln.cnt,
+  _oln.index = 0;
+  VM_DEBUG ("PRE_OLN: %d, cnt: %d, pre-allocate %d bytes.\n", PRE_OLN, i - 1,
             PRE_OLN * sizeof (ObjectList));
 }
 
@@ -101,48 +100,31 @@ obj_list_t oln_alloc (void)
 {
   obj_list_t ret = NULL;
 
-  if (0 == _oln.cnt)
+  if (PRE_OLN == _oln.index)
     {
       return NULL;
     }
 
-  for (int i = 0; i < PRE_OLN; i++)
-    {
-      ret = _oln.oln[i];
-
-      if (NULL != ret)
-        {
-          _oln.oln[i] = NULL;
-          _oln.cnt--;
-          break;
-        }
-    }
-
+  ret = _oln.oln[_oln.index];
   if (NULL == ret)
     {
-      os_printk ("BUG: there's no obj_list node, but cnt is %d\n", _oln.cnt);
+      os_printk ("BUG: there's no obj_list node, but cnt is %d\n", _oln.index);
       panic ("Maybe it's not recycled correctly?");
     }
-
+  printf ("oln_alloc: %d\n", _oln.index);
+  _oln.index++;
   return ret;
 }
 
 static void obj_list_node_recycle (obj_list_t node)
 {
-  for (int i = 0; i < PRE_OLN; i++)
-    {
-      if (NULL == _oln.oln[i])
-        {
-          _oln.oln[i] = node;
-          _oln.cnt++;
-          break;
-        }
-    }
+  printf ("oln recycle: %d\n", _oln.index);
+  _oln.oln[--_oln.index] = node;
 }
 
-bool is_oln_available (void)
+size_t oln_available (void)
 {
-  return (0 != _oln.cnt);
+  return (PRE_OLN - _oln.index);
 }
 
 static void active_nodes_clean (void)
@@ -161,24 +143,46 @@ static void obj_list_nodes_clean (void)
   for (int i = 0; i < PRE_OLN; i++)
     {
       os_free (_oln.oln[i]);
-      _oln.cnt--;
     }
 
-  if (0 != _oln.cnt)
-    {
-      os_printk (
-        "obj_list_nodes_clean: "
-        "the cnt (%d) is not 0, maybe there's potential bug somewhere!\n",
-        _oln.cnt);
-      panic ("");
-    }
+  _oln.index = 0;
   VM_DEBUG ("OLN clean!\n");
+}
+
+static inline void insert (ActiveRootNode *an)
+{
+  RB_INSERT (ActiveRoot, &ActiveRootHead, an);
+}
+
+static inline bool exist (object_t obj)
+{
+  ActiveRootNode node = {.value = (void *)obj};
+  return (NULL != RB_FIND (ActiveRoot, &ActiveRootHead, &node));
+}
+
+static void insert_value (void *value)
+{
+  ActiveRootNode *an = arn_alloc ();
+  an->value = value;
+  insert (an);
 }
 
 void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
+  if (0xDEADBEEF == (uintptr_t)obj)
+    {
+      printf ("active_root_insert: oh a half list node!\n");
+      printf ("let's skip it safely!\n");
+      return;
+    }
+
+  if (!obj)
+    {
+      panic ("BUG: free a null object!");
+    }
+
   if (PERMANENT_OBJ == obj->attr.gc)
     return;
 
@@ -195,6 +199,7 @@ void free_object (object_t obj)
     case string:
     case symbol:
     case primitive:
+    case procedure:
       {
         // simple object, we don't need to free its value
         // no need to free string
@@ -205,7 +210,7 @@ void free_object (object_t obj)
       {
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
-        FREE_OBJECT (&pair_free_list, (object_t)obj->value);
+        FREE_OBJECT (&pair_free_list, obj->value);
         break;
       }
     case list:
@@ -214,26 +219,27 @@ void free_object (object_t obj)
         obj_list_t prev = NULL;
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
 
+        if (SLIST_EMPTY (head))
+          {
+            FREE_OBJECT (&list_free_list, obj->value);
+            getchar ();
+            break;
+          }
+
         SLIST_FOREACH (node, head, next)
         {
           if (prev)
             {
+              free_object (prev->obj);
               SLIST_REMOVE (head, prev, ObjectList, next);
-              free_object ((object_t)prev->obj);
-              prev->obj = NULL;
-              obj_list_node_recycle (prev);
-              prev = NULL;
+              os_free ((void *)prev);
             }
           prev = node;
         }
 
-        if (prev)
-          {
-            SLIST_REMOVE (head, prev, ObjectList, next);
-            free_object ((object_t)prev->obj);
-            prev->obj = NULL;
-            obj_list_node_recycle (prev);
-          }
+        free_object (prev->obj);
+        SLIST_REMOVE (head, prev, ObjectList, next);
+        os_free ((void *)prev);
         FREE_OBJECT (&list_free_list, (object_t)obj->value);
         break;
       }
@@ -246,7 +252,7 @@ void free_object (object_t obj)
     case closure_on_heap:
     case closure_on_stack:
       {
-        FREE_OBJECT (&closure_free_list, (object_t)obj);
+        FREE_OBJECT (&closure_free_list, obj->value);
         break;
       }
     default:
@@ -258,8 +264,71 @@ void free_object (object_t obj)
   FREE_OBJECT (&obj_free_list, obj);
 }
 
+void free_inner_object (otype_t type, void *value)
+{
+  /* NOTE: Integers are self-contained object, so we can just release the object
+   */
+  if (!value)
+    {
+      panic ("BUG: free a null object!");
+    }
+
+  switch (type)
+    {
+    case pair:
+      {
+        free_object ((object_t) ((pair_t)value)->car);
+        free_object ((object_t) ((pair_t)value)->cdr);
+        FREE_OBJECT (&pair_free_list, value);
+        break;
+      }
+    case list:
+      {
+        obj_list_t node = NULL;
+        obj_list_t prev = NULL;
+        obj_list_head_t *head = &((list_t)value)->list;
+
+        if (SLIST_EMPTY (head))
+          {
+            FREE_OBJECT (&list_free_list, value);
+            break;
+          }
+
+        SLIST_FOREACH (node, head, next)
+        {
+          if (prev)
+            {
+              free_object (prev->obj);
+              SLIST_REMOVE (head, prev, ObjectList, next);
+              os_free ((void *)prev);
+            }
+          prev = node;
+        }
+
+        free_object (prev->obj);
+        SLIST_REMOVE (head, prev, ObjectList, next);
+        os_free ((void *)prev);
+        FREE_OBJECT (&list_free_list, value);
+        break;
+      }
+    case closure_on_heap:
+    case closure_on_stack:
+      {
+        FREE_OBJECT (&closure_free_list, value);
+        break;
+      }
+    default:
+      {
+        PANIC ("free_inner_object: Invalid type %d!\n", type);
+      }
+    }
+}
+
 static void recycle_object (object_t obj)
 {
+  if (PERMANENT_OBJ == obj->attr.gc)
+    return;
+
   switch (obj->attr.type)
     {
     case imm_int:
@@ -273,35 +342,32 @@ static void recycle_object (object_t obj)
     case string:
     case symbol:
     case primitive:
+    case procedure:
       {
-        RECYCLE_OBJ (obj_free_list);
+        // These objects don't have to be recycled recursively.
         break;
       }
     case list:
       {
-        RECYCLE_OBJ (list_free_list);
+        obj_list_t node = NULL;
+        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+
+        SLIST_FOREACH (node, head, next)
+        {
+          recycle_object (node->obj);
+        }
         break;
       }
     case pair:
       {
-        RECYCLE_OBJ (pair_free_list);
-        break;
-      }
-    case vector:
-      {
-        RECYCLE_OBJ (vector_free_list);
+        recycle_object (((pair_t)obj->value)->car);
+        recycle_object (((pair_t)obj->value)->cdr);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        // closures don't need to recycle
-        FORCE_FREE_OBJECTS (&closure_free_list);
-        break;
-      }
-    case procedure:
-      {
-        RECYCLE_OBJ (procedure_free_list);
+        FREE_OBJECT (&closure_free_list, obj);
         break;
       }
     default:
@@ -310,22 +376,22 @@ static void recycle_object (object_t obj)
         panic ("recycle_object is down!");
       }
     }
-}
 
-static inline void insert (ActiveRootNode *an)
-{
-  RB_INSERT (ActiveRoot, &ActiveRootHead, an);
-}
-
-static inline bool exist (object_t obj)
-{
-
-  ActiveRootNode node = {.value = (void *)obj};
-  return NULL != RB_FIND (ActiveRoot, &ActiveRootHead, &node);
+  obj->attr.gc = FREE_OBJ;
 }
 
 static void active_root_insert (object_t obj)
 {
+  if (0xDEADBEEF == (uintptr_t)obj)
+    {
+      return;
+    }
+
+  if (!obj)
+    {
+      panic ("BUG: active_root_insert - null obj!\n");
+    }
+
   if (exist (obj))
     return;
 
@@ -336,6 +402,8 @@ static void active_root_insert (object_t obj)
         pair_t p = (pair_t)obj->value;
         active_root_insert (p->car);
         active_root_insert (p->cdr);
+
+        insert_value (obj->value);
         break;
       }
     case list:
@@ -347,6 +415,8 @@ static void active_root_insert (object_t obj)
         {
           active_root_insert (node->obj);
         }
+
+        insert_value (obj->value);
         break;
       }
     case vector:
@@ -369,13 +439,85 @@ static void active_root_insert (object_t obj)
       }
     }
 
-  ActiveRootNode *an = arn_alloc ();
-  an->value = (void *)obj;
-  insert (an);
+  insert_value ((void *)obj);
 }
 
-static void active_root_insert_frame (u8_t *stack, u32_t local, u8_t cnt)
+static void active_root_inner_insert (otype_t type, void *value)
 {
+  /* printf ("insert!\n"); */
+
+  /* if (!value) */
+  /*   printf ("active_root_inner_insert: oh null! %d\n", type); */
+
+  /* if (exist (obj)) */
+  /*   printf ("oh exist!\n"); */
+
+  if (NULL == value)
+    {
+      // Some self-contain object may have NULL value
+      return;
+    }
+
+  if (exist (value))
+    return;
+
+  switch (type)
+    {
+    case imm_int:
+    case character:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case boolean:
+    case null_obj:
+    case none:
+    case string:
+    case symbol:
+    case primitive:
+    case procedure:
+      {
+        break;
+      }
+    case pair:
+      {
+        pair_t p = (pair_t)value;
+        active_root_insert (p->car);
+        active_root_insert (p->cdr);
+        insert_value (value);
+        break;
+      }
+    case list:
+      {
+        obj_list_t node = NULL;
+        obj_list_head_t *head = &((list_t)value)->list;
+
+        SLIST_FOREACH (node, head, next)
+        {
+          active_root_insert (node->obj);
+        }
+
+        insert_value (value);
+        break;
+      }
+    case vector:
+      {
+        panic ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+        break;
+      }
+    default:
+      {
+        printf ("active_root_inner_insert encountered a wrong type %d!\n",
+                type);
+        panic ("BUG");
+        break;
+      }
+    }
+}
+
+static void active_root_insert_frame (const u8_t *stack, u32_t local, u8_t cnt)
+{
+  /* printf ("insert frame %d, %d\n", local, cnt); */
+  /* getchar (); */
   for (u8_t i = 0; i < cnt; i++)
     {
       object_t obj = (object_t) (stack + local + i * sizeof (Object));
@@ -383,7 +525,7 @@ static void active_root_insert_frame (u8_t *stack, u32_t local, u8_t cnt)
       if (!obj)
         panic ("active_root_insert_frame: Invalid object address!");
 
-      active_root_insert (obj);
+      active_root_inner_insert (obj->attr.type, obj->value);
     }
 }
 
@@ -397,7 +539,7 @@ static void build_active_root (const gc_info_t gci)
   reg_t sp = gci->sp;
   bool run = true;
 
-  for (; ((fp > 0) && (65535 != fp)); sp = fp, fp = NEXT_FP ())
+  for (; ((fp > 0) && (NO_PREV_FP != fp)); sp = fp, fp = NEXT_FP ())
     {
       reg_t local = fp + FPS;
       u8_t obj_cnt = (sp - local) / sizeof (Object);
@@ -406,13 +548,14 @@ static void build_active_root (const gc_info_t gci)
       /* NOTE: The closure captured heap-allocated object should be in
        *        active_root too.
        */
-      closure_t closure = (closure_t) (stack + fp + FPS - sizeof (closure_t));
+
+      closure_t closure = *((closure_t *)(stack + local - sizeof (closure_t)));
       if (closure && closure->frame_size)
         {
           for (int i = 0; i < closure->frame_size; i++)
             {
               object_t obj = (&((object_t) (stack + closure->local))[i]);
-              active_root_insert (obj);
+              active_root_inner_insert (obj->attr.type, obj->value);
             }
         }
     }
@@ -422,11 +565,11 @@ static void clean_active_root ()
 {
   /* NOTE: Don't waste time to clean one by one. */
   _arn.index = 0;
-  RB_HEAD (ActiveRoot, ActiveRootNode)
-  ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
+  RB_INIT (&ActiveRootHead);
 }
 
-static void collect (size_t *count, obj_list_head_t *head, bool hurt)
+static void collect (size_t *count, obj_list_head_t *head, bool hurt,
+                     bool force)
 {
   obj_list_t node = NULL;
 
@@ -440,7 +583,131 @@ static void collect (size_t *count, obj_list_head_t *head, bool hurt)
 
   SLIST_FOREACH (node, head, next)
   {
-    int gc = node->obj->attr.gc;
+    if (force)
+      {
+        node->obj->attr.gc = FREE_OBJ;
+      }
+    else
+      {
+        int gc = node->obj->attr.gc;
+
+        if (PERMANENT_OBJ == gc)
+          {
+            continue;
+          }
+        else if (exist (node->obj))
+          {
+            if (GEN_1_OBJ == gc)
+              {
+                // younger object aged
+                node->obj->attr.gc++;
+              }
+            else if (GEN_2_OBJ == gc && hurt)
+              {
+                // hurtly collect
+                node->obj->attr.gc = FREE_OBJ;
+              }
+          }
+        else
+          {
+            // Not alive, release it
+            node->obj->attr.gc = FREE_OBJ;
+          }
+      }
+
+    if (FREE_OBJ == node->obj->attr.gc)
+      {
+        free_object (node->obj);
+        (*count)++;
+      }
+  }
+}
+
+static int get_gc_from_node (otype_t type, void *value)
+{
+  int gc = 0;
+
+  switch (type)
+    {
+    case list:
+      {
+        gc = ((list_t)value)->attr.gc;
+        break;
+      }
+    case pair:
+      {
+        gc = ((pair_t)value)->attr.gc;
+        break;
+      }
+    case vector:
+      {
+        gc = ((vector_t)value)->attr.gc;
+        break;
+      }
+    case closure_on_heap:
+    case closure_on_stack:
+      {
+        gc = ((closure_t)value)->attr.gc;
+        break;
+      }
+    default:
+      {
+        PANIC ("Invalid node type %d\n", type);
+      }
+    }
+
+  return gc;
+}
+
+static void set_gc_to_node (otype_t type, void *value, int gc)
+{
+  switch (type)
+    {
+    case list:
+      {
+        ((list_t)value)->attr.gc = gc;
+        break;
+      }
+    case pair:
+      {
+        ((pair_t)value)->attr.gc = gc;
+        break;
+      }
+    case vector:
+      {
+        ((vector_t)value)->attr.gc = gc;
+        break;
+      }
+    case closure_on_heap:
+    case closure_on_stack:
+      {
+        ((closure_t)value)->attr.gc = gc;
+        break;
+      }
+    default:
+      {
+        PANIC ("Invalid node type %d\n", type);
+      }
+    }
+}
+
+static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
+                           bool hurt, bool force)
+{
+  obj_list_t node = NULL;
+
+  /* GC algo:
+      1. Skip permanent object.
+      2. If it 's in active root, it get aged if it' s gen-1, keep age if it's
+         gen-2.
+      3. If it's not in active root, release it.
+      4. Collect all gen-2 object in hurt collect.
+   */
+
+  SLIST_FOREACH (node, head, next)
+  {
+
+    int gc = force ? FREE_OBJ : get_gc_from_node (type, (void *)node->obj);
 
     if (PERMANENT_OBJ == gc)
       {
@@ -451,37 +718,57 @@ static void collect (size_t *count, obj_list_head_t *head, bool hurt)
         if (GEN_1_OBJ == gc)
           {
             // younger object aged
-            node->obj->attr.gc++;
+            gc++;
           }
         else if (GEN_2_OBJ == gc && hurt)
           {
             // hurtly collect
-            node->obj->attr.gc = FREE_OBJ;
+            gc = FREE_OBJ;
           }
       }
     else
       {
         // Not alive, release it
-        node->obj->attr.gc = FREE_OBJ;
+        gc = FREE_OBJ;
       }
 
-    if (FREE_OBJ == node->obj->attr.gc)
+    if (FREE_OBJ == gc)
       {
-        recycle_object (node->obj);
-        *count++;
+        free_inner_object (type, (void *)node->obj);
+        (*count)++;
+      }
+    else
+      {
+        set_gc_to_node (type, (void *)node->obj, gc);
       }
   }
 }
 
-static void sweep ()
+static size_t count_me (obj_list_head_t *head)
 {
-  FREE_OBJECTS (&obj_free_list);
-  FREE_OBJECTS (&list_free_list);
-  FREE_OBJECTS (&vector_free_list);
-  FREE_OBJECTS (&pair_free_list);
-  FREE_OBJECTS (&closure_free_list);
-  FREE_OBJECTS (&procedure_free_list);
+  obj_list_t node = NULL;
+  size_t cnt = 0;
+
+  SLIST_FOREACH (node, head, next)
+  {
+    cnt++;
+  }
+  return cnt;
 }
+
+/* static void sweep () */
+/* { */
+/*   printf ("obj\n"); */
+/*   FREE_OBJECTS (&obj_free_list); */
+/*   printf ("list\n"); */
+/*   FREE_OBJECTS (&list_free_list); */
+/*   printf ("vector\n"); */
+/*   FREE_OBJECTS (&vector_free_list); */
+/*   printf ("pair\n"); */
+/*   FREE_OBJECTS (&pair_free_list); */
+/*   printf ("closure\n"); */
+/*   FREE_OBJECTS (&closure_free_list); */
+/* } */
 
 bool gc (const gc_info_t gci)
 {
@@ -509,9 +796,8 @@ bool gc (const gc_info_t gci)
   uint32_t t0 = k_cycle_get_32 ();
 #endif
 
-  os_printk ("GC: start\n");
-
   build_active_root (gci);
+
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
   long long t1 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
@@ -520,12 +806,39 @@ bool gc (const gc_info_t gci)
 #endif
 
   size_t count = 0;
-  collect (&count, &obj_free_list, false);
-  collect (&count, &list_free_list, false);
-  collect (&count, &vector_free_list, false);
-  collect (&count, &pair_free_list, false);
-  collect (&count, &closure_free_list, false);
-  collect (&count, &procedure_free_list, false);
+  size_t cnt = 0;
+  printf ("list before: %d\n", count_me (&list_free_list));
+  printf ("vector before: %d\n", count_me (&vector_free_list));
+  printf ("pair before: %d\n", count_me (&pair_free_list));
+  printf ("closure before: %d\n", count_me (&closure_free_list));
+  printf ("obj before: %d\n", count_me (&closure_free_list));
+  /* printf ("obj\n"); */
+  /* collect (&count, &obj_free_list, false); */
+  printf ("inner\n");
+  collect_inner (&cnt, &list_free_list, list, false, false);
+  printf ("list done, count: %d, remain: %d\n", cnt,
+          count_me (&list_free_list));
+  count += cnt;
+  cnt = 0;
+  collect_inner (&cnt, &vector_free_list, vector, false, false);
+  printf ("vector done, count: %d, remain: %d\n", cnt,
+          count_me (&vector_free_list));
+  count += cnt;
+  cnt = 0;
+  collect_inner (&cnt, &pair_free_list, pair, false, false);
+  printf ("pair done, count: %d, remain: %d\n", cnt,
+          count_me (&pair_free_list));
+  count += cnt;
+  cnt = 0;
+  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
+  printf ("closure done, count: %d, remain: %d\n", cnt,
+          count_me (&closure_free_list));
+  count += cnt;
+  cnt = 0;
+  collect (&cnt, &obj_free_list, false, false);
+  printf ("obj done, count: %d, remain: %d\n", cnt, count_me (&obj_free_list));
+  count += cnt;
+  cnt = 0;
 
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
@@ -545,12 +858,11 @@ bool gc (const gc_info_t gci)
                Do we have better approach to avoid big hurt?
                Or do we really need hurt collect in embedded system?
       */
-      collect (&count, &obj_free_list, gci->hurt);
-      collect (&count, &list_free_list, gci->hurt);
-      collect (&count, &vector_free_list, gci->hurt);
-      collect (&count, &pair_free_list, gci->hurt);
-      collect (&count, &closure_free_list, gci->hurt);
-      collect (&count, &procedure_free_list, gci->hurt);
+      collect_inner (&count, &list_free_list, list, true, false);
+      collect_inner (&count, &vector_free_list, vector, true, false);
+      collect_inner (&count, &pair_free_list, pair, true, false);
+      collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
+      collect (&count, &obj_free_list, true, false);
     }
 
 #ifdef LAMBDACHIP_LINUX
@@ -559,8 +871,6 @@ bool gc (const gc_info_t gci)
 #elif defined(LAMBDACHIP_ZEPHYR)
   uint32_t t3 = k_cycle_get_32 ();
 #endif
-
-  sweep ();
 
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
@@ -583,54 +893,48 @@ bool gc (const gc_info_t gci)
   printf ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0, t5 - t0);
 #endif
 
+  printf ("oln: %d, arn: %d\n", _oln.index, _arn.index);
+
   return true;
-}
-
-// For list node container
-static void oln_free_list_clean (void)
-{
-  obj_list_t prev = NULL;
-  obj_list_t node = NULL;
-
-  SLIST_FOREACH (node, &oln_free_list, next)
-  {
-    if (prev)
-      {
-        SLIST_REMOVE (&oln_free_list, prev, ObjectList, next);
-        os_free (prev);
-      }
-    prev = node;
-  }
-
-  os_free (prev);
 }
 
 void gc_clean_cache (void)
 {
-  FORCE_FREE_OBJECTS (&obj_free_list);
-  FORCE_FREE_OBJECTS (&list_free_list);
-  FORCE_FREE_OBJECTS (&vector_free_list);
-  FORCE_FREE_OBJECTS (&pair_free_list);
-  FORCE_FREE_OBJECTS (&closure_free_list);
-  FORCE_FREE_OBJECTS (&procedure_free_list);
-  oln_free_list_clean ();
+  size_t cnt = 0;
+  collect_inner (&cnt, &list_free_list, list, false, true);
+  collect_inner (&cnt, &vector_free_list, vector, false, true);
+  collect_inner (&cnt, &pair_free_list, pair, false, true);
+  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
+  collect (&cnt, &obj_free_list, false, true);
 }
 
-void gc_oln_book (obj_list_t node)
+void gc_book (otype_t type, void *obj, bool non_obj)
 {
-  SLIST_INSERT_HEAD (&oln_free_list, node, next);
-}
+  obj_list_t node = NULL;
+  obj_list_t inner_node = NULL;
 
-void gc_book (otype_t type, object_t obj)
-{
-  obj_list_t node = oln_alloc ();
-
-  if (!node)
+  printf ("book %d\n", type);
+  if (non_obj)
     {
-      panic ("gc_book: We're doomed! There're even no RAMs for GC!\n");
-    }
+      inner_node = oln_alloc ();
+      if (!inner_node)
+        {
+          panic ("gc_book: We're doomed! There're even no RAMs for GC!\n");
+        }
 
-  node->obj = obj;
+      inner_node->obj = obj;
+      printf ("inner\n");
+    }
+  else
+    {
+      node = oln_alloc ();
+      if (!node)
+        {
+          panic ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
+        }
+      node->obj = obj;
+      printf ("non inner\n");
+    }
 
   switch (type)
     {
@@ -644,40 +948,36 @@ void gc_book (otype_t type, object_t obj)
     case none:
     case string:
     case symbol:
+    case primitive:
+    case procedure:
       {
         SLIST_INSERT_HEAD (&obj_free_list, node, next);
         break;
       }
     case list:
       {
-        SLIST_INSERT_HEAD (&list_free_list, node, next);
+        SLIST_INSERT_HEAD (&list_free_list, inner_node, next);
         break;
       }
     case pair:
       {
-        SLIST_INSERT_HEAD (&pair_free_list, node, next);
+        SLIST_INSERT_HEAD (&pair_free_list, inner_node, next);
         break;
       }
     case vector:
       {
-        SLIST_INSERT_HEAD (&vector_free_list, node, next);
+        SLIST_INSERT_HEAD (&vector_free_list, inner_node, next);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        node->obj = obj->value;
-        SLIST_INSERT_HEAD (&closure_free_list, node, next);
-        break;
-      }
-    case procedure:
-      {
-        SLIST_INSERT_HEAD (&procedure_free_list, node, next);
+        SLIST_INSERT_HEAD (&closure_free_list, inner_node, next);
         break;
       }
     default:
       {
-        os_printk ("Invalid object type %d\n", obj->attr.type);
+        os_printk ("Invalid object type %d\n", type);
         panic ("gc_book is down!");
       }
     }
@@ -697,7 +997,7 @@ void *gc_pool_malloc (otype_t type)
   /* NOTE: If object was freed, then the internal obj was freed, so we don't
    *       have to maintain `gc' fields in the internal obj.
    */
-  void *ret = NULL;
+  obj_list_t node = NULL;
 
   switch (type)
     {
@@ -711,28 +1011,25 @@ void *gc_pool_malloc (otype_t type)
     case none:
     case string:
     case symbol:
+    case primitive:
+    case procedure:
       {
-        MALLOC_OBJ_FROM_POOL (obj_free_list);
-        break;
-      }
-    case obj_list_node:
-      {
-        // Don't cache oln
+        node = get_free_obj_node (&obj_free_list);
         break;
       }
     case list:
       {
-        MALLOC_OBJ_FROM_POOL (list_free_list);
+        node = get_free_obj_node (&list_free_list);
         break;
       }
     case pair:
       {
-        MALLOC_OBJ_FROM_POOL (pair_free_list);
+        node = get_free_obj_node (&pair_free_list);
         break;
       }
     case vector:
       {
-        MALLOC_OBJ_FROM_POOL (vector_free_list);
+        node = get_free_obj_node (&vector_free_list);
         break;
       }
     case closure_on_heap:
@@ -748,7 +1045,7 @@ void *gc_pool_malloc (otype_t type)
       }
     }
 
-  return ret;
+  return node ? node->obj : NULL;
 }
 
 void simple_collect (obj_list_head_t *head)
@@ -761,7 +1058,7 @@ void simple_collect (obj_list_head_t *head)
 
     if (PERMANENT_OBJ != obj->attr.gc)
       {
-        obj->attr.gc = 0;
+        obj->attr.gc = FREE_OBJ;
       }
   }
 }
@@ -773,23 +1070,24 @@ void gc_try_to_recycle (void)
   simple_collect (&list_free_list);
   simple_collect (&vector_free_list);
   simple_collect (&pair_free_list);
-  simple_collect (&procedure_free_list);
 
   /* NOTE:
    * Closures are not fixed size object, so we have to free it.
    */
-  FORCE_FREE_OBJECTS (&closure_free_list);
-  oln_free_list_clean ();
+  size_t cnt = 0;
+  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
 }
 
-void gc_recycle_current_frame (u8_t *stack, u32_t local, u32_t sp)
+void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
 {
 #if defined GC_RECYCLE_CURRENT_FRAME == 1
   size_t size = sizeof (Object);
   size_t cnt = (sp - local) / size;
+
   for (size_t i = 0; i < cnt; i++)
     {
       object_t obj = (object_t) (stack + local + i * size);
+
       switch (obj->attr.type)
         {
         case imm_int:
@@ -802,8 +1100,19 @@ void gc_recycle_current_frame (u8_t *stack, u32_t local, u32_t sp)
         case none:
         case string:
         case symbol:
+        case primitive:
+        case procedure:
           {
             // non-heap object
+            // printf ("non heap obj: %d\n", obj->attr.type);
+            break;
+          }
+        case closure_on_heap:
+        case closure_on_stack:
+          {
+            // closures are never recycled, we just free them
+            obj->attr.gc = FREE_OBJ;
+            FREE_OBJECT (&closure_free_list, obj);
             break;
           }
         default:
@@ -821,12 +1130,10 @@ void gc_init (void)
   pre_allocate_obj_list_nodes ();
 
   SLIST_INIT (&obj_free_list);
-  SLIST_INIT (&oln_free_list);
   SLIST_INIT (&list_free_list);
   SLIST_INIT (&vector_free_list);
   SLIST_INIT (&pair_free_list);
   SLIST_INIT (&closure_free_list);
-  SLIST_INIT (&procedure_free_list);
 }
 
 void gc_clean (void)

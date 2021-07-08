@@ -103,6 +103,23 @@ void create_symbol_table (symtab_t st)
     }
 }
 
+void clean_symbol_table (void)
+{
+  SymbolNode *node = NULL;
+  SymbolNode *prev = NULL;
+
+  RB_FOREACH (node, SymbolInternTable, &SymbolInternTableHead)
+  {
+    if (prev)
+      {
+        os_free ((void *)prev);
+      }
+    prev = node;
+  }
+  os_free ((void *)prev);
+  os_free (GLOBAL_REF (symbol_table.entry));
+}
+
 bool symbol_eq (object_t a, object_t b)
 {
   return a->value == b->value;

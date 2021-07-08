@@ -72,8 +72,7 @@ struct memory_block g_used_memory[4000] = {0};
 void *os_malloc (size_t size)
 {
   uint64_t used_memory_size = 0;
-  for (size_t i = 0;
-       i < (sizeof (g_used_memory) / sizeof (struct memory_block)); i++)
+  for (size_t i = 0; i < 4000; i++)
     {
       used_memory_size += g_used_memory[i].size;
     }
@@ -86,30 +85,37 @@ void *os_malloc (size_t size)
       VM_DEBUG ("Failed to allocate memory!\n");
       return NULL;
     }
+  printf ("os_malloc: %lld\n", used_memory_size);
+  //  getchar ();
 
   void *ptr = (void *)__malloc (size);
   if (NULL == ptr)
     {
       VM_DEBUG ("Failed to allocate memory!\n");
+      panic ("bug");
     }
   else
     {
-      for (size_t i = 0;
-           i < (sizeof (g_used_memory) / sizeof (struct memory_block)); i++)
+      size_t i = 0;
+      for (; i < 4000; i++)
         {
           // used_memory_size +=
-          if (g_used_memory[i].ptr == NULL)
+          if (NULL == g_used_memory[i].ptr)
             {
               g_used_memory[i].ptr = ptr;
               g_used_memory[i].size = size;
               break;
             }
-          else
-            {
-              continue;
-            }
+        }
+
+      if (4000 == i)
+        {
+          printf ("os_malloc: we are doomed! %p\n", ptr);
+          panic ("");
         }
     }
+
+  printf ("os_malloc: %p, %d\n", ptr, size);
 
   return ptr;
 }
@@ -122,14 +128,30 @@ void *os_calloc (size_t n, size_t size)
     {
       VM_DEBUG ("Failed to allocate memory!\n");
     }
+  size_t i = 0;
+  for (; i < 4000; i++)
+    {
+      // used_memory_size +=
+      if (NULL == g_used_memory[i].ptr)
+        {
+          g_used_memory[i].ptr = ptr;
+          g_used_memory[i].size = size;
+          break;
+        }
+    }
 
   return ptr;
 }
 
 void os_free (void *ptr)
 {
-  for (size_t i = 0;
-       i < (sizeof (g_used_memory) / sizeof (struct memory_block)); i++)
+  if (NULL != ptr)
+    __free (ptr);
+  else
+    return;
+
+  size_t i = 0;
+  for (; i < 4000; i++)
     {
       if (ptr == g_used_memory[i].ptr)
         {
@@ -139,6 +161,17 @@ void os_free (void *ptr)
         }
     }
 
-  if (NULL != ptr)
-    __free (ptr);
+  if (4000 == i)
+    {
+      printf ("os_free: we are doomed! %p\n", ptr);
+      panic ("");
+    }
+
+  uint64_t used_memory_size = 0;
+  for (size_t i = 0; i < 4000; i++)
+    {
+      used_memory_size += g_used_memory[i].size;
+    }
+
+  printf ("os_free: %p, %lld\n", ptr, used_memory_size);
 }

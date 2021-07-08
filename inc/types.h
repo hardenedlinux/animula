@@ -84,8 +84,6 @@ typedef enum obj_type
   boolean = 61,
   null_obj = 62,
   none = 63,
-
-  obj_list_node = 127
 } otype_t;
 
 #if defined ADDRESS_64
@@ -205,8 +203,8 @@ typedef struct MutString
 
 typedef struct GCInfo
 {
-  u32_t fp;
-  u32_t sp;
+  reg_t fp;
+  reg_t sp;
   u8_t *stack;
   bool hurt;
 } __packed GCInfo, *gc_info_t;
@@ -255,8 +253,8 @@ typedef u16_t reg_t;
 /* Frame Pre-store Size =
  * sizeof(pc) + sizeof(fp) + sizeof(attr) + sizeof(closure_t)
  */
-#define FPS       (2 * PC_SIZE + 1 + sizeof (closure_t))
-#define NEXT_FP() (*((reg_t *)(stack + fp + PC_SIZE)))
+#define FPS       (2 * sizeof (reg_t) + 1 + sizeof (closure_t))
+#define NEXT_FP() (*((reg_t *)(stack + fp + sizeof (reg_t))))
 
 #define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
 

@@ -89,7 +89,7 @@ static inline bool is_true (object_t obj)
 
 static inline bool is_unspecified (object_t obj)
 {
-  return obj == &GLOBAL_REF (none_const);
+  return (null_obj == obj->attr.type);
 }
 
 #define CREATE_NEW_OBJ(t, te, to)         \
@@ -162,7 +162,7 @@ static inline bool is_unspecified (object_t obj)
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
 
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
-obj_list_t lambdachip_new_obj_list_node (void);
+obj_list_t lambdachip_new_list_node (void);
 list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);

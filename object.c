@@ -59,13 +59,15 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   return closure;
 }
 
-obj_list_t lambdachip_new_obj_list_node (void)
+obj_list_t lambdachip_new_list_node (void)
 {
-  CREATE_NEW_OBJ (obj_list_t, obj_list_node, ObjectList);
+  return (obj_list_t)os_malloc (sizeof (ObjectList));
 }
 
+u32_t list_cnt = 0;
 list_t lambdachip_new_list (void)
 {
+  printf ("new list cnt: %d\n", list_cnt);
   CREATE_NEW_OBJ (list_t, list, List);
 }
 
@@ -86,9 +88,9 @@ closure_t lambdachip_new_closure (void)
 
 object_t lambdachip_new_object (u8_t type)
 {
-  bool from_pool = true;
   bool has_inner_obj = true;
   bool new_alloc = false;
+  bool new_inner = false;
   object_t object = NULL;
   void *value = NULL;
 
@@ -99,53 +101,86 @@ object_t lambdachip_new_object (u8_t type)
       object = (object_t)os_malloc (sizeof (Object));
       new_alloc = true;
 
+      printf ("no pool, malloc! %d\n", type);
       // Alloc failed, return NULL to trigger GC
       if (!object)
         return NULL;
     }
 
-  switch (type)
+  printf ("new obj: %d\n", type);
+
+  value = (void *)gc_pool_malloc (type);
+
+  if (value)
     {
-    case list:
-      {
-        value = (void *)lambdachip_new_list ();
-        break;
-      }
-    case pair:
-      {
-        value = (void *)lambdachip_new_pair ();
-        break;
-      }
-    case closure_on_heap:
-      {
-        value = (void *)lambdachip_new_closure ();
-        break;
-      }
-    case vector:
-      {
-        value = (void *)lambdachip_new_vector ();
-        break;
-      }
-    default:
-      {
-        has_inner_obj = false;
-        break;
-      }
+      goto done;
+    }
+  else
+    {
+      switch (type)
+        {
+        case list:
+          {
+            value = (void *)lambdachip_new_list ();
+            ((list_t)value)->attr.type = type;
+            ((list_t)value)->attr.gc = 1;
+            break;
+          }
+        case pair:
+          {
+            value = (void *)lambdachip_new_pair ();
+            ((pair_t)value)->attr.type = type;
+            ((pair_t)value)->attr.gc = 1;
+            break;
+          }
+        case closure_on_heap:
+          {
+            value = (void *)lambdachip_new_closure ();
+            ((closure_t)value)->attr.type = type;
+            ((closure_t)value)->attr.gc = 1;
+            break;
+          }
+        case vector:
+          {
+            value = (void *)lambdachip_new_vector ();
+            ((vector_t)value)->attr.type = type;
+            ((vector_t)value)->attr.gc = 1;
+            break;
+          }
+        default:
+          {
+            has_inner_obj = false;
+            break;
+          }
+        }
+
+      if (has_inner_obj && (NULL == value))
+        {
+          // The inner object wasn't successfully allocated, return NULL for GC
+          if (new_alloc)
+            {
+              os_free (object);
+            }
+          else
+            {
+              free_object (object);
+            }
+          printf ("inner failed!\n");
+          return NULL;
+        }
     }
 
-  if (has_inner_obj && !value)
-    {
-      // The inner object wasn't successfully allocated, return NULL for GC
-      free_object (object);
-      return NULL;
-    }
-
+done:
   object->value = value;
   object->attr.type = type;
   object->attr.gc = 1;
+  printf ("well new obj: %d\n", type);
 
   if (new_alloc)
-    gc_book (type, object);
+    gc_book (type, (void *)object, false);
+
+  if (has_inner_obj)
+    gc_book (type, (void *)value, true);
 
   return object;
 }

@@ -73,13 +73,20 @@ static inline void vm_stack_check (vm_t vm)
 
 #define POP() (vm->stack[--vm->sp])
 
-#define TOPx(t, size)  (*((t *)(vm->stack + vm->sp - size)))
-#define TOPxp(t, size) ((t *)(vm->stack + vm->sp - size))
+#define TOPx(t, size)             (*((t *)(vm->stack + vm->sp - size)))
+#define TOPxp(t, size)            ((t *)(vm->stack + vm->sp - size))
+#define TOP_FROMxp(from, t, size) ((t *)(vm->stack + vm->sp + (from)-size))
 
 #define POPx(t, size)             \
   ({                              \
     vm->sp -= (size);             \
     *((t *)(vm->stack + vm->sp)); \
+  })
+
+#define POP_FROMx(from, t, size)  \
+  ({                              \
+    (from) -= (size);             \
+    *((t *)(vm->stack + (from))); \
   })
 
 #define PUSHx(t, size, data)                       \
@@ -91,10 +98,12 @@ static inline void vm_stack_check (vm_t vm)
     }                                              \
   while (0)
 
-#define PUSH_OBJ(obj) PUSHx (Object, sizeof (Object), obj)
-#define POP_OBJ()     POPx (Object, sizeof (Object))
-#define TOP_OBJ()     TOPx (Object, sizeof (Object))
-#define TOP_OBJ_PTR() TOPxp (Object, sizeof (Object))
+#define PUSH_OBJ(obj)          PUSHx (Object, sizeof (Object), obj)
+#define POP_OBJ()              POPx (Object, sizeof (Object))
+#define POP_OBJ_FROM(from)     POP_FROMx (from, Object, sizeof (Object))
+#define TOP_OBJ_PTR_FROM(from) TOP_FROMxp (from, Object, sizeof (Object))
+#define TOP_OBJ()              TOPx (Object, sizeof (Object))
+#define TOP_OBJ_PTR()          TOPxp (Object, sizeof (Object))
 
 #define PUSH_U32(obj) PUSHx (u32_t, sizeof (u32_t), obj)
 #define POP_U32()     POPx (u32_t, sizeof (u32_t))
@@ -163,7 +172,7 @@ static inline void vm_stack_check (vm_t vm)
           {                                                                    \
             fp = *((reg_t *)(vm->stack + fp + sizeof (reg_t)));                \
           }                                                                    \
-        closure = (closure_t) (vm->stack + fp + FPS - sizeof (closure_t));     \
+        closure = *((closure_t *)(vm->stack + fp + FPS - sizeof (closure_t))); \
         if (closure && closure->frame_size)                                    \
           {                                                                    \
             if (offset >= closure->frame_size)                                 \
@@ -208,6 +217,8 @@ static inline void vm_stack_check (vm_t vm)
   do                                                                      \
     {                                                                     \
       size_t size = sizeof (Object) * vm->attr.shadow;                    \
+      printf ("tail rec: recycle frame\n");                               \
+      gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp - size);  \
       os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - size, size); \
       vm->sp = vm->local + size;                                          \
     }                                                                     \
@@ -281,7 +292,6 @@ static inline void vm_stack_check (vm_t vm)
           }                                                          \
         case TAIL_REC:                                               \
           {                                                          \
-            gc_recycle_current_frame (vm->stack, vm->local, vm->sp); \
             vm->sp = vm->local + arity * sizeof (Object);            \
             vm->attr.shadow = arity;                                 \
             vm->attr.mode = TAIL_REC;                                \
@@ -365,8 +375,9 @@ static inline void vm_stack_check (vm_t vm)
 #define RESTORE()                                                 \
   do                                                              \
     {                                                             \
-      Object ret = POP_OBJ ();                                    \
+      printf ("restore: recycle frame\n");                        \
       gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp); \
+      Object ret = POP_OBJ ();                                    \
       vm->sp = vm->fp + FPS;                                      \
       vm->closure = POP_CLOSURE ();                               \
       vm->attr.all = POP ();                                      \

@@ -91,7 +91,7 @@ object_t _cons (vm_t vm, object_t ret, object_t a, object_t b)
       {
         ret->attr.type = list;
         list_t lst = NEW (list);
-        obj_list_t ol = NEW_OBJ_LIST_NODE ();
+        obj_list_t ol = NEW_LIST_NODE ();
         SLIST_INSERT_HEAD (&lst->list, ol, next);
         ret->value = (void *)lst;
         break;
@@ -137,6 +137,14 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
   imm_int_t cnt = (imm_int_t)idx->value;
   imm_int_t lst_idx = cnt;
 
+  ret->attr.type = 0;
+  ret->value = NULL;
+  return ret;
+  if (SLIST_EMPTY (head))
+    {
+      PANIC ("list-ref encounter an empty List!\n");
+    }
+
   if (cnt < 0)
     {
       PANIC ("Invalid index %d!\n", lst_idx);
@@ -174,6 +182,11 @@ object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
   obj_list_t node = NULL;
   obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
   imm_int_t cnt = (imm_int_t)idx->value;
+
+  if (SLIST_EMPTY (head))
+    {
+      PANIC ("list-set! encounter an empty List!\n");
+    }
 
   SLIST_FOREACH (node, head, next)
   {
@@ -222,7 +235,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
        */
       SLIST_FOREACH (node, h1, next)
       {
-        obj_list_t new_node = NEW_OBJ_LIST_NODE ();
+        obj_list_t new_node = NEW_LIST_NODE ();
         new_node->obj = node->obj;
 
         if (!prev)
@@ -239,7 +252,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
 
       SLIST_FOREACH (node, h2, next)
       {
-        obj_list_t new_node = NEW_OBJ_LIST_NODE ();
+        obj_list_t new_node = NEW_LIST_NODE ();
         new_node->obj = node->obj;
         SLIST_INSERT_AFTER (prev, new_node, next);
         prev = new_node;

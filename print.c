@@ -102,6 +102,12 @@ static inline void complex_inexact_printer (const object_t obj)
 
 void object_printer (const object_t obj)
 {
+  if (NULL == obj)
+    {
+      printf ("NULL");
+      return;
+    }
+
   switch (obj->attr.type)
     {
     case imm_int:

@@ -40,10 +40,15 @@ vm_t lambdachip_init (void)
 
 void lambdachip_clean (vm_t vm)
 {
+  printf ("clean 1\n");
   vm_clean (vm);
+  printf ("clean 2\n");
   primitives_clean ();
+  printf ("clean 3\n");
   stdio_clean ();
+  printf ("clean 4\n");
   gc_clean ();
+  printf ("clean 5\n");
 }
 
 vm_t lambdachip_start (lef_loader_t lef_loader)
@@ -59,9 +64,13 @@ vm_t lambdachip_start (lef_loader_t lef_loader)
 
   if (!strncmp (lef->sig, "LEF", 3))
     {
+      printf ("load lef\n");
       vm_load_lef (vm, lef);
+      printf ("run vm\n");
       vm_run (vm);
+      printf ("clean lef\n");
       free_lef (lef);
+      printf ("clean lef done\n");
     }
   else
     {
