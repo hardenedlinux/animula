@@ -188,6 +188,7 @@ void free_object (object_t obj)
     case none:
     case string:
     case symbol:
+    case primitive:
       {
         // simple object, we don't need to free its value
         // no need to free string
@@ -265,6 +266,7 @@ static void recycle_object (object_t obj)
     case none:
     case string:
     case symbol:
+    case primitive:
       {
         RECYCLE_OBJ (obj_free_list);
         break;
@@ -710,6 +712,39 @@ void gc_try_to_recycle (void)
    */
   FORCE_FREE_OBJECTS (&closure_free_list);
   oln_free_list_clean ();
+}
+
+void gc_recycle_current_frame (u8_t *stack, u32_t local, u32_t sp)
+{
+#if defined GC_RECYCLE_CURRENT_FRAME == 1
+  size_t size = sizeof (Object);
+  size_t cnt = (sp - local) / size;
+  for (size_t i = 0; i < cnt; i++)
+    {
+      object_t obj = (object_t) (stack + local + i * size);
+      switch (obj->attr.type)
+        {
+        case imm_int:
+        case character:
+        case real:
+        case rational_pos:
+        case rational_neg:
+        case boolean:
+        case null_obj:
+        case none:
+        case string:
+        case symbol:
+          {
+            // non-heap object
+            break;
+          }
+        default:
+          {
+            recycle_object (obj);
+          }
+        }
+    }
+#endif
 }
 
 void gc_init (void)

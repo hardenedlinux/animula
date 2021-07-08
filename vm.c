@@ -1010,7 +1010,7 @@ void vm_init_environment (vm_t vm)
   vm->fp = 0;
   vm->local = 0;
   vm->attr.shadow = 0;
-  vm->attr.tail_rec = false;
+  vm->attr.mode = NORMAL_CALL;
   vm->cc = NULL;
   vm->closure = NULL;
 }

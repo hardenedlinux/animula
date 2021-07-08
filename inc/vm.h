@@ -276,13 +276,15 @@ static inline void vm_stack_check (vm_t vm)
         {                                                            \
         case TAIL_CALL:                                              \
           {                                                          \
+            vm->attr.mode = TAIL_CALL;                               \
             break;                                                   \
           }                                                          \
         case TAIL_REC:                                               \
           {                                                          \
+            gc_recycle_current_frame (vm->stack, vm->local, vm->sp); \
             vm->sp = vm->local + arity * sizeof (Object);            \
             vm->attr.shadow = arity;                                 \
-            vm->attr.tail_rec = true;                                \
+            vm->attr.mode = TAIL_REC;                                \
             break;                                                   \
           }                                                          \
         default:                                                     \
@@ -292,9 +294,9 @@ static inline void vm_stack_check (vm_t vm)
             PUSH_REG (sp ? (vm->fp ? vm->fp : NO_PREV_FP) : vm->fp); \
             PUSH (vm->attr.all);                                     \
             PUSH_CLOSURE (vm->closure);                              \
-            vm->attr.tail_rec = false;                               \
             vm->attr.shadow = 0;                                     \
             vm->fp = vm->sp - FPS;                                   \
+            vm->attr.mode = NORMAL_CALL;                             \
             break;                                                   \
           }                                                          \
         }                                                            \
@@ -360,19 +362,20 @@ static inline void vm_stack_check (vm_t vm)
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()                                   \
-  do                                                \
-    {                                               \
-      Object ret = POP_OBJ ();                      \
-      vm->sp = vm->fp + FPS;                        \
-      vm->closure = POP_CLOSURE ();                 \
-      vm->attr.all = POP ();                        \
-      vm->fp = POP_REG ();                          \
-      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp); \
-      vm->pc = POP_REG ();                          \
-      vm->local = vm->fp + FPS;                     \
-      PUSH_OBJ (ret);                               \
-    }                                               \
+#define RESTORE()                                                 \
+  do                                                              \
+    {                                                             \
+      Object ret = POP_OBJ ();                                    \
+      gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp); \
+      vm->sp = vm->fp + FPS;                                      \
+      vm->closure = POP_CLOSURE ();                               \
+      vm->attr.all = POP ();                                      \
+      vm->fp = POP_REG ();                                        \
+      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);               \
+      vm->pc = POP_REG ();                                        \
+      vm->local = vm->fp + FPS;                                   \
+      PUSH_OBJ (ret);                                             \
+    }                                                             \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \

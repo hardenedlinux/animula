@@ -442,8 +442,8 @@ typedef struct LambdaVM
     struct
     {
       unsigned shadow : 5; // shadow frame
-      unsigned tail_rec : 1;
-      unsigned reserved : 2;
+      unsigned mode : 2;
+      unsigned reserved : 1;
     };
     u8_t all;
   } attr;

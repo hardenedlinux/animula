@@ -242,6 +242,7 @@ void *gc_pool_malloc (otype_t type);
 void gc_oln_book (obj_list_t node);
 void gc_book (otype_t type, object_t obj);
 void gc_try_to_recycle (void);
+void gc_recycle_current_frame (u8_t *stack, u32_t local, u32_t sp);
 bool is_oln_available (void);
 obj_list_t oln_alloc (void);
 void gc_clean (void);
