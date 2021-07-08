@@ -61,13 +61,54 @@ void raw_free (void *ptr)
 #endif
 }
 
+struct memory_block
+{
+  void *ptr;
+  size_t size;
+};
+
+struct memory_block g_used_memory[4000] = {0};
+
 void *os_malloc (size_t size)
 {
-  void *ptr = (void *)__malloc (size);
+  uint64_t used_memory_size = 0;
+  for (size_t i = 0;
+       i < (sizeof (g_used_memory) / sizeof (struct memory_block)); i++)
+    {
+      used_memory_size += g_used_memory[i].size;
+    }
 
+  // if ((used_memory_size + size) > 192500) // OK
+  // if ((used_memory_size + size) > 193500)
+  // if ((used_memory_size + size) > 5000000)
+  if ((used_memory_size + size) > 19200)
+    {
+      VM_DEBUG ("Failed to allocate memory!\n");
+      return NULL;
+    }
+
+  void *ptr = (void *)__malloc (size);
   if (NULL == ptr)
     {
       VM_DEBUG ("Failed to allocate memory!\n");
+    }
+  else
+    {
+      for (size_t i = 0;
+           i < (sizeof (g_used_memory) / sizeof (struct memory_block)); i++)
+        {
+          // used_memory_size +=
+          if (g_used_memory[i].ptr == NULL)
+            {
+              g_used_memory[i].ptr = ptr;
+              g_used_memory[i].size = size;
+              break;
+            }
+          else
+            {
+              continue;
+            }
+        }
     }
 
   return ptr;
@@ -87,6 +128,17 @@ void *os_calloc (size_t n, size_t size)
 
 void os_free (void *ptr)
 {
+  for (size_t i = 0;
+       i < (sizeof (g_used_memory) / sizeof (struct memory_block)); i++)
+    {
+      if (ptr == g_used_memory[i].ptr)
+        {
+          g_used_memory[i].ptr = NULL;
+          g_used_memory[i].size = 0;
+          break;
+        }
+    }
+
   if (NULL != ptr)
     __free (ptr);
 }
