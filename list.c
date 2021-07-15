@@ -137,9 +137,6 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
   imm_int_t cnt = (imm_int_t)idx->value;
   imm_int_t lst_idx = cnt;
 
-  ret->attr.type = 0;
-  ret->value = NULL;
-  return ret;
   if (SLIST_EMPTY (head))
     {
       PANIC ("list-ref encounter an empty List!\n");
