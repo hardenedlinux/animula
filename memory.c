@@ -1,5 +1,6 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+ *        Rafael Lee    <rafaellee.img@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -67,39 +68,35 @@ struct memory_block
   size_t size;
 };
 
-struct memory_block g_used_memory[4000] = {0};
+#define MEMORY_TRACKER_SIZE 4000
+#define FREE_MEMORY_SIZE    19200
+struct memory_block g_used_memory[MEMORY_TRACKER_SIZE] = {0};
 
 void *os_malloc (size_t size)
 {
-  uint64_t used_memory_size = 0;
-  for (size_t i = 0; i < 4000; i++)
+  uint32_t used_memory_size = 0;
+  for (size_t i = 0; i < MEMORY_TRACKER_SIZE; i++)
     {
       used_memory_size += g_used_memory[i].size;
     }
 
-  // if ((used_memory_size + size) > 192500) // OK
-  // if ((used_memory_size + size) > 193500)
-  // if ((used_memory_size + size) > 5000000)
-  if ((used_memory_size + size) > 19200)
+  if ((used_memory_size + size) > FREE_MEMORY_SIZE)
     {
-      VM_DEBUG ("Failed to allocate memory!\n");
+      VM_DEBUG ("os_malloc: Failed to allocate memory!\n");
       return NULL;
     }
-  printf ("os_malloc: %lld\n", used_memory_size);
-  //  getchar ();
 
   void *ptr = (void *)__malloc (size);
+
   if (NULL == ptr)
     {
-      VM_DEBUG ("Failed to allocate memory!\n");
-      panic ("bug");
+      VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
     }
   else
     {
       size_t i = 0;
-      for (; i < 4000; i++)
+      for (; i < MEMORY_TRACKER_SIZE; i++)
         {
-          // used_memory_size +=
           if (NULL == g_used_memory[i].ptr)
             {
               g_used_memory[i].ptr = ptr;
@@ -108,38 +105,52 @@ void *os_malloc (size_t size)
             }
         }
 
-      if (4000 == i)
+      if (MEMORY_TRACKER_SIZE == i)
         {
-          printf ("os_malloc: we are doomed! %p\n", ptr);
-          panic ("");
+          PANIC ("os_malloc: memory tracker used up! %p\n", ptr);
         }
     }
-
-  printf ("os_malloc: %p, %d\n", ptr, size);
 
   return ptr;
 }
 
 void *os_calloc (size_t n, size_t size)
 {
+  uint32_t used_memory_size = 0;
+  for (size_t i = 0; i < MEMORY_TRACKER_SIZE; i++)
+    {
+      used_memory_size += g_used_memory[i].size;
+    }
+
+  if ((used_memory_size + n * size) > FREE_MEMORY_SIZE)
+    {
+      VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
+      return NULL;
+    }
+
   void *ptr = (void *)__calloc (n, size);
 
   if (NULL == ptr)
     {
-      VM_DEBUG ("Failed to allocate memory!\n");
+      VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
     }
-  size_t i = 0;
-  for (; i < 4000; i++)
+  else
     {
-      // used_memory_size +=
-      if (NULL == g_used_memory[i].ptr)
+      size_t i = 0;
+      for (; i < MEMORY_TRACKER_SIZE; i++)
         {
-          g_used_memory[i].ptr = ptr;
-          g_used_memory[i].size = size;
-          break;
+          if (NULL == g_used_memory[i].ptr)
+            {
+              g_used_memory[i].ptr = ptr;
+              g_used_memory[i].size = size;
+              break;
+            }
+        }
+      if (MEMORY_TRACKER_SIZE == i)
+        {
+          PANIC ("os_calloc: memory tracker used up! %p\n", ptr);
         }
     }
-
   return ptr;
 }
 
@@ -151,7 +162,7 @@ void os_free (void *ptr)
     return;
 
   size_t i = 0;
-  for (; i < 4000; i++)
+  for (; i < MEMORY_TRACKER_SIZE; i++)
     {
       if (ptr == g_used_memory[i].ptr)
         {
@@ -161,17 +172,8 @@ void os_free (void *ptr)
         }
     }
 
-  if (4000 == i)
+  if (MEMORY_TRACKER_SIZE == i)
     {
-      printf ("os_free: we are doomed! %p\n", ptr);
-      panic ("");
+      PANIC ("os_free: freed a memory area not managed by us, ptr=%p\n", ptr);
     }
-
-  uint64_t used_memory_size = 0;
-  for (size_t i = 0; i < 4000; i++)
-    {
-      used_memory_size += g_used_memory[i].size;
-    }
-
-  printf ("os_free: %p, %lld\n", ptr, used_memory_size);
 }
