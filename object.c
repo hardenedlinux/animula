@@ -105,8 +105,6 @@ object_t lambdachip_new_object (u8_t type)
         return NULL;
     }
 
-  value = (void *)gc_pool_malloc (type);
-
   if (value)
     {
       goto done;
@@ -166,7 +164,6 @@ object_t lambdachip_new_object (u8_t type)
     }
 
 done:
-  object->value = value;
   object->attr.type = type;
   object->attr.gc = 1;
 
@@ -174,7 +171,14 @@ done:
     gc_book (type, (void *)object, false);
 
   if (has_inner_obj)
-    gc_book (type, (void *)value, true);
+    {
+      object->value = value;
+      gc_book (type, (void *)value, true);
+    }
+  else
+    {
+      object->value = (void *)0;
+    }
 
   return object;
 }
