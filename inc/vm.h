@@ -57,7 +57,7 @@ extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
 static inline void vm_stack_check (vm_t vm)
 {
   if (GLOBAL_REF (VM_STKSEG_SIZE) <= vm->sp)
-    panic ("Stack overflow!\n");
+    PANIC ("Stack overflow!\n");
 }
 
 // NOTE: vm->sp always points to the first blank
@@ -217,7 +217,6 @@ static inline void vm_stack_check (vm_t vm)
   do                                                                      \
     {                                                                     \
       size_t size = sizeof (Object) * vm->attr.shadow;                    \
-      printf ("tail rec: recycle frame\n");                               \
       gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp - size);  \
       os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - size, size); \
       vm->sp = vm->local + size;                                          \
@@ -361,7 +360,7 @@ static inline void vm_stack_check (vm_t vm)
         default:                                                     \
           {                                                          \
             os_printk ("Not a callable type %d!\n", obj->attr.type); \
-            panic ("VM panic!\n");                                   \
+            PANIC ("VM panic!\n");                                   \
           }                                                          \
         }                                                            \
     }                                                                \
@@ -375,7 +374,6 @@ static inline void vm_stack_check (vm_t vm)
 #define RESTORE()                                                 \
   do                                                              \
     {                                                             \
-      printf ("restore: recycle frame\n");                        \
       gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp); \
       Object ret = POP_OBJ ();                                    \
       vm->sp = vm->fp + FPS;                                      \
@@ -426,7 +424,7 @@ static inline void call_closure_on_stack (vm_t vm, object_t obj)
   /* vm->sp += total_size; */
   /* JUMP (entry); */
 
-  panic ("closure_on_stack hasn't been implemented yet!\n");
+  PANIC ("closure_on_stack hasn't been implemented yet!\n");
 }
 
 static inline void call_closure_on_heap (vm_t vm, object_t obj)
@@ -448,7 +446,7 @@ static inline void call_closure_on_heap (vm_t vm, object_t obj)
       // Copy shadow frame of closure
       os_memcpy (vm->stack + vm->local, vm->stack + vm->sp - shadow_size,
                  shadow_size);
-      /* printf ("vm->local: %d, size: %d, vm->sp: %d\n", vm->local,
+      /* os_printk ("vm->local: %d, size: %d, vm->sp: %d\n", vm->local,
        * shadow_size, */
       /*         vm->sp); */
       vm->sp -= shadow_size;

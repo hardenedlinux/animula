@@ -67,7 +67,6 @@ obj_list_t lambdachip_new_list_node (void)
 u32_t list_cnt = 0;
 list_t lambdachip_new_list (void)
 {
-  printf ("new list cnt: %d\n", list_cnt);
   CREATE_NEW_OBJ (list_t, list, List);
 }
 
@@ -101,13 +100,10 @@ object_t lambdachip_new_object (u8_t type)
       object = (object_t)os_malloc (sizeof (Object));
       new_alloc = true;
 
-      printf ("no pool, malloc! %d\n", type);
       // Alloc failed, return NULL to trigger GC
       if (!object)
         return NULL;
     }
-
-  printf ("new obj: %d\n", type);
 
   value = (void *)gc_pool_malloc (type);
 
@@ -165,7 +161,6 @@ object_t lambdachip_new_object (u8_t type)
             {
               free_object (object);
             }
-          printf ("inner failed!\n");
           return NULL;
         }
     }
@@ -174,7 +169,6 @@ done:
   object->value = value;
   object->attr.type = type;
   object->attr.gc = 1;
-  printf ("well new obj: %d\n", type);
 
   if (new_alloc)
     gc_book (type, (void *)object, false);

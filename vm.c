@@ -336,10 +336,6 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
         Object ret = CREATE_RET_OBJ ();
-        printf ("lst: ");
-        object_printer (&o1);
-        printf ("\n");
-
         PUSH_OBJ (*fn (vm, &ret, &o1, &o2));
         break;
       }
@@ -1119,9 +1115,7 @@ void vm_load_lef (vm_t vm, lef_t lef)
   create_symbol_table (&lef->symtab);
   // FIXME: not all mem section is data seg
 
-  printf ("init globals\n");
   vm_init_globals (vm, lef);
-  printf ("init globals done\n");
 
   vm->code = LEF_PROG (lef);
   vm->pc = lef->entry;

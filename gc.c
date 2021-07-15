@@ -56,7 +56,7 @@ static void pre_allocate_active_nodes (void)
       if (NULL == _arn.arn[i])
         {
           os_printk ("GC: We're doomed! Did you set a too large PRE_ARN?");
-          panic ("Try to set PRE_ARN smaller!");
+          PANIC ("Try to set PRE_ARN smaller!");
         }
     }
 
@@ -109,16 +109,14 @@ obj_list_t oln_alloc (void)
   if (NULL == ret)
     {
       os_printk ("BUG: there's no obj_list node, but cnt is %d\n", _oln.index);
-      panic ("Maybe it's not recycled correctly?");
+      PANIC ("Maybe it's not recycled correctly?");
     }
-  printf ("oln_alloc: %d\n", _oln.index);
   _oln.index++;
   return ret;
 }
 
 static void obj_list_node_recycle (obj_list_t node)
 {
-  printf ("oln recycle: %d\n", _oln.index);
   _oln.oln[--_oln.index] = node;
 }
 
@@ -180,7 +178,7 @@ void free_object (object_t obj)
 
   if (!obj)
     {
-      panic ("BUG: free a null object!");
+      PANIC ("BUG: free a null object!");
     }
 
   if (PERMANENT_OBJ == obj->attr.gc)
@@ -270,7 +268,7 @@ void free_inner_object (otype_t type, void *value)
    */
   if (!value)
     {
-      panic ("BUG: free a null object!");
+      PANIC ("BUG: free a null object!");
     }
 
   switch (type)
@@ -373,7 +371,7 @@ static void recycle_object (object_t obj)
     default:
       {
         os_printk ("Invalid object type %d\n", obj->attr.type);
-        panic ("recycle_object is down!");
+        PANIC ("recycle_object is down!");
       }
     }
 
@@ -389,7 +387,7 @@ static void active_root_insert (object_t obj)
 
   if (!obj)
     {
-      panic ("BUG: active_root_insert - null obj!\n");
+      PANIC ("BUG: active_root_insert - null obj!\n");
     }
 
   if (exist (obj))
@@ -421,7 +419,7 @@ static void active_root_insert (object_t obj)
       }
     case vector:
       {
-        panic ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
         break;
       }
     default:
@@ -501,14 +499,13 @@ static void active_root_inner_insert (otype_t type, void *value)
       }
     case vector:
       {
-        panic ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
         break;
       }
     default:
       {
-        printf ("active_root_inner_insert encountered a wrong type %d!\n",
-                type);
-        panic ("BUG");
+        PANIC ("BUG: active_root_inner_insert encountered a wrong type %d!\n",
+               type);
         break;
       }
     }
@@ -523,7 +520,7 @@ static void active_root_insert_frame (const u8_t *stack, u32_t local, u8_t cnt)
       object_t obj = (object_t) (stack + local + i * sizeof (Object));
 
       if (!obj)
-        panic ("active_root_insert_frame: Invalid object address!");
+        PANIC ("active_root_insert_frame: Invalid object address!");
 
       active_root_inner_insert (obj->attr.type, obj->value);
     }
@@ -913,27 +910,24 @@ void gc_book (otype_t type, void *obj, bool non_obj)
   obj_list_t node = NULL;
   obj_list_t inner_node = NULL;
 
-  printf ("book %d\n", type);
   if (non_obj)
     {
       inner_node = oln_alloc ();
       if (!inner_node)
         {
-          panic ("gc_book: We're doomed! There're even no RAMs for GC!\n");
+          PANIC ("gc_book: We're doomed! There're even no RAMs for GC!\n");
         }
 
       inner_node->obj = obj;
-      printf ("inner\n");
     }
   else
     {
       node = oln_alloc ();
       if (!node)
         {
-          panic ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
+          PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
         }
       node->obj = obj;
-      printf ("non inner\n");
     }
 
   switch (type)
@@ -977,8 +971,7 @@ void gc_book (otype_t type, void *obj, bool non_obj)
       }
     default:
       {
-        os_printk ("Invalid object type %d\n", type);
-        panic ("gc_book is down!");
+        PANIC ("Invalid object type %d", type);
       }
     }
 }
@@ -1035,13 +1028,12 @@ void *gc_pool_malloc (otype_t type)
     case closure_on_heap:
     case closure_on_stack:
       {
-        panic ("BUG: closures are not allocated from pool!\n");
+        PANIC ("BUG: closures are not allocated from pool!\n");
         break;
       }
     default:
       {
-        os_printk ("Invalid object type %d\n", type);
-        panic ("gc_pool_malloc is down!");
+        PANIC ("Invalid object type: %d", type);
       }
     }
 
