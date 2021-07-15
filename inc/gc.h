@@ -30,13 +30,11 @@
 #define GC()                                     \
   do                                             \
     {                                            \
-      printf ("GC in!\n");                       \
       GCInfo gci = {.fp = vm->fp,                \
                     .sp = vm->sp,                \
                     .stack = vm->stack,          \
                     .hurt = LAMBDACHIP_GC_HURT}; \
       gc (&gci);                                 \
-      printf ("GC out!\n");                      \
     }                                            \
   while (0)
 
@@ -54,24 +52,23 @@
     ret;                                \
   })
 
-#define NEW_OBJ(t)                        \
-  ({                                      \
-    object_t obj = NULL;                  \
-    do                                    \
-      {                                   \
-        if (0 == oln_available ())        \
-          {                               \
-            printf ("NEW_OBJ no oln!\n"); \
-            GC ();                        \
-            continue;                     \
-          }                               \
-        obj = lambdachip_new_object (t);  \
-        if (obj)                          \
-          break;                          \
-        GC ();                            \
-      }                                   \
-    while (1);                            \
-    obj;                                  \
+#define NEW_OBJ(t)                       \
+  ({                                     \
+    object_t obj = NULL;                 \
+    do                                   \
+      {                                  \
+        if (0 == oln_available ())       \
+          {                              \
+            GC ();                       \
+            continue;                    \
+          }                              \
+        obj = lambdachip_new_object (t); \
+        if (obj)                         \
+          break;                         \
+        GC ();                           \
+      }                                  \
+    while (1);                           \
+    obj;                                 \
   })
 
 #define NEW_LIST_NODE()                   \
@@ -90,27 +87,26 @@
     ol;                                   \
   })
 
-#define NEW(t)                        \
-  ({                                  \
-    t##_t x = NULL;                   \
-    do                                \
-      {                               \
-        if (0 == oln_available ())    \
-          {                           \
-            printf ("NEW no oln!\n"); \
-            GC ();                    \
-            continue;                 \
-          }                           \
-        x = lambdachip_new_##t ();    \
-        if (x)                        \
-          {                           \
-            gc_book (t, x, true);     \
-            break;                    \
-          }                           \
-        GC ();                        \
-      }                               \
-    while (1);                        \
-    x;                                \
+#define NEW(t)                     \
+  ({                               \
+    t##_t x = NULL;                \
+    do                             \
+      {                            \
+        if (0 == oln_available ()) \
+          {                        \
+            GC ();                 \
+            continue;              \
+          }                        \
+        x = lambdachip_new_##t (); \
+        if (x)                     \
+          {                        \
+            gc_book (t, x, true);  \
+            break;                 \
+          }                        \
+        GC ();                     \
+      }                            \
+    while (1);                     \
+    x;                             \
   })
 
 typedef struct ActiveRoot ActiveRoot;
@@ -148,7 +144,6 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   {
     /* NOTE: when it's free, gc is 0.
      */
-    //    printf ("I'm in free list\n");
     if (FREE_OBJ == node->obj->attr.gc)
       {
         node->obj->attr.gc = 1; // allocated, as the 1st generation

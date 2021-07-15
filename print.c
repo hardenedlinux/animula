@@ -104,7 +104,7 @@ void object_printer (const object_t obj)
 {
   if (NULL == obj)
     {
-      printf ("NULL");
+      os_printk ("NULL");
       return;
     }
 

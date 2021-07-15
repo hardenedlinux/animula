@@ -491,7 +491,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)l;
 
         /* NOTE:
-         * To safely created a List, we have ot consider that GC may happend
+         * To safely created a List, we have to consider that GC may happend
          * unexpectedly.
          * 1. We must save list-obj to avoid to be freed by GC.
          * 2. The POP operation must be fixed to skip list-obj.
@@ -508,7 +508,6 @@ static object_t generate_object (vm_t vm, object_t obj)
             bl->obj = (void *)0xDEADBEEF;
             SLIST_INSERT_HEAD (&l->list, bl, next);
             object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
-            /* printf ("222\n"); */
             *new_obj = POP_OBJ_FROM (sp);
             // FIXME: What if it's global const?
             new_obj->attr.gc = 1; // don't forget to reset gc to 1
