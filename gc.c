@@ -220,7 +220,6 @@ void free_object (object_t obj)
         if (SLIST_EMPTY (head))
           {
             FREE_OBJECT (&list_free_list, obj->value);
-            getchar ();
             break;
           }
 
