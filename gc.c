@@ -231,7 +231,7 @@ void free_object (object_t obj)
             free_object (node->obj);
             // instead of free node, put node into OLN for future use
             // os_free (node);
-            memset (node, 0, sizeof (node));
+            memset (node, 0, sizeof (ObjectList));
             obj_list_node_recycle (node);
             SLIST_REMOVE_HEAD (head, next);
             node = SLIST_FIRST (head);
