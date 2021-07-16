@@ -16,6 +16,7 @@
  */
 
 #include "gc.h"
+#include "list.h"
 
 #ifdef LAMBDACHIP_LINUX
 #  include <sys/time.h>
@@ -706,10 +707,19 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
       4. Collect all gen-2 object in hurt collect.
    */
 
+  // sort all same object together thus we can try collect same object pointers
+  // sequentially
+  _list_sort_obj_ascending (*head);
+
+  obj_list_t prev_ok_to_free = NULL;
   SLIST_FOREACH (node, head, next)
   {
-
     int gc = force ? FREE_OBJ : get_gc_from_node (type, (void *)node->obj);
+    // if node changed and last node is OK to free
+    if (prev_ok_to_free && (prev_ok_to_free != node))
+      {
+        free_inner_object (type, (void *)prev_ok_to_free->obj);
+      }
 
     if (PERMANENT_OBJ == gc)
       {
@@ -736,14 +746,21 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
 
     if (FREE_OBJ == gc)
       {
-        free_inner_object (type, (void *)node->obj);
+        prev_ok_to_free = node;
         (*count)++;
       }
     else
       {
+        prev_ok_to_free = NULL;
         set_gc_to_node (type, (void *)node->obj, gc);
       }
   }
+
+  // if last element is OK to free
+  if (prev_ok_to_free)
+    {
+      free_inner_object (type, (void *)prev_ok_to_free->obj);
+    }
 }
 
 static size_t count_me (obj_list_head_t *head)
