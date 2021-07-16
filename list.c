@@ -207,6 +207,14 @@ object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
   return ret;
 }
 
+// (append list ...)
+// The last argument, if there is one, can be of any type.
+// Returns a list consisting of the elements of the first list followed by the
+// elements of the other lists. If there are no arguments, the empty list is
+// returned. If there is exactly one argument, it is returned. Otherwise the
+// resulting list is always newly allocated, except that it shares structure
+// with the last argument. An improper list results if the last argument is not
+// a proper list.
 object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
 {
   VALIDATE (l1, list);
