@@ -228,14 +228,20 @@ void free_object (object_t obj)
         {
           if (prev)
             {
-              free_object (prev->obj);
+              if (prev->obj)
+                {
+                  free_object (prev->obj);
+                }
               SLIST_REMOVE (head, prev, ObjectList, next);
               os_free ((void *)prev);
             }
           prev = node;
         }
 
-        free_object (prev->obj);
+        if (prev->obj)
+          {
+            free_object (prev->obj);
+          }
         SLIST_REMOVE (head, prev, ObjectList, next);
         os_free ((void *)prev);
         FREE_OBJECT (&list_free_list, (object_t)obj->value);
@@ -296,14 +302,20 @@ void free_inner_object (otype_t type, void *value)
         {
           if (prev)
             {
-              free_object (prev->obj);
+              if (prev->obj)
+                {
+                  free_object (prev->obj);
+                }
               SLIST_REMOVE (head, prev, ObjectList, next);
               os_free ((void *)prev);
             }
           prev = node;
         }
 
-        free_object (prev->obj);
+        if (prev->obj)
+          {
+            free_object (prev->obj);
+          }
         SLIST_REMOVE (head, prev, ObjectList, next);
         os_free ((void *)prev);
         FREE_OBJECT (&list_free_list, value);
