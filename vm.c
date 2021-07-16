@@ -876,7 +876,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         closure_t closure = create_closure (vm, arity, size, entry);
         Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
                       .value = (closure_t)closure};
-        gc_book (closure_on_heap, &obj, true);
+        gc_inner_obj_book (closure_on_heap, &obj);
         PUSH_OBJ (obj);
         break;
       }

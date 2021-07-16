@@ -917,73 +917,55 @@ void gc_clean_cache (void)
   collect (&cnt, &obj_free_list, false, true);
 }
 
-void gc_book (otype_t type, void *obj, bool non_obj)
+void gc_obj_book (void *obj)
 {
   obj_list_t node = NULL;
-  obj_list_t inner_node = NULL;
 
-  if (non_obj)
+  node = oln_alloc ();
+  if (!node)
     {
-      inner_node = oln_alloc ();
-      if (!inner_node)
-        {
-          PANIC ("gc_book: We're doomed! There're even no RAMs for GC!\n");
-        }
-
-      inner_node->obj = obj;
+      PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
     }
-  else
-    {
-      node = oln_alloc ();
-      if (!node)
-        {
-          PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
-        }
-      node->obj = obj;
-    }
+  node->obj = obj;
+  SLIST_INSERT_HEAD (&obj_free_list, node, next);
+}
 
-  switch (type)
+void gc_inner_obj_book (otype_t t, void *obj)
+{
+  obj_list_t node = NULL;
+  node = oln_alloc ();
+  if (!node)
     {
-    case imm_int:
-    case character:
-    case real:
-    case rational_pos:
-    case rational_neg:
-    case boolean:
-    case null_obj:
-    case none:
-    case string:
-    case symbol:
-    case primitive:
-    case procedure:
-      {
-        SLIST_INSERT_HEAD (&obj_free_list, node, next);
-        break;
-      }
+      PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
+    }
+  node->obj = obj;
+
+  switch (t)
+    {
     case list:
       {
-        SLIST_INSERT_HEAD (&list_free_list, inner_node, next);
+        SLIST_INSERT_HEAD (&list_free_list, node, next);
         break;
       }
     case pair:
       {
-        SLIST_INSERT_HEAD (&pair_free_list, inner_node, next);
+        SLIST_INSERT_HEAD (&pair_free_list, node, next);
         break;
       }
     case vector:
       {
-        SLIST_INSERT_HEAD (&vector_free_list, inner_node, next);
+        SLIST_INSERT_HEAD (&vector_free_list, node, next);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        SLIST_INSERT_HEAD (&closure_free_list, inner_node, next);
+        SLIST_INSERT_HEAD (&closure_free_list, node, next);
         break;
       }
     default:
       {
-        PANIC ("Invalid object type %d", type);
+        PANIC ("Invalid object type %d", t);
       }
     }
 }

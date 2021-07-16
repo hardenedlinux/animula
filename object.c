@@ -168,12 +168,12 @@ done:
   object->attr.gc = 1;
 
   if (new_alloc)
-    gc_book (type, (void *)object, false);
+    gc_obj_book (object);
 
   if (has_inner_obj)
     {
       object->value = value;
-      gc_book (type, (void *)value, true);
+      gc_inner_obj_book (type, (void *)value);
     }
   else
     {

@@ -100,7 +100,7 @@
         x = lambdachip_new_##t (); \
         if (x)                     \
           {                        \
-            gc_book (t, x, true);  \
+            gc_inner_obj_book (t, x); \
             break;                 \
           }                        \
         GC ();                     \
@@ -218,7 +218,8 @@ void gc_init (void);
 bool gc (const gc_info_t gci);
 void gc_clean_cache (void);
 void *gc_pool_malloc (otype_t type);
-void gc_book (otype_t type, void *obj, bool non_obj);
+void gc_inner_obj_book (otype_t t, void *obj);
+void gc_obj_book (void *obj);
 void gc_try_to_recycle (void);
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp);
 size_t oln_available (void);
