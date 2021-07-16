@@ -1,5 +1,6 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+ *        Rafael Lee <rafaellee.img@gmail.com>
  *  Lambdachip is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -285,4 +286,41 @@ object_t _list_length (vm_t vm, object_t ret, object_t l1)
   }
   ret->value = (void *)len;
   return ret;
+}
+
+void _list_sort_obj_ascending (obj_list_head_t head)
+{
+  // int sorted = false;
+  // bubble sort O(n^2)
+  obj_list_t node = NULL;
+  obj_list_t next_node = NULL;
+  if (SLIST_EMPTY (&head))
+    {
+      return;
+    }
+
+  bool swapped = false;
+  while (1)
+    {
+      node = SLIST_FIRST (&head);
+      next_node = SLIST_NEXT (node, next);
+      swapped = false;
+      while (next_node)
+        {
+          // swap
+          if (node->obj > next_node->obj)
+            {
+              object_t tmp = node->obj;
+              node->obj = next_node->obj;
+              next_node->obj = tmp;
+              swapped = true;
+            }
+          node = next_node;
+          next_node = SLIST_NEXT (next_node, next);
+        }
+      if (false == swapped)
+        {
+          break;
+        }
+    }
 }
