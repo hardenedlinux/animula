@@ -606,7 +606,7 @@ static void collect (size_t *count, obj_list_head_t *head, bool hurt,
               }
             else if (GEN_2_OBJ == gc && hurt)
               {
-                // hurtly collect
+                // hurtfully collect
                 node->obj->attr.gc = FREE_OBJ;
               }
           }
@@ -724,7 +724,7 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
           }
         else if (GEN_2_OBJ == gc && hurt)
           {
-            // hurtly collect
+            // hurtfully collect
             gc = FREE_OBJ;
           }
       }
