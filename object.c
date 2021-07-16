@@ -105,72 +105,64 @@ object_t lambdachip_new_object (u8_t type)
         return NULL;
     }
 
-  if (value)
+  switch (type)
     {
-      goto done;
-    }
-  else
-    {
-      switch (type)
-        {
-        case list:
-          {
-            value = (void *)lambdachip_new_list ();
-            ((list_t)value)->attr.type = type;
-            ((list_t)value)->attr.gc = 1;
-            break;
-          }
-        case pair:
-          {
-            value = (void *)lambdachip_new_pair ();
-            ((pair_t)value)->attr.type = type;
-            ((pair_t)value)->attr.gc = 1;
-            break;
-          }
-        case closure_on_heap:
-          {
-            value = (void *)lambdachip_new_closure ();
-            ((closure_t)value)->attr.type = type;
-            ((closure_t)value)->attr.gc = 1;
-            break;
-          }
-        case vector:
-          {
-            value = (void *)lambdachip_new_vector ();
-            ((vector_t)value)->attr.type = type;
-            ((vector_t)value)->attr.gc = 1;
-            break;
-          }
-        default:
-          {
-            has_inner_obj = false;
-            break;
-          }
-        }
-
-      if (has_inner_obj && (NULL == value))
-        {
-          // The inner object wasn't successfully allocated, return NULL for GC
-          if (new_alloc)
-            {
-              os_free (object);
-            }
-          else
-            {
-              free_object (object);
-            }
-          return NULL;
-        }
+    case list:
+      {
+        value = (void *)lambdachip_new_list ();
+        ((list_t)value)->attr.type = type;
+        ((list_t)value)->attr.gc = 1;
+        break;
+      }
+    case pair:
+      {
+        value = (void *)lambdachip_new_pair ();
+        ((pair_t)value)->attr.type = type;
+        ((pair_t)value)->attr.gc = 1;
+        break;
+      }
+    case closure_on_heap:
+      {
+        value = (void *)lambdachip_new_closure ();
+        ((closure_t)value)->attr.type = type;
+        ((closure_t)value)->attr.gc = 1;
+        break;
+      }
+    case vector:
+      {
+        value = (void *)lambdachip_new_vector ();
+        ((vector_t)value)->attr.type = type;
+        ((vector_t)value)->attr.gc = 1;
+        break;
+      }
+    default:
+      {
+        has_inner_obj = false;
+        break;
+      }
     }
 
-done:
+  if (has_inner_obj && (NULL == value))
+    {
+      // The inner object wasn't successfully allocated, return NULL for GC
+      if (new_alloc)
+        {
+          os_free (object);
+        }
+      else
+        {
+          free_object (object);
+        }
+      return NULL;
+    }
+
   object->attr.type = type;
   object->attr.gc = 1;
 
   if (new_alloc)
     gc_obj_book (object);
 
-  if (has_inner_obj)
+  if (has_inner_obj) // value is checked before
     {
       object->value = value;
       gc_inner_obj_book (type, (void *)value);
