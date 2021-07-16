@@ -115,6 +115,7 @@ obj_list_t oln_alloc (void)
   return ret;
 }
 
+// put obj_list_t back into OLN for future use
 static void obj_list_node_recycle (obj_list_t node)
 {
   _oln.oln[--_oln.index] = node;
@@ -214,7 +215,6 @@ void free_object (object_t obj)
     case list:
       {
         obj_list_t node = NULL;
-        obj_list_t prev = NULL;
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
 
         if (SLIST_EMPTY (head))
@@ -223,26 +223,20 @@ void free_object (object_t obj)
             break;
           }
 
-        SLIST_FOREACH (node, head, next)
-        {
-          if (prev)
-            {
-              if (prev->obj)
-                {
-                  free_object (prev->obj);
-                }
-              SLIST_REMOVE (head, prev, ObjectList, next);
-              os_free ((void *)prev);
-            }
-          prev = node;
-        }
-
-        if (prev->obj)
+        node = SLIST_FIRST (head);
+        while (node)
           {
-            free_object (prev->obj);
+            // call free_object recursively since node->obj can be a composite
+            // object
+            free_object (node->obj);
+            // instead of free node, put node into OLN for future use
+            // os_free (node);
+            memset (node, 0, sizeof (node));
+            obj_list_node_recycle (node);
+            SLIST_REMOVE_HEAD (head, next);
+            node = SLIST_FIRST (head);
           }
-        SLIST_REMOVE (head, prev, ObjectList, next);
-        os_free ((void *)prev);
+
         FREE_OBJECT (&list_free_list, (object_t)obj->value);
         break;
       }
