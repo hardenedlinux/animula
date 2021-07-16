@@ -182,7 +182,9 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                    \
   while (0)
 
-#define FREE_OBJECT(head, o)                             \
+
+// remove first find object in LIST head
+#define FREE_OBJECT_FROM_LIST(head, o)                   \
   do                                                     \
     {                                                    \
       obj_list_t node = NULL;                            \
