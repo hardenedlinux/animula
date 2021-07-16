@@ -1464,7 +1464,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
       return ret;
     }
 
-  list_t l = NEW (list);
+  list_t l = NEW_INNER_OBJ (list);
   SLIST_INIT (&l->list);
   ret->attr.type = list;
   ret->attr.gc = 1;

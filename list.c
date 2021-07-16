@@ -57,7 +57,7 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
           {
             ret->attr.gc = 0;
             ret->attr.type = list;
-            list_t l = NEW (list);
+            list_t l = NEW_INNER_OBJ (list);
             SLIST_INIT (&l->list);
             ret->value = (void *)l;
             obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);
@@ -90,7 +90,7 @@ object_t _cons (vm_t vm, object_t ret, object_t a, object_t b)
     case null_obj:
       {
         ret->attr.type = list;
-        list_t lst = NEW (list);
+        list_t lst = NEW_INNER_OBJ (list);
         obj_list_t ol = NEW_LIST_NODE ();
         SLIST_INSERT_HEAD (&lst->list, ol, next);
         ret->value = (void *)lst;
@@ -98,7 +98,7 @@ object_t _cons (vm_t vm, object_t ret, object_t a, object_t b)
       }
     default:
       {
-        pair_t p = NEW (pair);
+        pair_t p = NEW_INNER_OBJ (pair);
         object_t new_a = OBJ_IS_ON_STACK (a) ? NEW_OBJ (0) : a;
         object_t new_b = OBJ_IS_ON_STACK (b) ? NEW_OBJ (0) : b;
         if (new_a != a)
@@ -213,7 +213,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
   VALIDATE (l2, list);
 
   ret->attr.type = list;
-  list_t l = NEW (list);
+  list_t l = NEW_INNER_OBJ (list);
   SLIST_INIT (&l->list);
   ret->value = (void *)l;
   obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);

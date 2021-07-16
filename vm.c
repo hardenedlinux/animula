@@ -24,7 +24,8 @@ GLOBAL_DEF (size_t, VM_GLOBALSEG_SIZE) = 0;
 static void handle_optional_args (vm_t vm, object_t proc)
 {
   u8_t cnt = COUNT_ARGS () - proc->proc.opt;
-  Object varg = {.attr = {.type = list, .gc = 0}, .value = (void *)NEW (list)};
+  Object varg
+    = {.attr = {.type = list, .gc = 0}, .value = (void *)NEW_INNER_OBJ (list)};
   obj_list_head_t *head = LIST_OBJECT_HEAD (&varg);
 
   for (int i = 0; i < cnt; i++)
@@ -154,7 +155,7 @@ static void call_prim (vm_t vm, pn_t pn)
         obj_list_t prev = NULL;
         /* We always set k as return */
         Object k = GEN_PRIM (ret);
-        list_t new_list = NEW (list);
+        list_t new_list = NEW_INNER_OBJ (list);
         Object new_list_obj
           = {.attr = {.type = list, .gc = 1}, .value = (void *)new_list};
         obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_list_obj);
@@ -459,7 +460,7 @@ static object_t generate_object (vm_t vm, object_t obj)
     case pair:
       {
         VM_DEBUG ("(push-pair-object)\n");
-        pair_t p = NEW (pair);
+        pair_t p = NEW_INNER_OBJ (pair);
         p->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         obj->attr.type = pair;
         obj->value = (void *)p;
@@ -484,7 +485,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-list-object %d)\n", size);
-        list_t l = NEW (list);
+        list_t l = NEW_INNER_OBJ (list);
         SLIST_INIT (&l->list);
         l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         obj->attr.type = list;
@@ -521,7 +522,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-vector-object %d)\n", size);
-        vector_t v = NEW (vector);
+        vector_t v = NEW_INNER_OBJ (vector);
         v->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         v->vec = (object_t *)GC_MALLOC (sizeof (Object) * size);
         v->size = size;

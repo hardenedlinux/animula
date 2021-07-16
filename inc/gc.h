@@ -87,7 +87,7 @@
     ol;                                   \
   })
 
-#define NEW(t)                     \
+#define NEW_INNER_OBJ(t)           \
   ({                               \
     t##_t x = NULL;                \
     do                             \
