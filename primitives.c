@@ -1477,7 +1477,7 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
 
       // FIXME: check if pop is needed?
       // *new_obj = (object_t)POP_OBJ ();
-      obj_list_t bl = NEW_OBJ_LIST_NODE ();
+      obj_list_t bl = NEW_LIST_NODE ();
       bl->obj = new_obj;
       bl->obj->value = (void *)rx_buf[i];
       if (0 == i)
