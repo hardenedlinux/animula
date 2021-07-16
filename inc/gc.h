@@ -87,26 +87,26 @@
     ol;                                   \
   })
 
-#define NEW_INNER_OBJ(t)           \
-  ({                               \
-    t##_t x = NULL;                \
-    do                             \
-      {                            \
-        if (0 == oln_available ()) \
-          {                        \
-            GC ();                 \
-            continue;              \
-          }                        \
-        x = lambdachip_new_##t (); \
-        if (x)                     \
-          {                        \
+#define NEW_INNER_OBJ(t)              \
+  ({                                  \
+    t##_t x = NULL;                   \
+    do                                \
+      {                               \
+        if (0 == oln_available ())    \
+          {                           \
+            GC ();                    \
+            continue;                 \
+          }                           \
+        x = lambdachip_new_##t ();    \
+        if (x)                        \
+          {                           \
             gc_inner_obj_book (t, x); \
-            break;                 \
-          }                        \
-        GC ();                     \
-      }                            \
-    while (1);                     \
-    x;                             \
+            break;                    \
+          }                           \
+        GC ();                        \
+      }                               \
+    while (1);                        \
+    x;                                \
   })
 
 typedef struct ActiveRoot ActiveRoot;
