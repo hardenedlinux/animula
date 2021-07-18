@@ -36,6 +36,7 @@
 #  define os_memcpy     memcpy
 #  define os_strlen     strlen
 #  define os_abs        abs
+#  define os_fabs       fabs
 #  define STATIC_ASSERT BUILD_ASSERT
 /* NOTE: The newlib in Zephyr doesn't support strnlen, unfortunately. */
 static inline size_t os_strnlen (const char *s, size_t n)
@@ -84,7 +85,9 @@ int zephyr_stat (const char *path, struct fs_dirent *entry);
 #  define os_strnlen strnlen
 #  define os_strncmp strncmp
 #  define os_usleep  usleep
+#  include <math.h>
 #  define os_abs     abs
+#  define os_fabs    fabs
 #  define os_getchar getchar
 #  if defined __x86_64__
 #    define ADDRESS_64

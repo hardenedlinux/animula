@@ -28,6 +28,7 @@ static bool _int_gt (object_t x, object_t y);
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
+#define DIFF_EPSILON 0
 // primitives implementation
 
 static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
@@ -260,7 +261,15 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
   Object y_ = *yy;
   object_t x = &x_;
   object_t y = &y_;
-  if (real == y->attr.type)
+  if (complex_inexact == xx->attr.type || complex_inexact == yy->attr.type)
+    {
+      PANIC ("Complex_inexact is not supported yet!\n");
+    }
+  else if (complex_exact == xx->attr.type || complex_exact == yy->attr.type)
+    {
+      PANIC ("Complex_exact is not supported yet!\n");
+    }
+  else if (real == y->attr.type)
     {
 #ifdef LAMBDACHIP_LITTLE_ENDIAN
       float a;
@@ -716,26 +725,97 @@ void _object_print (object_t obj)
   object_printer (obj);
 }
 
-static bool _int_eq (object_t x, object_t y)
+static bool _int_eq (object_t xx, object_t yy)
 {
-  if (complex_inexact == x->attr.type || complex_exact == x->attr.type
-      || real == x->attr.type || rational_neg == x->attr.type
-      || rational_pos == x->attr.type || imm_int == x->attr.type)
+  Object x_ = *xx;
+  Object y_ = *yy;
+  object_t x = &x_;
+  object_t y = &y_;
+
+  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
+      PANIC ("Complex_inexact is not supported yet!\n");
+    }
+  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
+    {
+      PANIC ("Complex_exact is not supported yet!\n");
+    }
+  else if (real == x->attr.type || real == y->attr.type)
+    {
+      real_t a;
+      real_t b;
+      if (rational_pos == x->attr.type || rational_neg == x->attr.type
+          || imm_int == x->attr.type)
+        {
+          cast_int_or_fractal_to_float (x);
+          a.v = (uintptr_t)x->value;
+          b.v = (uintptr_t)y->value;
+        }
+      if (rational_pos == y->attr.type || rational_neg == y->attr.type
+          || imm_int == y->attr.type)
+        {
+          cast_int_or_fractal_to_float (y);
+          a.v = (uintptr_t)x->value;
+          b.v = (uintptr_t)y->value;
+        }
+      // since the decimal point is floated in the float point number
+      // There will be
+      if (os_fabs (a.f - b.f) <= DIFF_EPSILON)
+        {
+          return true;
+        }
+      else
+        {
+          return false;
+        }
+    }
+  else if (rational_pos == x->attr.type || rational_neg == x->attr.type
+           || rational_pos == y->attr.type || rational_neg == y->attr.type)
+    {
+      if (rational_pos == x->attr.type || rational_neg == x->attr.type)
+        {
+          cast_imm_int_to_rational (y);
+        }
+
+      if (rational_pos == y->attr.type || rational_neg == y->attr.type)
+        {
+          cast_imm_int_to_rational (x);
+        }
+
       if (y->attr.type == x->attr.type)
         {
-          // the type of the value doesn't matter
-          if ((imm_int_t)x->value == (imm_int_t)y->value)
+          if (x->value == y->value)
             {
+              PANIC ("No formalized rational number is equal to an integer!\n");
               return true;
             }
+          else
+            {
+              return false;
+            }
+        }
+      else
+        {
+          PANIC ("Program shall not reach here!\n");
+        }
+    }
+  else if (imm_int == x->attr.type && imm_int == y->attr.type)
+    {
+      if (x->value == y->value)
+        {
+          return true;
+        }
+      else // type error
+        {
+          return false;
         }
     }
   else
     {
-      PANIC ("Comparing not supported type %d and %d\n", x->attr.type,
-             y->attr.type);
+      PANIC ("Type not supported, x type = %d, y type = %d!\n", xx->attr.type,
+             yy->attr.type);
     }
+  PANIC ("Program shall not reach here!\n");
   return false;
 }
 
