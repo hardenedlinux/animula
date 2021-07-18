@@ -40,9 +40,11 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
   object_t y = &y_;
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
+      PANIC ("Complex_inexact is not supported yet!\n");
     }
   else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
+      PANIC ("Complex_exact is not supported yet!\n");
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
@@ -318,15 +320,11 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
   object_t y = &y_;
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
+      PANIC ("Complex_inexact is not supported yet!\n");
     }
   else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
-    }
-  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
-    {
-    }
-  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
-    {
+      PANIC ("Complex_exact is not supported yet!\n");
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
@@ -550,9 +548,11 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
   object_t y = &y_;
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
+      PANIC ("Complex_inexact is not supported yet!\n");
     }
   else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
     {
+      PANIC ("Complex_exact is not supported yet!\n");
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
@@ -830,12 +830,14 @@ static bool _int_lt (object_t x, object_t y)
 
 static bool _int_gt (object_t x, object_t y)
 {
-  // if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
-  //   {
-  //   }
-  // else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
-  //   {
-  //   }
+  if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
+    {
+      PANIC ("Complex_inexact is not supported yet!\n");
+    }
+  else if (complex_exact == x->attr.type || complex_exact == y->attr.type)
+    {
+      PANIC ("Complex_exact is not supported yet!\n");
+    }
   if (real == x->attr.type || real == y->attr.type)
     {
       cast_int_or_fractal_to_float (x);
