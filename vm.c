@@ -420,6 +420,7 @@ void call_prim (vm_t vm, pn_t pn)
             PUSH_OBJ (result);
             vm->state = VM_RUN;
             apply_proc (vm, &handler, NULL);
+            RESTORE ();
             // Handle non-continuable exception
             os_printk ("Exception occurred with non-continuable object: ");
             object_printer (&result);
