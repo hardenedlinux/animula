@@ -28,6 +28,7 @@
 #include "primitives.h"
 #include "symbol.h"
 #include "types.h"
+#include <setjmp.h>
 
 extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);
@@ -313,6 +314,18 @@ static inline void vm_stack_check (vm_t vm)
     }                                                                \
   while (0)
 
+#define SAVE_ENV_SIMPLE()         \
+  do                              \
+    {                             \
+      PUSH_REG (vm->pc);          \
+      PUSH_REG (vm->fp);          \
+      PUSH (vm->attr.all);        \
+      PUSH_CLOSURE (vm->closure); \
+      vm->fp = vm->sp - FPS;      \
+      vm->local = vm->sp;         \
+    }                             \
+  while (0)
+
 #define FIX_PC()                                           \
   do                                                       \
     {                                                      \
@@ -371,20 +384,20 @@ static inline void vm_stack_check (vm_t vm)
  * So we pop twice to skip its own prelude to restore the last
  * frame.
  */
-#define RESTORE()                                                 \
-  do                                                              \
-    {                                                             \
-      gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp); \
-      Object ret = POP_OBJ ();                                    \
-      vm->sp = vm->fp + FPS;                                      \
-      vm->closure = POP_CLOSURE ();                               \
-      vm->attr.all = POP ();                                      \
-      vm->fp = POP_REG ();                                        \
-      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);               \
-      vm->pc = POP_REG ();                                        \
-      vm->local = vm->fp + FPS;                                   \
-      PUSH_OBJ (ret);                                             \
-    }                                                             \
+//      gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp);
+#define RESTORE()                                   \
+  do                                                \
+    {                                               \
+      Object ret = POP_OBJ ();                      \
+      vm->sp = vm->fp + FPS;                        \
+      vm->closure = POP_CLOSURE ();                 \
+      vm->attr.all = POP ();                        \
+      vm->fp = POP_REG ();                          \
+      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp); \
+      vm->pc = POP_REG ();                          \
+      vm->local = vm->fp + FPS;                     \
+      PUSH_OBJ (ret);                               \
+    }                                               \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \
@@ -468,4 +481,5 @@ void vm_restart (vm_t vm);
 void vm_run (vm_t vm);
 void vm_load_lef (vm_t vm, lef_t lef);
 void apply_proc (vm_t vm, object_t proc, object_t ret);
+void call_prim (vm_t vm, pn_t pn);
 #endif // End of __LAMBDACHIP_VM_H__

@@ -1796,6 +1796,9 @@ void primitives_init (void)
   def_prim (42, "spi_transceive", 4, (void *)_os_spi_transceive);
   def_prim (43, "i2c_read_list", 3, (void *)_os_i2c_read_list);
   def_prim (44, "i2c_write_list", 3, (void *)_os_i2c_write_list);
+  def_prim (45, "with-exception-handler", 2, NULL);
+  def_prim (46, "scm_raise", 1, NULL);
+  def_prim (47, "scm_raise_continuable", 1, NULL);
 
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 

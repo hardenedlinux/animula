@@ -413,7 +413,9 @@ typedef enum vm_state
   VM_RUN = 1,
   VM_PAUSE = 2,
   VM_GC = 3,
-  VM_INIT_GLOBALS = 4
+  VM_INIT_GLOBALS = 4,
+  VM_EXCPT = 5,
+  VM_EXCPT_CONT = 6
 } vm_state_t;
 
 typedef struct LambdaVM
@@ -431,7 +433,6 @@ typedef struct LambdaVM
   cont_t cc; // current continuation
   bytecode8_t (*fetch_next_bytecode) (struct LambdaVM *);
   u8_t *code;
-  u8_t *data;
   u8_t *stack;
   object_t globals; // global table
   symtab_t symtab;

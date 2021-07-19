@@ -17,6 +17,8 @@
 
 #include "vm.h"
 
+jmp_buf extent = {0};
+
 GLOBAL_DEF (size_t, VM_CODESEG_SIZE) = 0;
 GLOBAL_DEF (size_t, VM_DATASEG_SIZE) = 0;
 GLOBAL_DEF (size_t, VM_GLOBALSEG_SIZE) = 0;
@@ -57,7 +59,7 @@ static closure_t create_closure (vm_t vm, u8_t arity, u8_t frame_size,
   return closure;
 }
 
-static void call_prim (vm_t vm, pn_t pn)
+void call_prim (vm_t vm, pn_t pn)
 {
   prim_t prim = get_prim (pn);
 
@@ -337,7 +339,8 @@ static void call_prim (vm_t vm, pn_t pn)
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
         Object ret = CREATE_RET_OBJ ();
-        PUSH_OBJ (*fn (vm, &ret, &o1, &o2));
+        fn (vm, &ret, &o1, &o2);
+        PUSH_OBJ (ret);
         break;
       }
     case prim_usleep:
@@ -369,8 +372,68 @@ static void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (*fn (vm, &ret));
         break;
       }
+    case scm_raise:
+      {
+        vm->state = VM_EXCPT;
+        break;
+      }
+    case scm_raise_continuable:
+      {
+        vm->state = VM_EXCPT_CONT;
+        break;
+      }
+    case with_exception_handler:
+      {
+        Object thunk = POP_OBJ ();
+        Object handler = POP_OBJ ();
+        Object result = CREATE_RET_OBJ ();
+        Object k = GEN_PRIM (ret);
+
+        SAVE_ENV_SIMPLE ();
+        PUSH_OBJ (k); // prim:return
+        PUSH_OBJ (result);
+        apply_proc (vm, &thunk, &result);
+
+      extent:
+        if (VM_EXCPT_CONT == vm->state)
+          {
+            u32_t sp = POP_REG ();
+            u32_t pc = POP_REG ();
+            SAVE_ENV_SIMPLE ();
+
+            PUSH_OBJ (k); // prim:return
+            PUSH_OBJ (result);
+            vm->state = VM_RUN;
+            apply_proc (vm, &handler, &result);
+            // PUSH_OBJ (result);
+            RESTORE ();
+            vm->sp = sp;
+            PUSH_OBJ (result);
+            thunk.proc.entry = pc;
+            apply_proc (vm, &thunk, &result);
+            goto extent;
+          }
+        else if (VM_EXCPT == vm->state)
+          {
+            SAVE_ENV_SIMPLE ();
+            PUSH_OBJ (k); // prim:return
+            PUSH_OBJ (result);
+            vm->state = VM_RUN;
+            apply_proc (vm, &handler, NULL);
+            // Handle non-continuable exception
+            os_printk ("Exception occurred with non-continuable object: ");
+            object_printer (&result);
+            os_printk ("\n");
+            vm->state = VM_STOP;
+          }
+
+        RESTORE ();
+        break;
+      }
     default:
-      os_printk ("Invalid prim number: %d\n", pn);
+      {
+        os_printk ("Invalid prim number: %d\n", pn);
+      }
     }
 }
 
@@ -1289,12 +1352,19 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
       /* getchar (); */
     }
 
+  // FIXME: optimize it to reduce redundant copying
   if (ret)
     {
       *ret = POP_OBJ ();
       /* NOTE: Since we use the deref tick here for copying,
        *       we must reset gc to 1 again!!! */
       ret->attr.gc = 1;
+
+      if (VM_EXCPT_CONT == vm->state)
+        {
+          PUSH_REG (vm->pc);
+          PUSH_REG (vm->sp);
+        }
     }
   else
     {

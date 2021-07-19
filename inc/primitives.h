@@ -28,7 +28,7 @@
 #include "types.h"
 #include "vector.h"
 
-#define PRIM_NAME_SIZE 16
+#define PRIM_NAME_SIZE 50
 #define PRIM_MAX       64
 #define BOARD_ID_LEN   25
 
@@ -81,6 +81,9 @@ typedef enum prim_num
   prim_spi_transceive = 42,
   prim_i2c_read_list = 43,
   prim_i2c_write_list = 44,
+  with_exception_handler = 45,
+  scm_raise = 46,
+  scm_raise_continuable = 47,
 
   do_not_forget_modify_PRIM_MAX = 63
 } pn_t;
