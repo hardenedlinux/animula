@@ -28,7 +28,6 @@
 #include "primitives.h"
 #include "symbol.h"
 #include "types.h"
-#include <setjmp.h>
 
 extern GLOBAL_DEF (size_t, VM_CODESEG_SIZE);
 extern GLOBAL_DEF (size_t, VM_DATASEG_SIZE);

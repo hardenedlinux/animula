@@ -17,8 +17,6 @@
 
 #include "vm.h"
 
-jmp_buf extent = {0};
-
 GLOBAL_DEF (size_t, VM_CODESEG_SIZE) = 0;
 GLOBAL_DEF (size_t, VM_DATASEG_SIZE) = 0;
 GLOBAL_DEF (size_t, VM_GLOBALSEG_SIZE) = 0;
