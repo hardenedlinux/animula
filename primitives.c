@@ -48,12 +48,12 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-      real_t a;
-      real_t b;
+      real_t a, b;
+      a.v = 0;
+      b.v = 0;
       if (real == x->attr.type)
         {
-          memcpy (&(a), &(x->value), 4);
+          a.v = (uintptr_t) (x->value);
         }
       else if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
@@ -75,7 +75,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
 
       if (real == y->attr.type)
         {
-          memcpy (&(b), &(y->value), 4);
+          b.v = (uintptr_t) (y->value);
         }
       else if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
@@ -92,12 +92,10 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
           PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
                  y->attr.type);
         }
-      float c = a.f + b.f;
+      real_t c;
+      c.f = a.f + b.f;
       ret->attr.type = real;
-      memcpy (&(ret->value), &c, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+      ret->value = (void *)c.v;
     }
   else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
            || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
@@ -164,18 +162,13 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
           cast_rational_to_float (x);
           // side effect
           cast_rational_to_float (y);
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-          float a;
-          float b;
-          memcpy (&a, &(x->value), 4);
-          memcpy (&b, &(y->value), 4);
-          b = a + b;
+          real_t a;
+          real_t b;
+          a.v = (uintptr_t)x->value;
+          b.v = (uintptr_t)y->value;
+          b.f = a.f + b.f;
           ret->attr.type = real;
-          memcpy (&(ret->value), &b, 4);
-
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+          ret->value = (void *)b.v;
           return ret;
         }
       // gcd
@@ -200,21 +193,15 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
         }
       else
         {
-          // convert to float
           cast_rational_to_float (x);
           cast_rational_to_float (y);
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-          float a;
-          float b;
-          memcpy (&a, &(x->value), 4);
-          memcpy (&b, &(y->value), 4);
-          b = a / b;
+          real_t a;
+          real_t b;
+          a.v = (uintptr_t)x->value;
+          b.v = (uintptr_t)y->value;
+          b.f = a.f / b.f;
           ret->attr.type = real;
-          memcpy (&(ret->value), &b, 4);
-
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+          ret->value = (void *)b.v;
         }
 
       // ret->attr.type == (numerator>0)?rational_pos:rational_neg;
@@ -225,19 +212,12 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
     {
       s64_t result = ((s64_t)x->value + (s64_t)y->value);
       s32_t result2 = 0xFFFFFFFF & result;
-      float result3;
-      if (result2 != result) // if overflow
+      real_t result3;
+      if (result2 != result) // if overflow, convert to real
         {
-          // PANIC ("Add overflow or underflow %lld, %d\n", result, result2);
-          result3 = (float)result;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-
-          memcpy (&(ret->value), &result3, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
-          // ret->value = (void *)result2;
+          result3.f = (float)result;
           ret->attr.type = real;
+          ret->value = (void *)(result3.v);
         }
       else
         {
@@ -273,14 +253,9 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == y->attr.type)
     {
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-      float a;
-      memcpy (&a, &(y->value), 4);
-      a = -a;
-      memcpy (&(y->value), &a, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+      real_t *pa;
+      pa = (real_t *)(y->value);
+      pa->f = -pa->f;
     }
   else if (rational_pos == y->attr.type)
     {
@@ -328,12 +303,12 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-      real_t a;
-      real_t b;
+      real_t a, b;
+      a.v = 0;
+      b.v = 0;
       if (real == x->attr.type)
         {
-          memcpy (&(a), &(x->value), 4);
+          a.v = (uintptr_t) (x->value);
         }
       else if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
@@ -355,7 +330,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
 
       if (real == y->attr.type)
         {
-          memcpy (&(b), &(y->value), 4);
+          b.v = (uintptr_t) (y->value);
         }
       else if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
@@ -373,12 +348,10 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
           PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
                  y->attr.type);
         }
-      float c = a.f * b.f;
+      real_t c;
+      c.f = a.f * b.f;
       ret->attr.type = real;
-      memcpy (&(ret->value), &c, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+      ret->value = (void *)c.v;
     }
   else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
            || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
@@ -440,24 +413,19 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
           denominator /= common_divisor;
           numerator /= common_divisor;
         }
-      else
+      else // integer more than 32 bit, convert to real
         {
           // side effect
           cast_rational_to_float (x);
           // side effect
           cast_rational_to_float (y);
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-          float a;
-          float b;
-          memcpy (&a, &(x->value), 4);
-          memcpy (&b, &(y->value), 4);
-          b = a * b;
+          real_t a, b;
+          a.v = (uintptr_t)x->value;
+          b.v = (uintptr_t)y->value;
+          b.f = a.f * b.f;
           ret->attr.type = real;
-          memcpy (&(ret->value), &b, 4);
+          ret->value = (void *)b.v;
           return ret;
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
         }
       // gcd
       // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
@@ -481,23 +449,17 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
           cast_rational_to_imm_int_if_denominator_is_1 (ret);
           return ret;
         }
-      else
+      else // more than 16 bit is used, cannot use as rational, convert to float
         {
           // convert to float
           cast_rational_to_float (x);
           cast_rational_to_float (y);
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-          float a;
-          float b;
-          memcpy (&a, &(x->value), 4);
-          memcpy (&b, &(y->value), 4);
-          b = a * b;
+          real_t a, b;
+          a.v = (uintptr_t)x->value;
+          b.v = (uintptr_t)y->value;
+          b.f = a.f * b.f;
           ret->attr.type = real;
-          memcpy (&(ret->value), &b, 4);
-
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+          ret->value = (void *)b.v;
         }
 
       // ret->attr.type == (numerator>0)?rational_pos:rational_neg;
@@ -508,18 +470,12 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
     {
       s64_t result = ((s64_t)x->value * (s64_t)y->value);
       s32_t result2 = 0xFFFFFFFF & result;
-      float result3;
+      real_t result3;
       if (result2 != result) // if overflow
         {
           // PANIC ("Add overflow or underflow %lld, %d\n", result, result2);
-          result3 = (float)result;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-
-          memcpy (&(ret->value), &result3, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
-          // ret->value = (void *)result2;
+          result3.f = (float)result;
+          ret->value = (void *)result3.v;
           ret->attr.type = real;
         }
       else
@@ -556,24 +512,20 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
-#ifndef LAMBDACHIP_LITTLE_ENDIAN
-#  error "BIG_ENDIAN not provided"
-#endif
-      float a;
-      float b;
+      real_t a, b;
       cast_int_or_fractal_to_float (x);
       cast_int_or_fractal_to_float (y);
-      memcpy (&a, &(x->value), sizeof (a));
-      memcpy (&b, &(y->value), sizeof (b));
-      if (b != 0.0f)
+      a.v = (uintptr_t)x->value;
+      b.v = (uintptr_t)y->value;
+      if (b.f != 0.0f)
         {
-          b = a / b;
+          b.f = a.f / b.f;
         }
       else
         {
           PANIC ("Div by 0 error!\n");
         }
-      memcpy (&(ret->value), &b, sizeof (b));
+      ret->value = (void *)b.v;
       ret->attr.type = real;
     }
   else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
@@ -641,13 +593,10 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       if (nn < MIN_REAL_DENOMINATOR || nn > MAX_REAL_DENOMINATOR
           || dd < MIN_REAL_DENOMINATOR || dd > MAX_REAL_DENOMINATOR)
         {
-          float a = (float)(nn * sign) / (float)dd;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-          memcpy (&(ret->value), &a, sizeof (a));
+          real_t a;
+          a.f = (float)(nn * sign) / (float)dd;
+          ret->value = (void *)a.v;
           ret->attr.type = real;
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
         }
       else // nn and dd are in range
         {
@@ -656,6 +605,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
           cast_rational_to_imm_int_if_denominator_is_1 (ret);
         }
     }
+  // int / int
   else if (imm_int == x->attr.type && imm_int == y->attr.type)
     {
       imm_int_t n = (imm_int_t) (x->value);
@@ -677,13 +627,9 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
           || d < MIN_REAL_DENOMINATOR || d > MAX_REAL_DENOMINATOR)
         {
           ret->attr.type = real;
-          float c = sign * (float)n / (float)d;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-          memcpy (&(ret->value), &c, sizeof (c));
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
-          // return ret;
+          real_t c;
+          c.f = sign * (float)n / (float)d;
+          ret->value = (void *)c.v;
         }
       else
         {
@@ -842,15 +788,12 @@ static bool _int_gt (object_t x, object_t y)
     {
       cast_int_or_fractal_to_float (x);
       cast_int_or_fractal_to_float (y);
-      float a = 0.0;
-      float b = 0.0;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-      memcpy (&a, &(x->value), sizeof (a));
-      memcpy (&b, &(y->value), sizeof (b));
-      return a > b;
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+      real_t a, b;
+      a.f = 0.0;
+      b.f = 0.0;
+      a.v = (uintptr_t)x->value;
+      b.v = (uintptr_t)y->value;
+      return a.f > b.f;
     }
   else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
            || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
