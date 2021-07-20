@@ -281,7 +281,6 @@ void free_inner_object (otype_t type, void *value)
     case list:
       {
         obj_list_t node = NULL;
-        obj_list_t prev = NULL;
         obj_list_head_t *head = &((list_t)value)->list;
 
         if (SLIST_EMPTY (head))
@@ -290,27 +289,20 @@ void free_inner_object (otype_t type, void *value)
             break;
           }
 
-        SLIST_FOREACH (node, head, next)
-        {
-          if (prev)
-            {
-              if (prev->obj)
-                {
-                  free_object (prev->obj);
-                }
-              SLIST_REMOVE (head, prev, ObjectList, next);
-              os_free ((void *)prev);
-            }
-          prev = node;
-        }
-
-        if (prev->obj)
+        node = SLIST_FIRST (head);
+        while (node)
           {
-            free_object (prev->obj);
+            // call free_object recursively since node->obj can be a composite
+            // object
+            free_object (node->obj);
+            // instead of free node, put node into OLN for future use
+            SLIST_REMOVE_HEAD (head, next);
+            os_free (node);
+            node = (void *)NULL;
+            node = SLIST_FIRST (head);
           }
-        SLIST_REMOVE (head, prev, ObjectList, next);
-        os_free ((void *)prev);
-        FREE_OBJECT_FROM_LIST (&list_free_list, value);
+
+        FREE_OBJECT_FROM_LIST (&list_free_list, (object_t)value);
         break;
       }
     case closure_on_heap:
