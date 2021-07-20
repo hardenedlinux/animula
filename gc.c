@@ -232,9 +232,7 @@ void free_object (object_t obj)
             free_object (node->obj);
             // instead of free node, put node into OLN for future use
             SLIST_REMOVE_HEAD (head, next);
-            memset (node, 0, sizeof (ObjectList));
             os_free (node);
-            node = (void *)NULL;
             node = SLIST_FIRST (head);
           }
 

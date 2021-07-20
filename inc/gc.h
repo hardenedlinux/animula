@@ -193,7 +193,6 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
         if (node->obj == (o))                            \
           {                                              \
             os_free (node->obj);                         \
-            memset (node->obj, 0, sizeof(ObjectList));   \
             node->obj = NULL;                            \
             SLIST_REMOVE (head, node, ObjectList, next); \
             obj_list_node_recycle (node);                \
