@@ -179,7 +179,7 @@ void call_prim (vm_t vm, pn_t pn)
             {
             case procedure:
               {
-                apply_proc (vm, &proc, ret);
+                apply_proc (vm, &proc, NULL);
                 break;
               }
             case primitive:
