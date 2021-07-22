@@ -227,7 +227,7 @@ void free_object (object_t obj)
       {
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
-        FREE_OBJECT_FROM_LIST (&pair_free_list, obj->value);
+        free_object_from_pool (&pair_free_list, obj->value);
         break;
       }
     case list:
@@ -237,7 +237,7 @@ void free_object (object_t obj)
 
         if (SLIST_EMPTY (head))
           {
-            FREE_OBJECT_FROM_LIST (&list_free_list, obj->value);
+            free_object_from_pool (&list_free_list, obj->value);
             break;
           }
 
@@ -253,7 +253,7 @@ void free_object (object_t obj)
             node = SLIST_FIRST (head);
           }
 
-        FREE_OBJECT_FROM_LIST (&list_free_list, (object_t)obj->value);
+        free_object_from_pool (&list_free_list, (object_t)obj->value);
         break;
       }
     case continuation:
@@ -265,7 +265,7 @@ void free_object (object_t obj)
     case closure_on_heap:
     case closure_on_stack:
       {
-        FREE_OBJECT_FROM_LIST (&closure_free_list, obj->value);
+        free_object_from_pool (&closure_free_list, obj->value);
         break;
       }
     default:
@@ -274,7 +274,7 @@ void free_object (object_t obj)
       }
     }
 
-  FREE_OBJECT_FROM_LIST (&obj_free_list, obj);
+  free_object_from_pool (&obj_free_list, obj);
 }
 
 void free_inner_object (otype_t type, void *value)
@@ -295,7 +295,7 @@ void free_inner_object (otype_t type, void *value)
       {
         free_object ((object_t) ((pair_t)value)->car);
         free_object ((object_t) ((pair_t)value)->cdr);
-        FREE_OBJECT_FROM_LIST (&pair_free_list, value);
+        free_object_from_pool (&pair_free_list, value);
         break;
       }
     case list:
@@ -305,7 +305,7 @@ void free_inner_object (otype_t type, void *value)
 
         if (SLIST_EMPTY (head))
           {
-            FREE_OBJECT_FROM_LIST (&list_free_list, value);
+            free_object_from_pool (&list_free_list, value);
             break;
           }
 
@@ -321,13 +321,13 @@ void free_inner_object (otype_t type, void *value)
             node = SLIST_FIRST (head);
           }
 
-        FREE_OBJECT_FROM_LIST (&list_free_list, (object_t)value);
+        free_object_from_pool (&list_free_list, (object_t)value);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        FREE_OBJECT_FROM_LIST (&closure_free_list, value);
+        free_object_from_pool (&closure_free_list, value);
         break;
       }
     default:
@@ -380,7 +380,7 @@ static void recycle_object (object_t obj)
     case closure_on_heap:
     case closure_on_stack:
       {
-        FREE_OBJECT_FROM_LIST (&closure_free_list, obj);
+        free_object_from_pool (&closure_free_list, obj);
         break;
       }
     default:
@@ -1100,7 +1100,7 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
           {
             // closures are never recycled, we just free them
             obj->attr.gc = FREE_OBJ;
-            FREE_OBJECT_FROM_LIST (&closure_free_list, obj);
+            free_object_from_pool (&closure_free_list, obj);
             break;
           }
         default:
@@ -1131,7 +1131,7 @@ void gc_clean (void)
 }
 
 // remove first find object in LIST head
-static void FREE_OBJECT_FROM_LIST (obj_list_head_t *head, object_t o)
+static void free_object_from_pool (obj_list_head_t *head, object_t o)
 {
   obj_list_t node = NULL;
   SLIST_FOREACH (node, (head), next)

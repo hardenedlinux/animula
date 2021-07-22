@@ -196,7 +196,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   while (0)
 
 static void obj_list_node_recycle (obj_list_t node);
-static void FREE_OBJECT_FROM_LIST (obj_list_head_t *head, object_t o);
+static void free_object_from_pool (obj_list_head_t *head, object_t o);
 void free_object (object_t obj);
 void gc_init (void);
 bool gc (const gc_info_t gci);
