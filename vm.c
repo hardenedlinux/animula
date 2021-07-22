@@ -1330,7 +1330,7 @@ void vm_run (vm_t vm)
       /* object_printer (&TOP_OBJ ()); */
       /* printf ("\n"); */
 
-      if (!vm->sp)
+      if (0 == vm->sp)
         {
           VM_DEBUG ("stack is empty, try to recycle once!\n");
           gc_try_to_recycle ();

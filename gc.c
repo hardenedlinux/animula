@@ -302,7 +302,6 @@ void free_inner_object (otype_t type, void *value)
             // instead of free node, put node into OLN for future use
             SLIST_REMOVE_HEAD (head, next);
             os_free (node);
-            node = (void *)NULL;
             node = SLIST_FIRST (head);
           }
 
