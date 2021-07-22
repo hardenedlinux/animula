@@ -23,11 +23,12 @@
 
 #endif
 
+static int get_gc_from_node (otype_t type, void *value);
 /* The GC in LambdaChip is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
 
    The meaning of `gc' field in Object:
-   * 3 means permernant.
+   * 3 means permarnent.
    * 1~2 means the generation, 0 means free.
    * The `gc' will increase by 1 when it survives from GC.
    * For stack-allocated object, `gc' field is always 0.
@@ -268,6 +269,9 @@ void free_inner_object (otype_t type, void *value)
     {
       PANIC ("BUG: free a null object!");
     }
+
+  if (PERMANENT_OBJ == get_gc_from_node (type, value))
+    return;
 
   switch (type)
     {

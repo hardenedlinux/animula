@@ -592,7 +592,7 @@ static object_t generate_object (vm_t vm, object_t obj)
             object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
             *new_obj = POP_OBJ_FROM (sp);
             // FIXME: What if it's global const?
-            new_obj->attr.gc = 1; // don't forget to reset gc to 1
+            new_obj->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
             bl->obj = new_obj;
           }
         vm->sp = sp; // refix the pop offset
