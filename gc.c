@@ -1129,3 +1129,20 @@ void gc_clean (void)
   active_nodes_clean ();
   obj_list_nodes_clean ();
 }
+
+// remove first find object in LIST head
+static void FREE_OBJECT_FROM_LIST (obj_list_head_t *head, object_t o)
+{
+  obj_list_t node = NULL;
+  SLIST_FOREACH (node, (head), next)
+  {
+    if (node->obj == (o))
+      {
+        os_free (node->obj);
+        node->obj = NULL;
+        SLIST_REMOVE (head, node, ObjectList, next);
+        obj_list_node_recycle (node);
+        break;
+      }
+  }
+}

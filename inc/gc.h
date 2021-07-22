@@ -182,26 +182,6 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                    \
   while (0)
 
-
-// remove first find object in LIST head
-#define FREE_OBJECT_FROM_LIST(head, o)                   \
-  do                                                     \
-    {                                                    \
-      obj_list_t node = NULL;                            \
-      SLIST_FOREACH (node, (head), next)                 \
-      {                                                  \
-        if (node->obj == (o))                            \
-          {                                              \
-            os_free (node->obj);                         \
-            node->obj = NULL;                            \
-            SLIST_REMOVE (head, node, ObjectList, next); \
-            obj_list_node_recycle (node);                \
-            break;                                       \
-          }                                              \
-      }                                                  \
-    }                                                    \
-  while (0)
-
 #define FREE_LIST_PRINT(head)                               \
   do                                                        \
     {                                                       \
@@ -215,6 +195,8 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                                       \
   while (0)
 
+static void obj_list_node_recycle (obj_list_t node);
+static void FREE_OBJECT_FROM_LIST (obj_list_head_t *head, object_t o);
 void free_object (object_t obj);
 void gc_init (void);
 bool gc (const gc_info_t gci);
