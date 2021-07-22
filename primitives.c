@@ -688,8 +688,8 @@ static bool _int_eq (object_t xx, object_t yy)
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
-      real_t a;
-      real_t b;
+      real_t a = {0};
+      real_t b = {0};
       if (rational_pos == x->attr.type || rational_neg == x->attr.type
           || imm_int == x->attr.type)
         {
@@ -1743,7 +1743,7 @@ static Object prim_integer_p (object_t obj)
     case real:
       {
         s32_t v = (s32_t)obj->value;
-        real_t r;
+        real_t r = {0};
         r.v = (uintptr_t)obj->value;
         ret = (v == r.f);
         break;
