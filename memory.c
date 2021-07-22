@@ -111,6 +111,7 @@ void *os_malloc (size_t size)
         }
     }
 
+  printf ("%s: ptr = %p\n", __FUNCTION__, ptr);
   return ptr;
 }
 
@@ -156,6 +157,7 @@ void *os_calloc (size_t n, size_t size)
 
 void os_free (void *ptr)
 {
+  printf ("%s: ptr = %p\n", __FUNCTION__, ptr);
   if (NULL != ptr)
     __free (ptr);
   else

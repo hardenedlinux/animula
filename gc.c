@@ -23,6 +23,8 @@
 
 #endif
 
+int gc_final = 0;
+
 static int get_gc_from_node (otype_t type, void *value);
 /* The GC in LambdaChip is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
@@ -172,21 +174,21 @@ void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
-  obj_list_t node = NULL;
-  bool node_exist = false;
-  SLIST_FOREACH (node, &list_free_list, next)
-  {
-    if (node->obj == obj)
-      {
-        node_exist = true;
-        break;
-      }
-  }
+  // obj_list_t node = NULL;
+  // bool node_exist = false;
+  // SLIST_FOREACH (node, &list_free_list, next)
+  // {
+  //   if (node->obj == obj)
+  //     {
+  //       node_exist = true;
+  //       break;
+  //     }
+  // }
 
-  if (!node_exist)
-    {
-      return;
-    }
+  // if (!node_exist)
+  //   {
+  //     return;
+  //   }
 
   if (0xDEADBEEF == (uintptr_t)obj)
     {
@@ -221,13 +223,24 @@ void free_object (object_t obj)
         // simple object, we don't need to free its value
         // no need to free string
         // symbol should never be recycled
+        if (gc_final)
+          {
+            free_object_from_pool (&obj_free_list, obj);
+          }
+        FREE_LIST_PRINT (&obj_free_list);
         break;
       }
     case pair:
       {
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
-        free_object_from_pool (&pair_free_list, obj->value);
+
+        if (gc_final)
+          {
+            free_object_from_pool (&pair_free_list, obj->value);
+            // free_object_from_pool (&obj_free_list, obj);
+          }
+        FREE_LIST_PRINT (&pair_free_list);
         break;
       }
     case list:
@@ -235,37 +248,50 @@ void free_object (object_t obj)
         obj_list_t node = NULL;
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
 
-        if (SLIST_EMPTY (head))
+        if (!SLIST_EMPTY (head))
           {
-            free_object_from_pool (&list_free_list, obj->value);
-            break;
-          }
-
-        node = SLIST_FIRST (head);
-        while (node)
-          {
-            // call free_object recursively since node->obj can be a composite
-            // object
-            free_object (node->obj);
-            // instead of free node, put node into OLN for future use
-            SLIST_REMOVE_HEAD (head, next);
-            os_free (node);
             node = SLIST_FIRST (head);
+            while (node)
+              {
+                // call free_object recursively since node->obj can be a
+                // composite object
+                free_object (node->obj);
+                // instead of free node, put node into OLN for future use
+                SLIST_REMOVE_HEAD (head, next);
+                os_free (node);
+                node = SLIST_FIRST (head);
+              }
           }
 
-        free_object_from_pool (&list_free_list, (object_t)obj->value);
+        // obj->value is the node of list
+        if (gc_final)
+          {
+            free_object_from_pool (&list_free_list, (object_t)obj->value);
+            // free_object_from_pool (&obj_free_list, obj);
+          }
         break;
+        FREE_LIST_PRINT (&list_free_list);
       }
     case continuation:
     case mut_string:
       {
         os_free ((void *)obj->value);
+        if (gc_final)
+          {
+            free_object_from_pool (&obj_free_list, obj);
+          }
+        FREE_LIST_PRINT (&obj_free_list);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_list, obj->value);
+        if (gc_final)
+          {
+            free_object_from_pool (&closure_free_list, obj->value);
+            // free_object_from_pool (&obj_free_list, obj);
+          }
+        FREE_LIST_PRINT (&closure_free_list);
         break;
       }
     default:
@@ -274,7 +300,10 @@ void free_object (object_t obj)
       }
     }
 
-  free_object_from_pool (&obj_free_list, obj);
+  if (gc_final)
+    {
+      free_object_from_pool (&obj_free_list, obj);
+    }
 }
 
 void free_inner_object (otype_t type, void *value)
@@ -295,7 +324,10 @@ void free_inner_object (otype_t type, void *value)
       {
         free_object ((object_t) ((pair_t)value)->car);
         free_object ((object_t) ((pair_t)value)->cdr);
-        free_object_from_pool (&pair_free_list, value);
+        if (gc_final)
+          {
+            free_object_from_pool (&pair_free_list, value);
+          }
         break;
       }
     case list:
@@ -305,7 +337,10 @@ void free_inner_object (otype_t type, void *value)
 
         if (SLIST_EMPTY (head))
           {
-            free_object_from_pool (&list_free_list, value);
+            if (gc_final)
+              {
+                free_object_from_pool (&list_free_list, value);
+              }
             break;
           }
 
@@ -321,13 +356,19 @@ void free_inner_object (otype_t type, void *value)
             node = SLIST_FIRST (head);
           }
 
-        free_object_from_pool (&list_free_list, (object_t)value);
+        if (gc_final)
+          {
+            free_object_from_pool (&list_free_list, (object_t)value);
+          }
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_list, value);
+        if (gc_final)
+          {
+            free_object_from_pool (&closure_free_list, value);
+          }
         break;
       }
     default:
@@ -916,6 +957,14 @@ void gc_clean_cache (void)
   collect_inner (&cnt, &vector_free_list, vector, false, true);
   collect_inner (&cnt, &pair_free_list, pair, false, true);
   collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
+
+  gc_final = 1;
+
+  collect_inner (&cnt, &list_free_list, list, false, true);
+  collect_inner (&cnt, &vector_free_list, vector, false, true);
+  collect_inner (&cnt, &pair_free_list, pair, false, true);
+  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
+
   collect (&cnt, &obj_free_list, false, true);
 }
 
