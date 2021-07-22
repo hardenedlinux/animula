@@ -172,6 +172,22 @@ void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
+  obj_list_t node = NULL;
+  bool node_exist = false;
+  SLIST_FOREACH (node, &list_free_list, next)
+  {
+    if (node->obj == obj)
+      {
+        node_exist = true;
+        break;
+      }
+  }
+
+  if (!node_exist)
+    {
+      return;
+    }
+
   if (0xDEADBEEF == (uintptr_t)obj)
     {
       printf ("active_root_insert: oh a half list node!\n");
