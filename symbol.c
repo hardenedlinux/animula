@@ -124,3 +124,8 @@ bool symbol_eq (object_t a, object_t b)
 {
   return a->value == b->value;
 }
+
+Object prim_symbol_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, symbol);
+}

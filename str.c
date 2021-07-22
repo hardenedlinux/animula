@@ -89,3 +89,21 @@ object_t _list_to_string (vm_t vm, object_t ret, object_t lst)
 
   return ret;
 }
+
+Object prim_string_p (object_t obj)
+{
+  int type = obj->attr.type;
+  return (((string == type) || (mut_string == type))
+            ? GLOBAL_REF (true_const)
+            : GLOBAL_REF (false_const));
+}
+
+Object prim_char_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, character);
+}
+
+Object prim_keyword_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, keyword);
+}

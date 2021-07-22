@@ -1025,61 +1025,6 @@ static object_t _os_usleep (vm_t vm, object_t ret, object_t us)
   return ret;
 }
 
-static object_t prim_is_null (vm_t vm, object_t ret, object_t l)
-{
-  if (list == l->attr.type)
-    {
-      list_t lst = (list_t)l->value;
-      obj_list_head_t *head = LIST_OBJECT_HEAD (l);
-      obj_list_t node = SLIST_FIRST (head);
-      if (node)
-        {
-          *ret = GLOBAL_REF (false_const);
-        }
-      else
-        {
-          *ret = GLOBAL_REF (true_const);
-        }
-    }
-  else if (null_obj == l->attr.type)
-    {
-      *ret = GLOBAL_REF (true_const);
-    }
-  else
-    {
-      *ret = GLOBAL_REF (false_const);
-    }
-  return ret;
-}
-
-static object_t prim_is_pair (vm_t vm, object_t ret, object_t l)
-{
-  if (list == l->attr.type)
-    {
-      // if (eq l '()) return #f
-      list_t lst = (list_t)l->value;
-      obj_list_head_t *head = LIST_OBJECT_HEAD (l);
-      obj_list_t node = SLIST_FIRST (head);
-      if (node)
-        {
-          *ret = GLOBAL_REF (true_const);
-        }
-      else
-        {
-          *ret = GLOBAL_REF (false_const);
-        }
-    }
-  else if (pair == l->attr.type)
-    {
-      *ret = GLOBAL_REF (true_const);
-    }
-  else
-    {
-      *ret = GLOBAL_REF (false_const);
-    }
-  return ret;
-}
-
 #ifdef LAMBDACHIP_ZEPHYR
 
 extern GLOBAL_DEF (super_device, super_dev_led0);
@@ -1744,6 +1689,111 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
 
 #endif /* LAMBDACHIP_LINUX */
 
+static Object prim_procedure_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, procedure);
+}
+
+static Object prim_primitive_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, primitive);
+}
+
+static Object prim_boolean_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, boolean);
+}
+
+static Object prim_number_p (object_t obj)
+{
+  bool ret = false;
+
+  switch (obj->attr.type)
+    {
+    case imm_int:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case complex_exact:
+    case complex_inexact:
+      {
+        ret = true;
+        break;
+      }
+    default:
+      {
+        ret = false;
+      }
+    }
+
+  return (ret ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const));
+}
+
+static Object prim_integer_p (object_t obj)
+{
+  bool ret = false;
+
+  switch (obj->attr.type)
+    {
+    case imm_int:
+      {
+        ret = true;
+        break;
+      }
+    case real:
+      {
+        s32_t v = (s32_t)obj->value;
+        real_t r;
+        r.v = (uintptr_t)obj->value;
+        ret = (v == r.f);
+        break;
+      }
+    default:
+      {
+        ret = false;
+      }
+    }
+
+  return (ret ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const));
+}
+
+static Object prim_real_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, real);
+}
+
+static Object prim_rational_p (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case rational_pos:
+    case rational_neg:
+      {
+        return GLOBAL_REF (true_const);
+      }
+    default:
+      {
+        return GLOBAL_REF (false_const);
+      }
+    }
+}
+
+static Object prim_complex_p (object_t obj)
+{
+  switch (obj->attr.type)
+    {
+    case complex_exact:
+    case complex_inexact:
+      {
+        return GLOBAL_REF (true_const);
+      }
+    default:
+      {
+        return GLOBAL_REF (false_const);
+      }
+    }
+}
+
 void primitives_init (void)
 {
   /* NOTE: If fn is NULL, then it's inlined to call_prim
@@ -1791,14 +1841,34 @@ void primitives_init (void)
   def_prim (37, "list_to_string", 1, (void *)_list_to_string);
   def_prim (38, "i2c_read_byte", 3, (void *)_os_i2c_read_byte);
   def_prim (39, "i2c_write_byte", 4, (void *)_os_i2c_write_byte);
-  def_prim (40, "null?", 1, (void *)prim_is_null);
-  def_prim (41, "pair?", 1, (void *)prim_is_pair);
+  def_prim (40, "null?", 1, (void *)prim_null_p);
+  def_prim (41, "pair?", 1, (void *)prim_pair_p);
   def_prim (42, "spi_transceive", 4, (void *)_os_spi_transceive);
   def_prim (43, "i2c_read_list", 3, (void *)_os_i2c_read_list);
   def_prim (44, "i2c_write_list", 3, (void *)_os_i2c_write_list);
   def_prim (45, "with-exception-handler", 2, NULL);
   def_prim (46, "scm_raise", 1, NULL);
   def_prim (47, "scm_raise_continuable", 1, NULL);
+  def_prim (48, "scm_error", 1, NULL);
+  def_prim (49, "error-object?", 1, NULL);
+  def_prim (50, "error-object-message", 1, NULL);
+  def_prim (51, "error-object-irritants", 1, NULL);
+  def_prim (52, "read-error", 1, NULL);
+  def_prim (53, "file-error?", 1, NULL);
+  def_prim (54, "dynamic-wind", 3, NULL);
+  def_prim (55, "list?", 1, prim_list_p);
+  def_prim (56, "string?", 1, prim_string_p);
+  def_prim (57, "char?", 1, prim_char_p);
+  def_prim (58, "keyword?", 1, prim_keyword_p);
+  def_prim (59, "symbol?", 1, prim_symbol_p);
+  def_prim (60, "procedure?", 1, prim_procedure_p);
+  def_prim (61, "primitive?", 1, prim_primitive_p);
+  def_prim (62, "boolean?", 1, prim_boolean_p);
+  def_prim (63, "number?", 1, prim_number_p);
+  def_prim (64, "integer?", 1, prim_integer_p);
+  def_prim (65, "real?", 1, prim_real_p);
+  def_prim (66, "rational?", 1, prim_rational_p);
+  def_prim (67, "complex?", 1, prim_complex_p);
 
   // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
 

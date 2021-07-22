@@ -116,18 +116,6 @@ object_t _cons (vm_t vm, object_t ret, object_t a, object_t b)
   return ret;
 }
 
-bool _is_pair (object_t obj)
-{
-  switch (obj->attr.type)
-    {
-    case list:
-    case pair:
-      return true;
-    default:
-      return false;
-    }
-}
-
 object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
 {
   VALIDATE (lst, list);
@@ -323,4 +311,73 @@ void _list_sort_obj_ascending (obj_list_head_t head)
           break;
         }
     }
+}
+
+Object prim_pair_p (object_t obj)
+{
+  bool ret = false;
+
+  switch (obj->attr.type)
+    {
+    case list:
+      {
+        if (SLIST_EMPTY (LIST_OBJECT_HEAD (obj)))
+          {
+            ret = false;
+          }
+        else
+          {
+            ret = true;
+          }
+        break;
+      }
+    case pair:
+      {
+        ret = true;
+        break;
+      }
+    default:
+      {
+        ret = false;
+      }
+    }
+
+  return (ret ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const));
+}
+
+Object prim_null_p (object_t obj)
+{
+  bool ret = false;
+
+  switch (obj->attr.type)
+    {
+    case list:
+      {
+        if (SLIST_EMPTY (LIST_OBJECT_HEAD (obj)))
+          {
+            ret = true;
+          }
+        else
+          {
+            ret = false;
+          }
+        break;
+      }
+    case null_obj:
+      {
+        ret = true;
+        break;
+      }
+    default:
+      {
+        ret = false;
+      }
+    }
+
+  return (ret ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const));
+}
+
+Object prim_list_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, list);
 }

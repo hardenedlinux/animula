@@ -28,8 +28,8 @@
 #include "types.h"
 #include "vector.h"
 
-#define PRIM_NAME_SIZE 50
-#define PRIM_MAX       64
+#define PRIM_NAME_SIZE 32
+#define PRIM_MAX       70
 #define BOARD_ID_LEN   25
 
 // NOTE: assign is not a primitive
@@ -84,8 +84,24 @@ typedef enum prim_num
   with_exception_handler = 45,
   scm_raise = 46,
   scm_raise_continuable = 47,
+  is_list = 55,
+  is_string = 56,
+  is_char = 57,
+  is_keyword = 58,
+  is_symbol = 59,
+  is_procedure = 60,
+  is_primitive = 61,
+  is_boolean = 62,
+  is_number = 63,
+  is_integer = 64,
+  is_real = 65,
+  is_complex = 66,
+  is_rational = 67,
+  is_exact = 68,
+  is_inexact = 69,
 
-  do_not_forget_modify_PRIM_MAX = 63
+  do_not_forget_modify_PRIM_MAX = 70
+
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \
@@ -110,6 +126,8 @@ typedef object_t (*func_2_args_t) (vm_t, object_t, object_t);
 typedef object_t (*func_3_args_t) (vm_t, object_t, object_t, object_t);
 typedef object_t (*func_4_args_t) (vm_t, object_t, object_t, object_t,
                                    object_t);
+
+typedef Object (*pred_t) (object_t);
 
 typedef struct Primitive
 {

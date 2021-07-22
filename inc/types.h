@@ -86,6 +86,10 @@ typedef enum obj_type
   none = 63,
 } otype_t;
 
+#define CHECK_OBJECT_TYPE(o, t)                      \
+  (((t) == (o)->attr.type) ? GLOBAL_REF (true_const) \
+                           : GLOBAL_REF (false_const));
+
 #if defined ADDRESS_64
 typedef s64_t imm_int_t;
 // hov stands for half-of-value

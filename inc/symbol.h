@@ -47,5 +47,6 @@ Object symbol_to_string (object_t str);
 void create_symbol_table (symtab_t st);
 void clean_symbol_table (void);
 bool symbol_eq (object_t a, object_t b);
+Object prim_symbol_p (object_t obj);
 
 #endif // End of __LAMBDACHIP_SYMBOL_H__

@@ -347,8 +347,6 @@ void call_prim (vm_t vm, pn_t pn)
     case list_to_string:
     case car:
     case cdr:
-    case is_null:
-    case is_pair:
       {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o = POP_OBJ ();
@@ -427,6 +425,27 @@ void call_prim (vm_t vm, pn_t pn)
           }
 
         RESTORE ();
+        break;
+      }
+    case is_null:
+    case is_pair:
+    case is_list:
+    case is_string:
+    case is_char:
+    case is_keyword:
+    case is_symbol:
+    case is_procedure:
+    case is_primitive:
+    case is_boolean:
+    case is_number:
+    case is_integer:
+    case is_real:
+    case is_rational:
+    case is_complex:
+      {
+        Object o = POP_OBJ ();
+        pred_t fn = (pred_t)prim->fn;
+        PUSH_OBJ (fn (&o));
         break;
       }
     default:

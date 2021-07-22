@@ -27,5 +27,8 @@ object_t _read_char (vm_t vm, object_t ret);
 object_t _read_str (vm_t vm, object_t ret, object_t cnt);
 object_t _read_line (vm_t vm, object_t ret);
 object_t _list_to_string (vm_t vm, object_t ret, object_t lst);
+Object prim_string_p (object_t obj);
+Object prim_char_p (object_t obj);
+Object prim_keyword_p (object_t obj);
 
 #endif // End of __LAMBDACHIP_STRING_H__
