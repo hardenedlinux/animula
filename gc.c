@@ -223,11 +223,6 @@ void free_object (object_t obj)
         // simple object, we don't need to free its value
         // no need to free string
         // symbol should never be recycled
-        if (gc_final)
-          {
-            free_object_from_pool (&obj_free_list, obj);
-          }
-        FREE_LIST_PRINT (&obj_free_list);
         break;
       }
     case pair:
@@ -235,12 +230,7 @@ void free_object (object_t obj)
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
 
-        if (gc_final)
-          {
-            free_object_from_pool (&pair_free_list, obj->value);
-            // free_object_from_pool (&obj_free_list, obj);
-          }
-        FREE_LIST_PRINT (&pair_free_list);
+        free_object_from_pool (&pair_free_list, obj->value);
         break;
       }
     case list:
@@ -263,35 +253,20 @@ void free_object (object_t obj)
               }
           }
 
-        // obj->value is the node of list
-        if (gc_final)
-          {
-            free_object_from_pool (&list_free_list, (object_t)obj->value);
-            // free_object_from_pool (&obj_free_list, obj);
-          }
+        free_object_from_pool (&list_free_list, (object_t)obj->value);
         break;
-        FREE_LIST_PRINT (&list_free_list);
       }
     case continuation:
     case mut_string:
       {
         os_free ((void *)obj->value);
-        if (gc_final)
-          {
-            free_object_from_pool (&obj_free_list, obj);
-          }
-        FREE_LIST_PRINT (&obj_free_list);
+        free_object_from_pool (&obj_free_list, obj);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        if (gc_final)
-          {
-            free_object_from_pool (&closure_free_list, obj->value);
-            // free_object_from_pool (&obj_free_list, obj);
-          }
-        FREE_LIST_PRINT (&closure_free_list);
+        free_object_from_pool (&closure_free_list, obj->value);
         break;
       }
     default:
@@ -300,10 +275,7 @@ void free_object (object_t obj)
       }
     }
 
-  if (gc_final)
-    {
-      free_object_from_pool (&obj_free_list, obj);
-    }
+  free_object_from_pool (&obj_free_list, obj);
 }
 
 void free_inner_object (otype_t type, void *value)
@@ -756,6 +728,7 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.
    */
+  FREE_LIST_PRINT (head);
 
   SLIST_FOREACH (node, head, next)
   {
@@ -831,6 +804,7 @@ bool gc (const gc_info_t gci)
    *    b. if no collectable obj, then goto 3
    * 3. Free obj pool
    */
+  // usleep (10000);
 
 #ifdef LAMBDACHIP_LINUX
   const long long TICKS_PER_SECOND = 1000000L;
@@ -859,6 +833,9 @@ bool gc (const gc_info_t gci)
 
   size_t count = 0;
   size_t cnt = 0;
+
+  gc_final = 0;
+
   printf ("list before: %d\n", count_me (&list_free_list));
   printf ("vector before: %d\n", count_me (&vector_free_list));
   printf ("pair before: %d\n", count_me (&pair_free_list));
@@ -882,6 +859,8 @@ bool gc (const gc_info_t gci)
           count_me (&pair_free_list));
   count += cnt;
   cnt = 0;
+  collect_inner (&cnt, &vector_free_list, vector, false, false);
+
   collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
   printf ("closure done, count: %d, remain: %d\n", cnt,
           count_me (&closure_free_list));
@@ -898,6 +877,15 @@ bool gc (const gc_info_t gci)
 #elif defined(LAMBDACHIP_ZEPHYR)
   uint32_t t2 = k_cycle_get_32 ();
 #endif
+  gc_final = 1;
+
+  collect_inner (&cnt, &list_free_list, list, false, false);
+  collect_inner (&cnt, &vector_free_list, vector, false, false);
+  collect_inner (&cnt, &pair_free_list, pair, false, false);
+  collect_inner (&cnt, &vector_free_list, vector, false, false);
+  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
+
+  collect (&cnt, &obj_free_list, false, false);
 
   if (0 == count && gci->hurt)
     {
@@ -910,10 +898,22 @@ bool gc (const gc_info_t gci)
                Do we have better approach to avoid big hurt?
                Or do we really need hurt collect in embedded system?
       */
+      gc_final = 0;
+
       collect_inner (&count, &list_free_list, list, true, false);
       collect_inner (&count, &vector_free_list, vector, true, false);
       collect_inner (&count, &pair_free_list, pair, true, false);
+      collect_inner (&cnt, &vector_free_list, vector, false, false);
       collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
+
+      gc_final = 1;
+
+      collect_inner (&count, &list_free_list, list, true, false);
+      collect_inner (&count, &vector_free_list, vector, true, false);
+      collect_inner (&count, &pair_free_list, pair, true, false);
+      collect_inner (&cnt, &vector_free_list, vector, false, false);
+      collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
+
       collect (&count, &obj_free_list, true, false);
     }
 
@@ -947,6 +947,19 @@ bool gc (const gc_info_t gci)
 
   printf ("oln: %d, arn: %d\n", _oln.index, _arn.index);
 
+  os_printk ("pair_free_list");
+  FREE_LIST_PRINT (&pair_free_list);
+  os_printk ("list_free_list");
+  FREE_LIST_PRINT (&list_free_list);
+  os_printk ("obj_free_list");
+  FREE_LIST_PRINT (&obj_free_list);
+  os_printk ("closure_free_list");
+  FREE_LIST_PRINT (&closure_free_list);
+  os_printk ("vector_free_list");
+  FREE_LIST_PRINT (&vector_free_list);
+  os_printk ("obj_free_list");
+  FREE_LIST_PRINT (&obj_free_list);
+
   return true;
 }
 
@@ -966,6 +979,19 @@ void gc_clean_cache (void)
   collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
 
   collect (&cnt, &obj_free_list, false, true);
+
+  os_printk ("pair_free_list");
+  FREE_LIST_PRINT (&pair_free_list);
+  os_printk ("list_free_list");
+  FREE_LIST_PRINT (&list_free_list);
+  os_printk ("obj_free_list");
+  FREE_LIST_PRINT (&obj_free_list);
+  os_printk ("closure_free_list");
+  FREE_LIST_PRINT (&closure_free_list);
+  os_printk ("vector_free_list");
+  FREE_LIST_PRINT (&vector_free_list);
+  os_printk ("obj_free_list");
+  FREE_LIST_PRINT (&obj_free_list);
 }
 
 void gc_obj_book (void *obj)
@@ -1182,6 +1208,11 @@ void gc_clean (void)
 // remove first find object in LIST head
 static void free_object_from_pool (obj_list_head_t *head, object_t o)
 {
+  if (!gc_final)
+    {
+      return;
+    }
+
   obj_list_t node = NULL;
   SLIST_FOREACH (node, (head), next)
   {

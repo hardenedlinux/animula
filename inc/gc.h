@@ -186,12 +186,12 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   do                                                        \
     {                                                       \
       obj_list_t node = NULL;                               \
-      os_printk ("--------------------------\n");           \
+      os_printk ("^^^^^^^^^^^^^^^^^^^^^^^^^^\n");           \
       SLIST_FOREACH (node, (head), next)                    \
       {                                                     \
         os_printk ("node: %p, obj: %p\n", node, node->obj); \
       }                                                     \
-      os_printk ("--------------------------\n");           \
+      os_printk ("vvvvvvvvvvvvvvvvvvvvvvvvvv\n");           \
     }                                                       \
   while (0)
 
