@@ -90,6 +90,11 @@ void create_symbol_table (symtab_t st)
 
   GLOBAL_SET (symbol_table.cnt, st->cnt);
 
+  if (!start)
+    {
+      return;
+    }
+
   uint8_t *p = os_malloc (start);
   if (p)
     {
