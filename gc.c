@@ -296,10 +296,7 @@ void free_inner_object (otype_t type, void *value)
       {
         free_object ((object_t) ((pair_t)value)->car);
         free_object ((object_t) ((pair_t)value)->cdr);
-        if (gc_final)
-          {
-            free_object_from_pool (&pair_free_list, value);
-          }
+        free_object_from_pool (&pair_free_list, value);
         break;
       }
     case list:
@@ -309,10 +306,7 @@ void free_inner_object (otype_t type, void *value)
 
         if (SLIST_EMPTY (head))
           {
-            if (gc_final)
-              {
-                free_object_from_pool (&list_free_list, value);
-              }
+            free_object_from_pool (&list_free_list, value);
             break;
           }
 
@@ -328,19 +322,13 @@ void free_inner_object (otype_t type, void *value)
             node = SLIST_FIRST (head);
           }
 
-        if (gc_final)
-          {
-            free_object_from_pool (&list_free_list, (object_t)value);
-          }
+        free_object_from_pool (&list_free_list, (object_t)value);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        if (gc_final)
-          {
-            free_object_from_pool (&closure_free_list, value);
-          }
+        free_object_from_pool (&closure_free_list, value);
         break;
       }
     default:
@@ -804,7 +792,7 @@ bool gc (const gc_info_t gci)
    *    b. if no collectable obj, then goto 3
    * 3. Free obj pool
    */
-  // usleep (10000);
+  usleep (10000);
 
 #ifdef LAMBDACHIP_LINUX
   const long long TICKS_PER_SECOND = 1000000L;
@@ -860,13 +848,11 @@ bool gc (const gc_info_t gci)
   count += cnt;
   cnt = 0;
   collect_inner (&cnt, &vector_free_list, vector, false, false);
-
-  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
   printf ("closure done, count: %d, remain: %d\n", cnt,
           count_me (&closure_free_list));
   count += cnt;
   cnt = 0;
-  collect (&cnt, &obj_free_list, false, false);
+  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
   printf ("obj done, count: %d, remain: %d\n", cnt, count_me (&obj_free_list));
   count += cnt;
   cnt = 0;
@@ -880,12 +866,25 @@ bool gc (const gc_info_t gci)
   gc_final = 1;
 
   collect_inner (&cnt, &list_free_list, list, false, false);
+  printf ("list done, count: %d, remain: %d\n", cnt,
+          count_me (&list_free_list));
+
   collect_inner (&cnt, &vector_free_list, vector, false, false);
+  printf ("vector done, count: %d, remain: %d\n", cnt,
+          count_me (&vector_free_list));
+
   collect_inner (&cnt, &pair_free_list, pair, false, false);
+  printf ("pair done, count: %d, remain: %d\n", cnt,
+          count_me (&pair_free_list));
+
   collect_inner (&cnt, &vector_free_list, vector, false, false);
+  printf ("closure done, count: %d, remain: %d\n", cnt,
+          count_me (&closure_free_list));
+
   collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
 
   collect (&cnt, &obj_free_list, false, false);
+  printf ("obj done, count: %d, remain: %d\n", cnt, count_me (&obj_free_list));
 
   if (0 == count && gci->hurt)
     {
@@ -1219,7 +1218,8 @@ static void free_object_from_pool (obj_list_head_t *head, object_t o)
     if (node->obj == (o))
       {
         os_free (node->obj);
-        node->obj = NULL;
+        node->obj = (void *)0xBEAFDEAD;
+        // node->obj = NULL;
         SLIST_REMOVE (head, node, ObjectList, next);
         obj_list_node_recycle (node);
         break;

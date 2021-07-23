@@ -155,9 +155,17 @@ void *os_calloc (size_t n, size_t size)
   return ptr;
 }
 
+void print_ptr (object_t p)
+{
+  os_printk ("ptr = %p, attr.gc = %d, attr.type = %d, value = 0x%02X\n", p,
+             p->attr.gc, p->attr.type, (uintptr_t)p->value);
+}
+
 void os_free (void *ptr)
 {
   printf ("%s: ptr = %p\n", __FUNCTION__, ptr);
+  print_ptr ((object_t)ptr);
+  // printf ("%s: ptr = %p\n", __FUNCTION__, ptr);
   if (NULL != ptr)
     __free (ptr);
   else

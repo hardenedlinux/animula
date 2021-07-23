@@ -567,6 +567,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-list-object %d)\n", size);
         list_t l = NEW_INNER_OBJ (list);
+        os_printk ("lambdachip_new_list, list_t = %p\n", l);
         SLIST_INIT (&l->list);
         l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
         obj->attr.type = list;
