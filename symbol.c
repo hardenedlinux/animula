@@ -108,6 +108,11 @@ void clean_symbol_table (void)
   SymbolNode *node = NULL;
   SymbolNode *prev = NULL;
 
+  if (RB_EMPTY (&SymbolInternTableHead))
+    {
+      return;
+    }
+
   RB_FOREACH (node, SymbolInternTable, &SymbolInternTableHead)
   {
     if (prev)
