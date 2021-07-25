@@ -52,23 +52,23 @@
     ret;                                \
   })
 
-#define NEW_OBJ(t)                       \
-  ({                                     \
-    object_t obj = NULL;                 \
-    do                                   \
-      {                                  \
-        if (0 == oln_available ())       \
-          {                              \
-            GC ();                       \
-            continue;                    \
-          }                              \
-        obj = lambdachip_new_object (t); \
-        if (obj)                         \
-          break;                         \
-        GC ();                           \
-      }                                  \
-    while (1);                           \
-    obj;                                 \
+#define NEW_OBJ(t)                              \
+  ({                                            \
+    object_t obj = NULL;                        \
+    do                                          \
+      {                                         \
+        if (0 == object_list_node_available ()) \
+          {                                     \
+            GC ();                              \
+            continue;                           \
+          }                                     \
+        obj = lambdachip_new_object (t);        \
+        if (obj)                                \
+          break;                                \
+        GC ();                                  \
+      }                                         \
+    while (1);                                  \
+    obj;                                        \
   })
 
 #define NEW_LIST_NODE()                   \
@@ -87,26 +87,26 @@
     ol;                                   \
   })
 
-#define NEW_INNER_OBJ(t)              \
-  ({                                  \
-    t##_t x = NULL;                   \
-    do                                \
-      {                               \
-        if (0 == oln_available ())    \
-          {                           \
-            GC ();                    \
-            continue;                 \
-          }                           \
-        x = lambdachip_new_##t ();    \
-        if (x)                        \
-          {                           \
-            gc_inner_obj_book (t, x); \
-            break;                    \
-          }                           \
-        GC ();                        \
-      }                               \
-    while (1);                        \
-    x;                                \
+#define NEW_INNER_OBJ(t)                        \
+  ({                                            \
+    t##_t x = NULL;                             \
+    do                                          \
+      {                                         \
+        if (0 == object_list_node_available ()) \
+          {                                     \
+            GC ();                              \
+            continue;                           \
+          }                                     \
+        x = lambdachip_new_##t ();              \
+        if (x)                                  \
+          {                                     \
+            gc_inner_obj_book (t, x);           \
+            break;                              \
+          }                                     \
+        GC ();                                  \
+      }                                         \
+    while (1);                                  \
+    x;                                          \
   })
 
 typedef struct ActiveRoot ActiveRoot;
@@ -195,7 +195,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                                       \
   while (0)
 
-static void obj_list_node_recycle (obj_list_t node);
+static void object_list_node_recycle (obj_list_t node);
 static void free_object_from_pool (obj_list_head_t *head, object_t o);
 void free_object (object_t obj);
 void gc_init (void);
@@ -206,7 +206,7 @@ void gc_inner_obj_book (otype_t t, void *obj);
 void gc_obj_book (void *obj);
 void gc_try_to_recycle (void);
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp);
-size_t oln_available (void);
-obj_list_t oln_alloc (void);
+size_t object_list_node_available (void);
+obj_list_t object_list_node_alloc (void);
 void gc_clean (void);
 #endif // End of __LAMBDACHIP_GC_H__

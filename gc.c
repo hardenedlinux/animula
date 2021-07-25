@@ -81,7 +81,7 @@ static ActiveRootNode *arn_alloc (void)
   return _arn.arn[_arn.index++];
 }
 
-static void pre_allocate_obj_list_nodes (void)
+static void pre_allocate_object_list_node (void)
 {
   int i = 0;
   for (; i < PRE_OLN; i++)
@@ -100,7 +100,7 @@ static void pre_allocate_obj_list_nodes (void)
             PRE_OLN * sizeof (ObjectList));
 }
 
-obj_list_t oln_alloc (void)
+obj_list_t object_list_node_alloc (void)
 {
   obj_list_t ret = NULL;
 
@@ -120,12 +120,12 @@ obj_list_t oln_alloc (void)
 }
 
 // put obj_list_t back into OLN for future use
-static void obj_list_node_recycle (obj_list_t node)
+static void object_list_node_recycle (obj_list_t node)
 {
   _oln.oln[--_oln.index] = node;
 }
 
-size_t oln_available (void)
+size_t object_list_node_available (void)
 {
   return (PRE_OLN - _oln.index);
 }
@@ -142,7 +142,7 @@ static void active_nodes_clean (void)
   VM_DEBUG ("ARN clean!\n");
 }
 
-static void obj_list_nodes_clean (void)
+static void object_list_node_clean (void)
 {
   bool freed = false;
   for (int i = 0; i < PRE_OLN; i++)
@@ -1016,7 +1016,7 @@ void gc_obj_book (void *obj)
 {
   obj_list_t node = NULL;
 
-  node = oln_alloc ();
+  node = object_list_node_alloc ();
   if (!node)
     {
       PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
@@ -1028,7 +1028,7 @@ void gc_obj_book (void *obj)
 void gc_inner_obj_book (otype_t t, void *obj)
 {
   obj_list_t node = NULL;
-  node = oln_alloc ();
+  node = object_list_node_alloc ();
   if (!node)
     {
       PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
@@ -1208,7 +1208,7 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
 void gc_init (void)
 {
   pre_allocate_active_nodes ();
-  pre_allocate_obj_list_nodes ();
+  pre_allocate_object_list_node ();
 
   SLIST_INIT (&obj_free_list);
   SLIST_INIT (&list_free_list);
@@ -1220,7 +1220,7 @@ void gc_init (void)
 void gc_clean (void)
 {
   active_nodes_clean ();
-  obj_list_nodes_clean ();
+  object_list_node_clean ();
 }
 
 // remove first find object in LIST head
@@ -1240,7 +1240,7 @@ static void free_object_from_pool (obj_list_head_t *head, object_t o)
         node->obj = (void *)0xBEAFDEAD;
         // node->obj = NULL;
         SLIST_REMOVE (head, node, ObjectList, next);
-        obj_list_node_recycle (node);
+        object_list_node_recycle (node);
         break;
       }
   }
