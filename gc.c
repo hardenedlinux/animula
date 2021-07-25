@@ -81,7 +81,7 @@ static ActiveRootNode *arn_alloc (void)
   return _arn.arn[_arn.index++];
 }
 
-static void pre_allocate_object_list_node (void)
+static void object_list_node_pre_allocate (void)
 {
   int i = 0;
   for (; i < PRE_OLN; i++)
@@ -104,7 +104,7 @@ obj_list_t object_list_node_alloc (void)
 {
   obj_list_t ret = NULL;
 
-  if (PRE_OLN == _oln.index)
+  if (!object_list_node_available ())
     {
       return NULL;
     }
@@ -1208,7 +1208,7 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
 void gc_init (void)
 {
   pre_allocate_active_nodes ();
-  pre_allocate_object_list_node ();
+  object_list_node_pre_allocate ();
 
   SLIST_INIT (&obj_free_list);
   SLIST_INIT (&list_free_list);
