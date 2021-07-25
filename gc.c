@@ -42,11 +42,11 @@ static RB_HEAD (ActiveRoot, ActiveRootNode)
 
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
-static obj_list_head_t obj_free_list;
-static obj_list_head_t list_free_list;
-static obj_list_head_t vector_free_list;
-static obj_list_head_t pair_free_list;
-static obj_list_head_t closure_free_list;
+static obj_list_head_t obj_free_pool;
+static obj_list_head_t list_free_pool;
+static obj_list_head_t vector_free_pool;
+static obj_list_head_t pair_free_pool;
+static obj_list_head_t closure_free_pool;
 
 static struct Pre_ARN _arn = {0};
 static struct Pre_OLN _oln = {0};
@@ -195,7 +195,7 @@ void free_object (object_t obj)
    */
   // obj_list_t node = NULL;
   // bool node_exist = false;
-  // SLIST_FOREACH (node, &list_free_list, next)
+  // SLIST_FOREACH (node, &list_free_pool, next)
   // {
   //   if (node->obj == obj)
   //     {
@@ -249,7 +249,7 @@ void free_object (object_t obj)
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
 
-        free_object_from_pool (&pair_free_list, obj->value);
+        free_object_from_pool (&pair_free_pool, obj->value);
         break;
       }
     case list:
@@ -272,20 +272,20 @@ void free_object (object_t obj)
               }
           }
 
-        free_object_from_pool (&list_free_list, (object_t)obj->value);
+        free_object_from_pool (&list_free_pool, (object_t)obj->value);
         break;
       }
     case continuation:
     case mut_string:
       {
         os_free ((void *)obj->value);
-        free_object_from_pool (&obj_free_list, obj);
+        free_object_from_pool (&obj_free_pool, obj);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_list, obj->value);
+        free_object_from_pool (&closure_free_pool, obj->value);
         break;
       }
     default:
@@ -294,7 +294,7 @@ void free_object (object_t obj)
       }
     }
 
-  free_object_from_pool (&obj_free_list, obj);
+  free_object_from_pool (&obj_free_pool, obj);
 }
 
 void free_inner_object (otype_t type, void *value)
@@ -315,7 +315,7 @@ void free_inner_object (otype_t type, void *value)
       {
         free_object ((object_t) ((pair_t)value)->car);
         free_object ((object_t) ((pair_t)value)->cdr);
-        free_object_from_pool (&pair_free_list, value);
+        free_object_from_pool (&pair_free_pool, value);
         break;
       }
     case list:
@@ -325,7 +325,7 @@ void free_inner_object (otype_t type, void *value)
 
         if (SLIST_EMPTY (head))
           {
-            free_object_from_pool (&list_free_list, value);
+            free_object_from_pool (&list_free_pool, value);
             break;
           }
 
@@ -341,13 +341,13 @@ void free_inner_object (otype_t type, void *value)
             node = SLIST_FIRST (head);
           }
 
-        free_object_from_pool (&list_free_list, (object_t)value);
+        free_object_from_pool (&list_free_pool, (object_t)value);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_list, value);
+        free_object_from_pool (&closure_free_pool, value);
         break;
       }
     default:
@@ -400,7 +400,7 @@ static void recycle_object (object_t obj)
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_list, obj);
+        free_object_from_pool (&closure_free_pool, obj);
         break;
       }
     default:
@@ -791,15 +791,15 @@ static size_t count_me (obj_list_head_t *head)
 /* static void sweep () */
 /* { */
 /*   printf ("obj\n"); */
-/*   FREE_OBJECTS (&obj_free_list); */
+/*   FREE_OBJECTS (&obj_free_pool); */
 /*   printf ("list\n"); */
-/*   FREE_OBJECTS (&list_free_list); */
+/*   FREE_OBJECTS (&list_free_pool); */
 /*   printf ("vector\n"); */
-/*   FREE_OBJECTS (&vector_free_list); */
+/*   FREE_OBJECTS (&vector_free_pool); */
 /*   printf ("pair\n"); */
-/*   FREE_OBJECTS (&pair_free_list); */
+/*   FREE_OBJECTS (&pair_free_pool); */
 /*   printf ("closure\n"); */
-/*   FREE_OBJECTS (&closure_free_list); */
+/*   FREE_OBJECTS (&closure_free_pool); */
 /* } */
 
 bool gc (const gc_info_t gci)
@@ -843,35 +843,35 @@ bool gc (const gc_info_t gci)
 
   gc_final = 0;
 
-  printf ("list before: %d\n", count_me (&list_free_list));
-  printf ("pair before: %d\n", count_me (&pair_free_list));
-  printf ("closure before: %d\n", count_me (&closure_free_list));
-  printf ("vector before: %d\n", count_me (&vector_free_list));
-  printf ("obj before: %d\n", count_me (&obj_free_list));
+  printf ("pair before: %d\n", count_me (&pair_free_pool));
+  printf ("vector before: %d\n", count_me (&vector_free_pool));
+  printf ("list before: %d\n", count_me (&list_free_pool));
+  printf ("closure before: %d\n", count_me (&closure_free_pool));
+  printf ("obj before: %d\n", count_me (&obj_free_pool));
   /* printf ("obj\n"); */
-  /* collect (&count, &obj_free_list, false); */
+  /* collect (&count, &obj_free_pool, false); */
   printf ("inner\n");
-  collect_inner (&delta, &list_free_list, list, false, false);
+  collect_inner (&delta, &list_free_pool, list, false, false);
   printf ("list done, count: %d, remain: %d\n", delta,
-          count_me (&list_free_list));
+          count_me (&list_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &pair_free_list, vector, false, false);
+  collect_inner (&delta, &pair_free_pool, vector, false, false);
   printf ("vector done, count: %d, remain: %d\n", delta,
-          count_me (&pair_free_list));
+          count_me (&pair_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &closure_free_list, vector, false, false);
+  collect_inner (&delta, &closure_free_pool, vector, false, false);
   printf ("closure done, count: %d, remain: %d\n", delta,
-          count_me (&closure_free_list));
+          count_me (&closure_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &vector_free_list, closure_on_heap, false, false);
+  collect_inner (&delta, &vector_free_pool, closure_on_heap, false, false);
   printf ("obj done, count: %d, remain: %d\n", delta,
-          count_me (&vector_free_list));
+          count_me (&vector_free_pool));
   count += delta;
   delta = 0;
 
@@ -884,33 +884,33 @@ bool gc (const gc_info_t gci)
 
   gc_final = 1;
 
-  collect_inner (&delta, &list_free_list, list, false, false);
+  collect_inner (&delta, &list_free_pool, list, false, false);
   printf ("list done, count: %d, remain: %d\n", delta,
-          count_me (&list_free_list));
+          count_me (&list_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &pair_free_list, pair, false, false);
+  collect_inner (&delta, &pair_free_pool, pair, false, false);
   printf ("pair done, count: %d, remain: %d\n", delta,
-          count_me (&pair_free_list));
+          count_me (&pair_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &closure_free_list, closure_on_heap, false, false);
+  collect_inner (&delta, &closure_free_pool, closure_on_heap, false, false);
   printf ("closure done, count: %d, remain: %d\n", delta,
-          count_me (&closure_free_list));
+          count_me (&closure_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &vector_free_list, vector, false, false);
+  collect_inner (&delta, &vector_free_pool, vector, false, false);
   printf ("vector done, count: %d, remain: %d\n", delta,
-          count_me (&vector_free_list));
+          count_me (&vector_free_pool));
   count += delta;
   delta = 0;
 
-  collect (&delta, &obj_free_list, false, false);
+  collect (&delta, &obj_free_pool, false, false);
   printf ("obj done, count: %d, remain: %d\n", delta,
-          count_me (&obj_free_list));
+          count_me (&obj_free_pool));
   count += delta;
   delta = 0;
 
@@ -927,18 +927,18 @@ bool gc (const gc_info_t gci)
       */
       gc_final = 0;
 
-      collect_inner (&count, &list_free_list, list, true, false);
-      collect_inner (&count, &pair_free_list, pair, true, false);
-      collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
-      collect_inner (&count, &vector_free_list, vector, true, false);
+      collect_inner (&count, &pair_free_pool, pair, true, false);
+      collect_inner (&count, &vector_free_pool, vector, true, false);
+      collect_inner (&count, &list_free_pool, list, true, false);
+      collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
 
       gc_final = 1;
 
-      collect_inner (&count, &list_free_list, list, true, false);
-      collect_inner (&count, &pair_free_list, pair, true, false);
-      collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
-      collect_inner (&count, &vector_free_list, vector, true, false);
-      collect (&count, &obj_free_list, true, false);
+      collect_inner (&count, &pair_free_pool, pair, true, false);
+      collect_inner (&count, &vector_free_pool, vector, true, false);
+      collect_inner (&count, &list_free_pool, list, true, false);
+      collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
+      collect (&count, &obj_free_pool, true, false);
     }
 
 #ifdef LAMBDACHIP_LINUX
@@ -971,16 +971,16 @@ bool gc (const gc_info_t gci)
 
   printf ("oln: %d, arn: %d\n", _oln.index, _arn.index);
 
-  os_printk ("list_free_list");
-  FREE_LIST_PRINT (&list_free_list);
-  os_printk ("pair_free_list");
-  FREE_LIST_PRINT (&pair_free_list);
-  os_printk ("closure_free_list");
-  FREE_LIST_PRINT (&closure_free_list);
-  os_printk ("vector_free_list");
-  FREE_LIST_PRINT (&vector_free_list);
-  os_printk ("obj_free_list");
-  FREE_LIST_PRINT (&obj_free_list);
+  os_printk ("pair_free_pool");
+  FREE_LIST_PRINT (&pair_free_pool);
+  os_printk ("vector_free_pool");
+  FREE_LIST_PRINT (&vector_free_pool);
+  os_printk ("list_free_pool");
+  FREE_LIST_PRINT (&list_free_pool);
+  os_printk ("closure_free_pool");
+  FREE_LIST_PRINT (&closure_free_pool);
+  os_printk ("obj_free_pool");
+  FREE_LIST_PRINT (&obj_free_pool);
 
   return true;
 }
@@ -988,40 +988,40 @@ bool gc (const gc_info_t gci)
 void gc_clean_cache (void)
 {
   size_t cnt = 0;
-  os_printk ("list_free_list");
-  collect_inner (&cnt, &list_free_list, list, false, true);
-  os_printk ("pair_free_list\n");
-  collect_inner (&cnt, &pair_free_list, pair, false, true);
-  os_printk ("closure_free_list");
-  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
-  os_printk ("vector_free_list");
-  collect_inner (&cnt, &vector_free_list, vector, false, true);
+  os_printk ("pair_free_pool\n");
+  collect_inner (&cnt, &pair_free_pool, pair, false, true);
+  os_printk ("vector_free_pool");
+  collect_inner (&cnt, &vector_free_pool, vector, false, true);
+  os_printk ("list_free_pool");
+  collect_inner (&cnt, &list_free_pool, list, false, true);
+  os_printk ("closure_free_pool");
+  collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
 
   gc_final = 1;
   os_printk ("gc_final = 1 && collect\n");
 
-  os_printk ("list_free_list");
-  collect_inner (&cnt, &list_free_list, list, false, true);
-  os_printk ("pair_free_list\n");
-  collect_inner (&cnt, &pair_free_list, pair, false, true);
-  os_printk ("closure_free_list");
-  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
-  os_printk ("vector_free_list");
-  collect_inner (&cnt, &vector_free_list, vector, false, true);
-  os_printk ("obj_free_list");
-  collect (&cnt, &obj_free_list, false, true);
+  os_printk ("pair_free_pool\n");
+  collect_inner (&cnt, &pair_free_pool, pair, false, true);
+  os_printk ("vector_free_pool");
+  collect_inner (&cnt, &vector_free_pool, vector, false, true);
+  os_printk ("list_free_pool");
+  collect_inner (&cnt, &list_free_pool, list, false, true);
+  os_printk ("closure_free_pool");
+  collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
+  os_printk ("obj_free_pool");
+  collect (&cnt, &obj_free_pool, false, true);
 
   os_printk ("after collect && clean cache\n");
-  os_printk ("list_free_list");
-  FREE_LIST_PRINT (&list_free_list);
-  os_printk ("pair_free_list\n");
-  FREE_LIST_PRINT (&pair_free_list);
-  os_printk ("closure_free_list");
-  FREE_LIST_PRINT (&closure_free_list);
-  os_printk ("vector_free_list");
-  FREE_LIST_PRINT (&vector_free_list);
-  os_printk ("obj_free_list");
-  FREE_LIST_PRINT (&obj_free_list);
+  os_printk ("pair_free_pool\n");
+  FREE_LIST_PRINT (&pair_free_pool);
+  os_printk ("vector_free_pool");
+  FREE_LIST_PRINT (&vector_free_pool);
+  os_printk ("list_free_pool");
+  FREE_LIST_PRINT (&list_free_pool);
+  os_printk ("closure_free_pool");
+  FREE_LIST_PRINT (&closure_free_pool);
+  os_printk ("obj_free_pool");
+  FREE_LIST_PRINT (&obj_free_pool);
 }
 
 void gc_obj_book (void *obj)
@@ -1034,7 +1034,7 @@ void gc_obj_book (void *obj)
       PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
     }
   node->obj = obj;
-  SLIST_INSERT_HEAD (&obj_free_list, node, next);
+  SLIST_INSERT_HEAD (&obj_free_pool, node, next);
 }
 
 void gc_inner_obj_book (otype_t t, void *obj)
@@ -1049,25 +1049,25 @@ void gc_inner_obj_book (otype_t t, void *obj)
 
   switch (t)
     {
-    case list:
-      {
-        SLIST_INSERT_HEAD (&list_free_list, node, next);
-        break;
-      }
     case pair:
       {
-        SLIST_INSERT_HEAD (&pair_free_list, node, next);
+        SLIST_INSERT_HEAD (&pair_free_pool, node, next);
         break;
       }
     case vector:
       {
-        SLIST_INSERT_HEAD (&vector_free_list, node, next);
+        SLIST_INSERT_HEAD (&vector_free_pool, node, next);
+        break;
+      }
+    case list:
+      {
+        SLIST_INSERT_HEAD (&list_free_pool, node, next);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        SLIST_INSERT_HEAD (&closure_free_list, node, next);
+        SLIST_INSERT_HEAD (&closure_free_pool, node, next);
         break;
       }
     default:
@@ -1108,22 +1108,22 @@ void *gc_pool_malloc (otype_t type)
     case primitive:
     case procedure:
       {
-        node = get_free_obj_node (&obj_free_list);
+        node = get_free_obj_node (&obj_free_pool);
         break;
       }
     case list:
       {
-        node = get_free_obj_node (&list_free_list);
+        node = get_free_obj_node (&list_free_pool);
         break;
       }
     case pair:
       {
-        node = get_free_obj_node (&pair_free_list);
+        node = get_free_obj_node (&pair_free_pool);
         break;
       }
     case vector:
       {
-        node = get_free_obj_node (&vector_free_list);
+        node = get_free_obj_node (&vector_free_pool);
         break;
       }
     case closure_on_heap:
@@ -1159,16 +1159,16 @@ void simple_collect (obj_list_head_t *head)
 void gc_try_to_recycle (void)
 {
   /* FIXME: The runtime created globals shouldn't be recycled */
-  simple_collect (&obj_free_list);
-  simple_collect (&list_free_list);
-  simple_collect (&vector_free_list);
-  simple_collect (&pair_free_list);
+  simple_collect (&obj_free_pool);
+  simple_collect (&list_free_pool);
+  simple_collect (&vector_free_pool);
+  simple_collect (&pair_free_pool);
 
   /* NOTE:
    * Closures are not fixed size object, so we have to free it.
    */
   size_t cnt = 0;
-  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
+  collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
 }
 
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
@@ -1205,7 +1205,7 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
           {
             // closures are never recycled, we just free them
             obj->attr.gc = FREE_OBJ;
-            free_object_from_pool (&closure_free_list, obj);
+            free_object_from_pool (&closure_free_pool, obj);
             break;
           }
         default:
@@ -1222,11 +1222,11 @@ void gc_init (void)
   pre_allocate_active_nodes ();
   object_list_node_pre_allocate ();
 
-  SLIST_INIT (&obj_free_list);
-  SLIST_INIT (&list_free_list);
-  SLIST_INIT (&vector_free_list);
-  SLIST_INIT (&pair_free_list);
-  SLIST_INIT (&closure_free_list);
+  SLIST_INIT (&obj_free_pool);
+  SLIST_INIT (&list_free_pool);
+  SLIST_INIT (&vector_free_pool);
+  SLIST_INIT (&pair_free_pool);
+  SLIST_INIT (&closure_free_pool);
 }
 
 void gc_clean (void)
