@@ -165,11 +165,13 @@ void os_free (void *ptr)
 {
   printf ("%s: ", __FUNCTION__);
   print_ptr ((object_t)ptr);
-  // printf ("%s: ptr = %p\n", __FUNCTION__, ptr);
+  // According to Linux library call, if ptr is NULL, no operation is performed.
+  // NULL ptr checking shall not be in this level
+  // Make it more strict to prevent future bug.
   if (NULL != ptr)
     __free (ptr);
   else
-    return;
+    PANIC ("Free a NULL ptr");
 
   size_t i = 0;
   for (; i < MEMORY_TRACKER_SIZE; i++)
