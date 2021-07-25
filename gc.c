@@ -86,12 +86,15 @@ static void object_list_node_pre_allocate (void)
   int i = 0;
   for (; i < PRE_OLN; i++)
     {
-      _oln.oln[i] = (obj_list_t)os_malloc (sizeof (ObjectList));
-
-      if (NULL == _oln.oln[i])
+      obj_list_t ptr = (obj_list_t)os_malloc (sizeof (ObjectList));
+      if (NULL == ptr)
         {
           PANIC ("GC: We're doomed! Did you set a too large PRE_OLN?"
                  "Try to set PRE_OLN smaller!");
+        }
+      else
+        {
+          _oln.oln[i] = ptr;
         }
     }
 
@@ -110,6 +113,7 @@ obj_list_t object_list_node_alloc (void)
     }
 
   ret = _oln.oln[_oln.index];
+  _oln.oln[_oln.index] = NULL;
   if (NULL == ret)
     {
       os_printk ("BUG: there's no obj_list node, but cnt is %d\n", _oln.index);
@@ -144,18 +148,24 @@ static void active_nodes_clean (void)
 
 static void object_list_node_clean (void)
 {
-  bool freed = false;
+  printf ("_oln.index = %d\n", _oln.index);
   for (int i = 0; i < PRE_OLN; i++)
     {
-      os_free (_oln.oln[i]);
-      freed = true;
+      printf ("i = %d, ", i);
+      void *ptr = _oln.oln[i];
+      if (NULL != ptr)
+        {
+          os_free (ptr);
+          _oln.oln[i] = NULL;
+        }
+      else
+        {
+          printf ("NULL, \n");
+        }
     }
 
-  if (freed)
-    {
-      _oln.index = 0;
-    }
-  os_printk ("PLN clean done!\n");
+  _oln.index = 0;
+  os_printk ("OLN clean done!\n");
   VM_DEBUG ("OLN clean!\n");
 }
 
