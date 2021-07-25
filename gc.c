@@ -138,17 +138,24 @@ static void active_nodes_clean (void)
     }
 
   _arn.index = 0;
+  os_printk ("ARN clean done!\n");
   VM_DEBUG ("ARN clean!\n");
 }
 
 static void obj_list_nodes_clean (void)
 {
+  bool freed = false;
   for (int i = 0; i < PRE_OLN; i++)
     {
       os_free (_oln.oln[i]);
+      freed = true;
     }
 
-  _oln.index = 0;
+  if (freed)
+    {
+      _oln.index = 0;
+    }
+  os_printk ("PLN clean done!\n");
   VM_DEBUG ("OLN clean!\n");
 }
 
@@ -820,42 +827,41 @@ bool gc (const gc_info_t gci)
 #endif
 
   size_t count = 0;
-  size_t cnt = 0;
+  size_t delta = 0;
 
   gc_final = 0;
 
   printf ("list before: %d\n", count_me (&list_free_list));
-  printf ("vector before: %d\n", count_me (&vector_free_list));
   printf ("pair before: %d\n", count_me (&pair_free_list));
   printf ("closure before: %d\n", count_me (&closure_free_list));
-  printf ("obj before: %d\n", count_me (&closure_free_list));
+  printf ("vector before: %d\n", count_me (&vector_free_list));
+  printf ("obj before: %d\n", count_me (&obj_free_list));
   /* printf ("obj\n"); */
   /* collect (&count, &obj_free_list, false); */
   printf ("inner\n");
-  collect_inner (&cnt, &list_free_list, list, false, false);
-  printf ("list done, count: %d, remain: %d\n", cnt,
+  collect_inner (&delta, &list_free_list, list, false, false);
+  printf ("list done, count: %d, remain: %d\n", delta,
           count_me (&list_free_list));
-  count += cnt;
-  cnt = 0;
-  collect_inner (&cnt, &vector_free_list, vector, false, false);
-  printf ("vector done, count: %d, remain: %d\n", cnt,
-          count_me (&vector_free_list));
-  count += cnt;
-  cnt = 0;
-  collect_inner (&cnt, &pair_free_list, pair, false, false);
-  printf ("pair done, count: %d, remain: %d\n", cnt,
+  count += delta;
+  delta = 0;
+
+  collect_inner (&delta, &pair_free_list, vector, false, false);
+  printf ("vector done, count: %d, remain: %d\n", delta,
           count_me (&pair_free_list));
-  count += cnt;
-  cnt = 0;
-  collect_inner (&cnt, &vector_free_list, vector, false, false);
-  printf ("closure done, count: %d, remain: %d\n", cnt,
+  count += delta;
+  delta = 0;
+
+  collect_inner (&delta, &closure_free_list, vector, false, false);
+  printf ("closure done, count: %d, remain: %d\n", delta,
           count_me (&closure_free_list));
-  count += cnt;
-  cnt = 0;
-  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
-  printf ("obj done, count: %d, remain: %d\n", cnt, count_me (&obj_free_list));
-  count += cnt;
-  cnt = 0;
+  count += delta;
+  delta = 0;
+
+  collect_inner (&delta, &vector_free_list, closure_on_heap, false, false);
+  printf ("obj done, count: %d, remain: %d\n", delta,
+          count_me (&vector_free_list));
+  count += delta;
+  delta = 0;
 
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
@@ -863,28 +869,38 @@ bool gc (const gc_info_t gci)
 #elif defined(LAMBDACHIP_ZEPHYR)
   uint32_t t2 = k_cycle_get_32 ();
 #endif
+
   gc_final = 1;
 
-  collect_inner (&cnt, &list_free_list, list, false, false);
-  printf ("list done, count: %d, remain: %d\n", cnt,
+  collect_inner (&delta, &list_free_list, list, false, false);
+  printf ("list done, count: %d, remain: %d\n", delta,
           count_me (&list_free_list));
+  count += delta;
+  delta = 0;
 
-  collect_inner (&cnt, &vector_free_list, vector, false, false);
-  printf ("vector done, count: %d, remain: %d\n", cnt,
-          count_me (&vector_free_list));
-
-  collect_inner (&cnt, &pair_free_list, pair, false, false);
-  printf ("pair done, count: %d, remain: %d\n", cnt,
+  collect_inner (&delta, &pair_free_list, pair, false, false);
+  printf ("pair done, count: %d, remain: %d\n", delta,
           count_me (&pair_free_list));
+  count += delta;
+  delta = 0;
 
-  collect_inner (&cnt, &vector_free_list, vector, false, false);
-  printf ("closure done, count: %d, remain: %d\n", cnt,
+  collect_inner (&delta, &closure_free_list, closure_on_heap, false, false);
+  printf ("closure done, count: %d, remain: %d\n", delta,
           count_me (&closure_free_list));
+  count += delta;
+  delta = 0;
 
-  collect_inner (&cnt, &closure_free_list, closure_on_heap, false, false);
+  collect_inner (&delta, &vector_free_list, vector, false, false);
+  printf ("vector done, count: %d, remain: %d\n", delta,
+          count_me (&vector_free_list));
+  count += delta;
+  delta = 0;
 
-  collect (&cnt, &obj_free_list, false, false);
-  printf ("obj done, count: %d, remain: %d\n", cnt, count_me (&obj_free_list));
+  collect (&delta, &obj_free_list, false, false);
+  printf ("obj done, count: %d, remain: %d\n", delta,
+          count_me (&obj_free_list));
+  count += delta;
+  delta = 0;
 
   if (0 == count && gci->hurt)
     {
@@ -900,19 +916,16 @@ bool gc (const gc_info_t gci)
       gc_final = 0;
 
       collect_inner (&count, &list_free_list, list, true, false);
-      collect_inner (&count, &vector_free_list, vector, true, false);
       collect_inner (&count, &pair_free_list, pair, true, false);
-      collect_inner (&cnt, &vector_free_list, vector, false, false);
       collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
+      collect_inner (&count, &vector_free_list, vector, true, false);
 
       gc_final = 1;
 
       collect_inner (&count, &list_free_list, list, true, false);
-      collect_inner (&count, &vector_free_list, vector, true, false);
       collect_inner (&count, &pair_free_list, pair, true, false);
-      collect_inner (&cnt, &vector_free_list, vector, false, false);
       collect_inner (&count, &closure_free_list, closure_on_heap, true, false);
-
+      collect_inner (&count, &vector_free_list, vector, true, false);
       collect (&count, &obj_free_list, true, false);
     }
 
@@ -946,12 +959,10 @@ bool gc (const gc_info_t gci)
 
   printf ("oln: %d, arn: %d\n", _oln.index, _arn.index);
 
-  os_printk ("pair_free_list");
-  FREE_LIST_PRINT (&pair_free_list);
   os_printk ("list_free_list");
   FREE_LIST_PRINT (&list_free_list);
-  os_printk ("obj_free_list");
-  FREE_LIST_PRINT (&obj_free_list);
+  os_printk ("pair_free_list");
+  FREE_LIST_PRINT (&pair_free_list);
   os_printk ("closure_free_list");
   FREE_LIST_PRINT (&closure_free_list);
   os_printk ("vector_free_list");
@@ -965,26 +976,34 @@ bool gc (const gc_info_t gci)
 void gc_clean_cache (void)
 {
   size_t cnt = 0;
+  os_printk ("list_free_list");
   collect_inner (&cnt, &list_free_list, list, false, true);
-  collect_inner (&cnt, &vector_free_list, vector, false, true);
+  os_printk ("pair_free_list\n");
   collect_inner (&cnt, &pair_free_list, pair, false, true);
+  os_printk ("closure_free_list");
   collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
+  os_printk ("vector_free_list");
+  collect_inner (&cnt, &vector_free_list, vector, false, true);
 
   gc_final = 1;
+  os_printk ("gc_final = 1 && collect\n");
 
+  os_printk ("list_free_list");
   collect_inner (&cnt, &list_free_list, list, false, true);
-  collect_inner (&cnt, &vector_free_list, vector, false, true);
+  os_printk ("pair_free_list\n");
   collect_inner (&cnt, &pair_free_list, pair, false, true);
+  os_printk ("closure_free_list");
   collect_inner (&cnt, &closure_free_list, closure_on_heap, false, true);
-
+  os_printk ("vector_free_list");
+  collect_inner (&cnt, &vector_free_list, vector, false, true);
+  os_printk ("obj_free_list");
   collect (&cnt, &obj_free_list, false, true);
 
-  os_printk ("pair_free_list");
-  FREE_LIST_PRINT (&pair_free_list);
+  os_printk ("after collect && clean cache\n");
   os_printk ("list_free_list");
   FREE_LIST_PRINT (&list_free_list);
-  os_printk ("obj_free_list");
-  FREE_LIST_PRINT (&obj_free_list);
+  os_printk ("pair_free_list\n");
+  FREE_LIST_PRINT (&pair_free_list);
   os_printk ("closure_free_list");
   FREE_LIST_PRINT (&closure_free_list);
   os_printk ("vector_free_list");
