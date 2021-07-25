@@ -42,11 +42,11 @@ static RB_HEAD (ActiveRoot, ActiveRootNode)
 
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
-static obj_list_head_t obj_free_pool;
-static obj_list_head_t list_free_pool;
-static obj_list_head_t vector_free_pool;
 static obj_list_head_t pair_free_pool;
+static obj_list_head_t vector_free_pool;
+static obj_list_head_t list_free_pool;
 static obj_list_head_t closure_free_pool;
+static obj_list_head_t obj_free_pool;
 
 static struct Pre_ARN _arn = {0};
 static struct Pre_OLN _oln = {0};
@@ -380,6 +380,12 @@ static void recycle_object (object_t obj)
         // These objects don't have to be recycled recursively.
         break;
       }
+    case pair:
+      {
+        recycle_object (((pair_t)obj->value)->car);
+        recycle_object (((pair_t)obj->value)->cdr);
+        break;
+      }
     case list:
       {
         obj_list_t node = NULL;
@@ -389,12 +395,6 @@ static void recycle_object (object_t obj)
         {
           recycle_object (node->obj);
         }
-        break;
-      }
-    case pair:
-      {
-        recycle_object (((pair_t)obj->value)->car);
-        recycle_object (((pair_t)obj->value)->cdr);
         break;
       }
     case closure_on_heap:
@@ -439,6 +439,11 @@ static void active_root_insert (object_t obj)
         insert_value (obj->value);
         break;
       }
+    case vector:
+      {
+        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+        break;
+      }
     case list:
       {
         obj_list_t node = NULL;
@@ -450,11 +455,6 @@ static void active_root_insert (object_t obj)
         }
 
         insert_value (obj->value);
-        break;
-      }
-    case vector:
-      {
-        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
         break;
       }
     default:
@@ -519,6 +519,11 @@ static void active_root_inner_insert (otype_t type, void *value)
         insert_value (value);
         break;
       }
+    case vector:
+      {
+        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
+        break;
+      }
     case list:
       {
         obj_list_t node = NULL;
@@ -530,11 +535,6 @@ static void active_root_inner_insert (otype_t type, void *value)
         }
 
         insert_value (value);
-        break;
-      }
-    case vector:
-      {
-        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
         break;
       }
     default:
@@ -661,11 +661,6 @@ static int get_gc_from_node (otype_t type, void *value)
 
   switch (type)
     {
-    case list:
-      {
-        gc = ((list_t)value)->attr.gc;
-        break;
-      }
     case pair:
       {
         gc = ((pair_t)value)->attr.gc;
@@ -674,6 +669,11 @@ static int get_gc_from_node (otype_t type, void *value)
     case vector:
       {
         gc = ((vector_t)value)->attr.gc;
+        break;
+      }
+    case list:
+      {
+        gc = ((list_t)value)->attr.gc;
         break;
       }
     case closure_on_heap:
@@ -695,11 +695,6 @@ static void set_gc_to_node (otype_t type, void *value, int gc)
 {
   switch (type)
     {
-    case list:
-      {
-        ((list_t)value)->attr.gc = gc;
-        break;
-      }
     case pair:
       {
         ((pair_t)value)->attr.gc = gc;
@@ -708,6 +703,11 @@ static void set_gc_to_node (otype_t type, void *value, int gc)
     case vector:
       {
         ((vector_t)value)->attr.gc = gc;
+        break;
+      }
+    case list:
+      {
+        ((list_t)value)->attr.gc = gc;
         break;
       }
     case closure_on_heap:
@@ -792,12 +792,12 @@ static size_t count_me (obj_list_head_t *head)
 /* { */
 /*   printf ("obj\n"); */
 /*   FREE_OBJECTS (&obj_free_pool); */
-/*   printf ("list\n"); */
-/*   FREE_OBJECTS (&list_free_pool); */
-/*   printf ("vector\n"); */
-/*   FREE_OBJECTS (&vector_free_pool); */
 /*   printf ("pair\n"); */
 /*   FREE_OBJECTS (&pair_free_pool); */
+/*   printf ("vector\n"); */
+/*   FREE_OBJECTS (&vector_free_pool); */
+/*   printf ("list\n"); */
+/*   FREE_OBJECTS (&list_free_pool); */
 /*   printf ("closure\n"); */
 /*   FREE_OBJECTS (&closure_free_pool); */
 /* } */
@@ -851,27 +851,27 @@ bool gc (const gc_info_t gci)
   /* printf ("obj\n"); */
   /* collect (&count, &obj_free_pool, false); */
   printf ("inner\n");
-  collect_inner (&delta, &list_free_pool, list, false, false);
-  printf ("list done, count: %d, remain: %d\n", delta,
-          count_me (&list_free_pool));
-  count += delta;
-  delta = 0;
-
   collect_inner (&delta, &pair_free_pool, vector, false, false);
   printf ("vector done, count: %d, remain: %d\n", delta,
           count_me (&pair_free_pool));
   count += delta;
   delta = 0;
 
-  collect_inner (&delta, &closure_free_pool, vector, false, false);
-  printf ("closure done, count: %d, remain: %d\n", delta,
-          count_me (&closure_free_pool));
-  count += delta;
-  delta = 0;
-
   collect_inner (&delta, &vector_free_pool, closure_on_heap, false, false);
   printf ("obj done, count: %d, remain: %d\n", delta,
           count_me (&vector_free_pool));
+  count += delta;
+  delta = 0;
+
+  collect_inner (&delta, &list_free_pool, list, false, false);
+  printf ("list done, count: %d, remain: %d\n", delta,
+          count_me (&list_free_pool));
+  count += delta;
+  delta = 0;
+
+  collect_inner (&delta, &closure_free_pool, vector, false, false);
+  printf ("closure done, count: %d, remain: %d\n", delta,
+          count_me (&closure_free_pool));
   count += delta;
   delta = 0;
 
