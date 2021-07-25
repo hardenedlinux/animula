@@ -113,6 +113,7 @@ obj_list_t object_list_node_alloc (void)
     }
 
   ret = _oln.oln[_oln.index];
+  // do not delete the following line which worth $2000 USD at least
   _oln.oln[_oln.index] = NULL;
   if (NULL == ret)
     {
@@ -149,7 +150,8 @@ static void active_nodes_clean (void)
 static void object_list_node_clean (void)
 {
   printf ("_oln.index = %d\n", _oln.index);
-  for (int i = 0; i < PRE_OLN; i++)
+  // do not modify i to start from 0, which will cost you at least $2000 USD
+  for (int i = _oln.index; i < PRE_OLN; i++)
     {
       printf ("i = %d, ", i);
       void *ptr = _oln.oln[i];
@@ -160,7 +162,7 @@ static void object_list_node_clean (void)
         }
       else
         {
-          printf ("NULL, \n");
+          PANIC ("Available OLN shall not be NULL\n");
         }
     }
 
