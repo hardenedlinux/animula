@@ -110,8 +110,6 @@ void *os_malloc (size_t size)
           PANIC ("os_malloc: memory tracker used up! %p\n", ptr);
         }
     }
-
-  printf ("%s: ptr = %p, size = %d\n", __FUNCTION__, ptr, size);
   return ptr;
 }
 

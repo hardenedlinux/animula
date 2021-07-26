@@ -76,8 +76,6 @@ static ActiveRootNode *arn_alloc (void)
       PANIC ("GC: We're doomed! Did you set a too small PRE_ARN?"
              "Try to set PRE_ARN larger!");
     }
-
-  os_printk ("*arn_alloc, _arn.index = %d\n", _arn.index);
   return _arn.arn[_arn.index++];
 }
 
@@ -143,13 +141,11 @@ static void active_nodes_clean (void)
     }
 
   _arn.index = 0;
-  os_printk ("ARN clean done!\n");
   VM_DEBUG ("ARN clean!\n");
 }
 
 static void object_list_node_clean (void)
 {
-  printf ("_oln.index = %d\n", _oln.index);
   // do not modify i to start from 0, which will cost you at least $2000 USD
   if (0 != _oln.index)
     {
@@ -157,7 +153,6 @@ static void object_list_node_clean (void)
     }
   for (int i = _oln.index; i < PRE_OLN; i++)
     {
-      printf ("i = %d, ", i);
       void *ptr = _oln.oln[i];
       if (NULL != ptr)
         {
@@ -171,7 +166,6 @@ static void object_list_node_clean (void)
     }
 
   _oln.index = 0;
-  os_printk ("OLN clean done!\n");
   VM_DEBUG ("OLN clean!\n");
 }
 
@@ -746,8 +740,6 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.
    */
-  FREE_LIST_PRINT (head);
-
   SLIST_FOREACH (node, head, next)
   {
     u8_t gc = force ? FREE_OBJ : get_gc_from_node (type, (void *)node->obj);
@@ -854,14 +846,6 @@ bool gc (const gc_info_t gci)
 
   gc_final = 0;
 
-  printf ("pair before: %d\n", count_me (&pair_free_pool));
-  printf ("vector before: %d\n", count_me (&vector_free_pool));
-  printf ("list before: %d\n", count_me (&list_free_pool));
-  printf ("closure before: %d\n", count_me (&closure_free_pool));
-  printf ("obj before: %d\n", count_me (&obj_free_pool));
-  /* printf ("obj\n"); */
-  /* collect (&count, &obj_free_pool, false); */
-
   collect_inner (&count, &pair_free_pool, vector, false, false);
   collect_inner (&count, &vector_free_pool, closure_on_heap, false, false);
   collect_inner (&count, &list_free_pool, list, false, false);
@@ -937,59 +921,24 @@ bool gc (const gc_info_t gci)
   printf ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0, t5 - t0);
 #endif
 
-  printf ("oln: %d, arn: %d\n", _oln.index, _arn.index);
-
-  os_printk ("pair_free_pool");
-  FREE_LIST_PRINT (&pair_free_pool);
-  os_printk ("vector_free_pool");
-  FREE_LIST_PRINT (&vector_free_pool);
-  os_printk ("list_free_pool");
-  FREE_LIST_PRINT (&list_free_pool);
-  os_printk ("closure_free_pool");
-  FREE_LIST_PRINT (&closure_free_pool);
-  os_printk ("obj_free_pool");
-  FREE_LIST_PRINT (&obj_free_pool);
-
   return true;
 }
 
 void gc_clean_cache (void)
 {
   size_t cnt = 0;
-  os_printk ("pair_free_pool\n");
   collect_inner (&cnt, &pair_free_pool, pair, false, true);
-  os_printk ("vector_free_pool");
   collect_inner (&cnt, &vector_free_pool, vector, false, true);
-  os_printk ("list_free_pool");
   collect_inner (&cnt, &list_free_pool, list, false, true);
-  os_printk ("closure_free_pool");
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
 
   gc_final = 1;
-  os_printk ("gc_final = 1 && collect\n");
 
-  os_printk ("pair_free_pool\n");
   collect_inner (&cnt, &pair_free_pool, pair, false, true);
-  os_printk ("vector_free_pool");
   collect_inner (&cnt, &vector_free_pool, vector, false, true);
-  os_printk ("list_free_pool");
   collect_inner (&cnt, &list_free_pool, list, false, true);
-  os_printk ("closure_free_pool");
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
-  os_printk ("obj_free_pool");
   collect (&cnt, &obj_free_pool, false, true);
-
-  os_printk ("after collect && clean cache\n");
-  os_printk ("pair_free_pool\n");
-  FREE_LIST_PRINT (&pair_free_pool);
-  os_printk ("vector_free_pool");
-  FREE_LIST_PRINT (&vector_free_pool);
-  os_printk ("list_free_pool");
-  FREE_LIST_PRINT (&list_free_pool);
-  os_printk ("closure_free_pool");
-  FREE_LIST_PRINT (&closure_free_pool);
-  os_printk ("obj_free_pool");
-  FREE_LIST_PRINT (&obj_free_pool);
 }
 
 void gc_obj_book (void *obj)
