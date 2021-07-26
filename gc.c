@@ -49,7 +49,7 @@ static obj_list_head_t closure_free_pool;
 static obj_list_head_t obj_free_pool;
 
 static struct Pre_ARN _arn = {0};
-static struct Pre_OLN _oln = {0};
+struct Pre_OLN _oln = {0};
 
 static void pre_allocate_active_nodes (void)
 {
@@ -114,7 +114,7 @@ obj_list_t object_list_node_alloc (void)
 
   ret = _oln.oln[_oln.index];
   // do not delete the following line which worth $2000 USD at least
-  _oln.oln[_oln.index] = NULL;
+  _oln.oln[_oln.index] = (void *)0xDEAD0001;
   if (NULL == ret)
     {
       os_printk ("BUG: there's no obj_list node, but cnt is %d\n", _oln.index);
@@ -151,6 +151,10 @@ static void object_list_node_clean (void)
 {
   printf ("_oln.index = %d\n", _oln.index);
   // do not modify i to start from 0, which will cost you at least $2000 USD
+  if (0 != _oln.index)
+    {
+      PANIC ("Not all nodes returned to OLN");
+    }
   for (int i = _oln.index; i < PRE_OLN; i++)
     {
       printf ("i = %d, ", i);
@@ -221,7 +225,11 @@ void free_object (object_t obj /* , bool force */)
       PANIC ("BUG: free a null object!");
     }
 
-  if (PERMANENT_OBJ == obj->attr.gc)
+  u8_t gc = obj->attr.gc;
+  if (gc_final)
+    gc = FREE_OBJ;
+
+  if (PERMANENT_OBJ == gc)
     return;
 
   switch (obj->attr.type)
@@ -297,7 +305,7 @@ void free_object (object_t obj /* , bool force */)
   free_object_from_pool (&obj_free_pool, obj);
 }
 
-void free_inner_object (otype_t type, void *value)
+void free_inner_object (otype_t type, void *value /* , bool force */)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
@@ -306,7 +314,10 @@ void free_inner_object (otype_t type, void *value)
       PANIC ("BUG: free a null object!");
     }
 
-  if (PERMANENT_OBJ == get_gc_from_node (type, value))
+  u8_t gc = get_gc_from_node (type, value);
+  if (gc_final)
+    gc = FREE_OBJ;
+  if (PERMANENT_OBJ == gc)
     return;
 
   switch (type)
@@ -943,6 +954,8 @@ bool gc (const gc_info_t gci)
       collect_inner (&count, &list_free_pool, list, true, false);
       collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
       collect (&count, &obj_free_pool, true, false);
+
+      gc_final = 0;
     }
 
 #ifdef LAMBDACHIP_LINUX
