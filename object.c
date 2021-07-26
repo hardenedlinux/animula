@@ -65,9 +65,9 @@ obj_list_t lambdachip_new_list_node (void)
 }
 
 u32_t list_cnt = 0;
-list_t lambdachip_new_list (void)
+pair_t lambdachip_new_pair (void)
 {
-  CREATE_NEW_OBJ (list_t, list, List);
+  CREATE_NEW_OBJ (pair_t, pair, Pair);
 }
 
 vector_t lambdachip_new_vector (void)
@@ -75,9 +75,9 @@ vector_t lambdachip_new_vector (void)
   CREATE_NEW_OBJ (vector_t, vector, Vector);
 }
 
-pair_t lambdachip_new_pair (void)
+list_t lambdachip_new_list (void)
 {
-  CREATE_NEW_OBJ (pair_t, pair, Pair);
+  CREATE_NEW_OBJ (list_t, list, List);
 }
 
 closure_t lambdachip_new_closure (void)
@@ -107,13 +107,6 @@ object_t lambdachip_new_object (u8_t type)
 
   switch (type)
     {
-    case list:
-      {
-        value = (void *)lambdachip_new_list ();
-        ((list_t)value)->attr.type = type;
-        ((list_t)value)->attr.gc = 1;
-        break;
-      }
     case pair:
       {
         value = (void *)lambdachip_new_pair ();
@@ -121,18 +114,25 @@ object_t lambdachip_new_object (u8_t type)
         ((pair_t)value)->attr.gc = 1;
         break;
       }
-    case closure_on_heap:
-      {
-        value = (void *)lambdachip_new_closure ();
-        ((closure_t)value)->attr.type = type;
-        ((closure_t)value)->attr.gc = 1;
-        break;
-      }
     case vector:
       {
         value = (void *)lambdachip_new_vector ();
         ((vector_t)value)->attr.type = type;
         ((vector_t)value)->attr.gc = 1;
+        break;
+      }
+    case list:
+      {
+        value = (void *)lambdachip_new_list ();
+        ((list_t)value)->attr.type = type;
+        ((list_t)value)->attr.gc = 1;
+        break;
+      }
+    case closure_on_heap:
+      {
+        value = (void *)lambdachip_new_closure ();
+        ((closure_t)value)->attr.type = type;
+        ((closure_t)value)->attr.gc = 1;
         break;
       }
     default:
