@@ -822,7 +822,7 @@ bool gc (const gc_info_t gci)
    *    b. if no collectable obj, then goto 3
    * 3. Free obj pool
    */
-  usleep (10000);
+  // usleep (10000);
 
 #ifdef LAMBDACHIP_LINUX
   const long long TICKS_PER_SECOND = 1000000L;
@@ -861,31 +861,11 @@ bool gc (const gc_info_t gci)
   printf ("obj before: %d\n", count_me (&obj_free_pool));
   /* printf ("obj\n"); */
   /* collect (&count, &obj_free_pool, false); */
-  printf ("inner\n");
-  collect_inner (&delta, &pair_free_pool, vector, false, false);
-  printf ("vector done, count: %d, remain: %d\n", delta,
-          count_me (&pair_free_pool));
-  count += delta;
-  delta = 0;
 
-  collect_inner (&delta, &vector_free_pool, closure_on_heap, false, false);
-  printf ("obj done, count: %d, remain: %d\n", delta,
-          count_me (&vector_free_pool));
-  count += delta;
-  delta = 0;
-
-  collect_inner (&delta, &list_free_pool, list, false, false);
-  printf ("list done, count: %d, remain: %d\n", delta,
-          count_me (&list_free_pool));
-  count += delta;
-  delta = 0;
-
-  collect_inner (&delta, &closure_free_pool, vector, false, false);
-  printf ("closure done, count: %d, remain: %d\n", delta,
-          count_me (&closure_free_pool));
-  count += delta;
-  delta = 0;
-
+  collect_inner (&count, &pair_free_pool, vector, false, false);
+  collect_inner (&count, &vector_free_pool, closure_on_heap, false, false);
+  collect_inner (&count, &list_free_pool, list, false, false);
+  collect_inner (&count, &closure_free_pool, vector, false, false);
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
   long long t2 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
@@ -895,36 +875,11 @@ bool gc (const gc_info_t gci)
 
   gc_final = 1;
 
-  collect_inner (&delta, &list_free_pool, list, false, false);
-  printf ("list done, count: %d, remain: %d\n", delta,
-          count_me (&list_free_pool));
-  count += delta;
-  delta = 0;
-
-  collect_inner (&delta, &pair_free_pool, pair, false, false);
-  printf ("pair done, count: %d, remain: %d\n", delta,
-          count_me (&pair_free_pool));
-  count += delta;
-  delta = 0;
-
-  collect_inner (&delta, &closure_free_pool, closure_on_heap, false, false);
-  printf ("closure done, count: %d, remain: %d\n", delta,
-          count_me (&closure_free_pool));
-  count += delta;
-  delta = 0;
-
-  collect_inner (&delta, &vector_free_pool, vector, false, false);
-  printf ("vector done, count: %d, remain: %d\n", delta,
-          count_me (&vector_free_pool));
-  count += delta;
-  delta = 0;
-
-  collect (&delta, &obj_free_pool, false, false);
-  printf ("obj done, count: %d, remain: %d\n", delta,
-          count_me (&obj_free_pool));
-  count += delta;
-  delta = 0;
-
+  collect_inner (&count, &pair_free_pool, pair, false, false);
+  collect_inner (&count, &vector_free_pool, vector, false, false);
+  collect_inner (&count, &list_free_pool, list, false, false);
+  collect_inner (&count, &closure_free_pool, closure_on_heap, false, false);
+  collect (&count, &obj_free_pool, false, false);
   if (0 == count && gci->hurt)
     {
       /*
@@ -1262,8 +1217,7 @@ static void free_object_from_pool (obj_list_head_t *head, object_t o)
     if (node->obj == (o))
       {
         os_free (node->obj);
-        node->obj = (void *)0xBEAFDEAD;
-        // node->obj = NULL;
+        node->obj = NULL;
         SLIST_REMOVE (head, node, ObjectList, next);
         object_list_node_recycle (node);
         break;

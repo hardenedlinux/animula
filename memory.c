@@ -155,19 +155,8 @@ void *os_calloc (size_t n, size_t size)
   return ptr;
 }
 
-void print_ptr (object_t p)
-{
-  os_printk ("ptr = %p, attr.gc = %d, attr.type = %d, value = 0x%02X\n", p,
-             p->attr.gc, p->attr.type, (uintptr_t)p->value);
-}
-
 void os_free (void *ptr)
 {
-  printf ("%s: ", __FUNCTION__);
-  print_ptr ((object_t)ptr);
-  // According to Linux library call, if ptr is NULL, no operation is performed.
-  // NULL ptr checking shall not be in this level
-  // Make it more strict to prevent future bug.
   if (NULL != ptr)
     __free (ptr);
   else
