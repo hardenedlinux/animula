@@ -754,7 +754,7 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
 
   SLIST_FOREACH (node, head, next)
   {
-    int gc = force ? FREE_OBJ : get_gc_from_node (type, (void *)node->obj);
+    u8_t gc = force ? FREE_OBJ : get_gc_from_node (type, (void *)node->obj);
 
     if (PERMANENT_OBJ == gc)
       {
