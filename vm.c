@@ -472,7 +472,6 @@ static uintptr_t vm_get_uintptr (vm_t vm)
 #endif
   return *((uintptr_t *)buf);
 }
-extern struct Pre_OLN _oln;
 
 static u16_t vm_get_u16 (vm_t vm)
 {
@@ -567,17 +566,12 @@ static object_t generate_object (vm_t vm, object_t obj)
         u8_t s = NEXT_DATA ();
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-list-object %d)\n", size);
-        printf (
-          "  ^^^^^^^^^^^^     list_t l = , _oln.index = %d, _oln[i] = %p\n",
-          _oln.index, _oln.oln[_oln.index]);
         list_t l = NEW_INNER_OBJ (list);
         os_printk ("lambdachip_new_list, list_t = %p\n", l);
         SLIST_INIT (&l->list);
         l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
         obj->attr.type = list;
         obj->value = (void *)l;
-        printf ("  list_t l = %p, _oln.index = %d, _oln[i] = %p\n", l,
-                _oln.index, _oln.oln[_oln.index]);
 
         /* NOTE:
          * To safely created a List, we have to consider that GC may happend
@@ -591,19 +585,12 @@ static object_t generate_object (vm_t vm, object_t obj)
 
         for (u16_t i = 0; i < size; i++)
           {
-            // malloc, if fail, GC
+            // POP_OBJ_FROM (sp);
             obj_list_t bl = NEW_LIST_NODE ();
-            printf ("  list node = %p\n", bl);
-            printf ("    creating list, l = ");
-            object_printer (obj);
-            // object_printer (l);
-            printf ("\n");
             // avoid crash in case GC was triggered here
             bl->obj = (void *)0xDEADBEEF;
             SLIST_INSERT_HEAD (&l->list, bl, next);
-            // get a pointer from GC pool
             object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
-            printf ("  list node->obj = %p\n", new_obj);
             *new_obj = POP_OBJ_FROM (sp);
             // FIXME: What if it's global const?
             new_obj->attr.gc
@@ -611,11 +598,6 @@ static object_t generate_object (vm_t vm, object_t obj)
             bl->obj = new_obj;
           }
         vm->sp = sp; // refix the pop offset
-
-        printf ("create list done, l = ");
-        // list_printer (l);
-        object_printer (obj);
-        printf ("\n");
         break;
       }
     case vector:

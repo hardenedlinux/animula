@@ -193,7 +193,7 @@ static void insert_value (void *value)
   insert (an);
 }
 
-void free_object (object_t obj /* , bool force */)
+void free_object (object_t obj)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
@@ -624,9 +624,6 @@ static void collect (size_t *count, obj_list_head_t *head, bool hurt,
       4. Collect all gen-2 object in hurt collect.
    */
 
-  printf ("collect(), FREE_LIST_PRINT (head) = ");
-  FREE_LIST_PRINT (head);
-
   SLIST_FOREACH (node, head, next)
   {
     if (force)
@@ -749,7 +746,6 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.
    */
-  printf ("collect_inner(), FREE_LIST_PRINT (head) = ");
   FREE_LIST_PRINT (head);
 
   SLIST_FOREACH (node, head, next)
@@ -1007,11 +1003,11 @@ void gc_clean_cache (void)
   size_t cnt = 0;
   os_printk ("pair_free_pool\n");
   collect_inner (&cnt, &pair_free_pool, pair, false, true);
-  os_printk ("vector_free_pool\n");
+  os_printk ("vector_free_pool");
   collect_inner (&cnt, &vector_free_pool, vector, false, true);
-  os_printk ("list_free_pool\n");
+  os_printk ("list_free_pool");
   collect_inner (&cnt, &list_free_pool, list, false, true);
-  os_printk ("closure_free_pool\n");
+  os_printk ("closure_free_pool");
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
 
   gc_final = 1;
@@ -1019,25 +1015,25 @@ void gc_clean_cache (void)
 
   os_printk ("pair_free_pool\n");
   collect_inner (&cnt, &pair_free_pool, pair, false, true);
-  os_printk ("vector_free_pool\n");
+  os_printk ("vector_free_pool");
   collect_inner (&cnt, &vector_free_pool, vector, false, true);
-  os_printk ("list_free_pool\n");
+  os_printk ("list_free_pool");
   collect_inner (&cnt, &list_free_pool, list, false, true);
-  os_printk ("closure_free_pool\n");
+  os_printk ("closure_free_pool");
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
-  os_printk ("obj_free_pool\n");
+  os_printk ("obj_free_pool");
   collect (&cnt, &obj_free_pool, false, true);
 
   os_printk ("after collect && clean cache\n");
   os_printk ("pair_free_pool\n");
   FREE_LIST_PRINT (&pair_free_pool);
-  os_printk ("vector_free_pool\n");
+  os_printk ("vector_free_pool");
   FREE_LIST_PRINT (&vector_free_pool);
-  os_printk ("list_free_pool\n");
+  os_printk ("list_free_pool");
   FREE_LIST_PRINT (&list_free_pool);
-  os_printk ("closure_free_pool\n");
+  os_printk ("closure_free_pool");
   FREE_LIST_PRINT (&closure_free_pool);
-  os_printk ("obj_free_pool\n");
+  os_printk ("obj_free_pool");
   FREE_LIST_PRINT (&obj_free_pool);
 }
 
