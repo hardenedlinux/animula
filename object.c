@@ -53,7 +53,7 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   closure->frame_size = frame_size;
   closure->entry = entry;
   closure->arity = arity;
-  closure->attr.gc = 1;
+  closure->attr.gc = GEN_1_OBJ;
   closure->attr.type = closure_on_heap;
 
   return closure;
@@ -111,28 +111,28 @@ object_t lambdachip_new_object (u8_t type)
       {
         value = (void *)lambdachip_new_pair ();
         ((pair_t)value)->attr.type = type;
-        ((pair_t)value)->attr.gc = 1;
+        ((pair_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case vector:
       {
         value = (void *)lambdachip_new_vector ();
         ((vector_t)value)->attr.type = type;
-        ((vector_t)value)->attr.gc = 1;
+        ((vector_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case list:
       {
         value = (void *)lambdachip_new_list ();
         ((list_t)value)->attr.type = type;
-        ((list_t)value)->attr.gc = 1;
+        ((list_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case closure_on_heap:
       {
         value = (void *)lambdachip_new_closure ();
         ((closure_t)value)->attr.type = type;
-        ((closure_t)value)->attr.gc = 1;
+        ((closure_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     default:
@@ -157,7 +157,7 @@ object_t lambdachip_new_object (u8_t type)
     }
 
   object->attr.type = type;
-  object->attr.gc = 1;
+  object->attr.gc = GEN_1_OBJ;
 
   if (new_alloc)
     gc_obj_book (object);

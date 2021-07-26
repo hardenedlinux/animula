@@ -24,15 +24,15 @@ GLOBAL_DEF (size_t, VM_GLOBALSEG_SIZE) = 0;
 static void handle_optional_args (vm_t vm, object_t proc)
 {
   u8_t cnt = COUNT_ARGS () - proc->proc.opt;
-  Object varg
-    = {.attr = {.type = list, .gc = 0}, .value = (void *)NEW_INNER_OBJ (list)};
+  Object varg = {.attr = {.type = list, .gc = FREE_OBJ},
+                 .value = (void *)NEW_INNER_OBJ (list)};
   obj_list_head_t *head = LIST_OBJECT_HEAD (&varg);
 
   for (int i = 0; i < cnt; i++)
     {
       object_t new_obj = NEW_OBJ (0);
       *new_obj = POP_OBJ ();
-      new_obj->attr.gc = 1; // don't forget to reset gc to 1
+      new_obj->attr.gc = GEN_1_OBJ; // don't forget to reset gc to GEN_1_OBJ
       obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
       bl->obj = new_obj;
       SLIST_INSERT_HEAD (head, bl, next);
@@ -81,7 +81,7 @@ void call_prim (vm_t vm, pn_t pn)
         size_t size = sizeof (struct Object);
         Object o2 = POP_OBJ ();
         Object o1 = POP_OBJ ();
-        Object ret = {.attr = {.type = none, .gc = 0}, .value = NULL};
+        Object ret = {.attr = {.type = none, .gc = FREE_OBJ}, .value = NULL};
         ret = *(fn (vm, &ret, &o1, &o2));
         PUSH_OBJ (ret);
         break;
@@ -93,7 +93,7 @@ void call_prim (vm_t vm, pn_t pn)
         size_t size = sizeof (struct Object);
         Object xsor = POP_OBJ ();
         Object xend = POP_OBJ ();
-        Object ret = {.attr = {.type = imm_int, .gc = 0}, .value = NULL};
+        Object ret = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = NULL};
         VALIDATE (&xsor, imm_int);
         VALIDATE (&xend, imm_int);
         ret.value = (void *)fn ((imm_int_t)xend.value, (imm_int_t)xsor.value);
@@ -156,8 +156,8 @@ void call_prim (vm_t vm, pn_t pn)
         /* We always set k as return */
         Object k = GEN_PRIM (ret);
         list_t new_list = NEW_INNER_OBJ (list);
-        Object new_list_obj
-          = {.attr = {.type = list, .gc = 1}, .value = (void *)new_list};
+        Object new_list_obj = {.attr = {.type = list, .gc = GEN_1_OBJ},
+                               .value = (void *)new_list};
         obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_list_obj);
 
         PUSH_REG (vm->pc);
@@ -491,7 +491,7 @@ static object_t generate_object (vm_t vm, object_t obj)
 {
   bytecode8_t bc;
   bc.all = NEXT_DATA ();
-  obj->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 0;
+  obj->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : FREE_OBJ;
   obj->attr.type = bc.all;
 
   switch (obj->attr.type)
@@ -542,7 +542,7 @@ static object_t generate_object (vm_t vm, object_t obj)
       {
         VM_DEBUG ("(push-pair-object)\n");
         pair_t p = NEW_INNER_OBJ (pair);
-        p->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
+        p->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
         obj->attr.type = pair;
         obj->value = (void *)p;
         PUSH_OBJ (*obj);
@@ -550,12 +550,12 @@ static object_t generate_object (vm_t vm, object_t obj)
 
         object_t cdr = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
         *cdr = POP_OBJ_FROM (sp);
-        cdr->attr.gc = 1; // don't forget to reset gc to 1
+        cdr->attr.gc = GEN_1_OBJ; // don't forget to reset gc to 1
         p->cdr = cdr;
 
         object_t car = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
         *car = POP_OBJ_FROM (sp);
-        car->attr.gc = 1; // don't forget to reset gc to 1
+        car->attr.gc = GEN_1_OBJ; // don't forget to reset gc to 1
         p->car = car;
 
         vm->sp = sp; // refix the pop offset
@@ -569,7 +569,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         list_t l = NEW_INNER_OBJ (list);
         os_printk ("lambdachip_new_list, list_t = %p\n", l);
         SLIST_INIT (&l->list);
-        l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
+        l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
         obj->attr.type = list;
         obj->value = (void *)l;
 
@@ -593,7 +593,8 @@ static object_t generate_object (vm_t vm, object_t obj)
             object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
             *new_obj = POP_OBJ_FROM (sp);
             // FIXME: What if it's global const?
-            new_obj->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
+            new_obj->attr.gc
+              = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
             bl->obj = new_obj;
           }
         vm->sp = sp; // refix the pop offset
@@ -605,7 +606,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         u16_t size = ((s << 8) | NEXT_DATA ());
         VM_DEBUG ("(push-vector-object %d)\n", size);
         vector_t v = NEW_INNER_OBJ (vector);
-        v->attr.gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 1;
+        v->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
         v->vec = (object_t *)GC_MALLOC (sizeof (Object) * size);
         v->size = size;
         obj->attr.type = vector;
@@ -617,7 +618,7 @@ static object_t generate_object (vm_t vm, object_t obj)
           {
             object_t new_obj = NEW_OBJ (TOP_OBJ_PTR_FROM (sp)->attr.type);
             *new_obj = POP_OBJ_FROM (sp);
-            new_obj->attr.gc = 1; // don't forget to reset gc to 1
+            new_obj->attr.gc = GEN_1_OBJ; // don't forget to reset gc to 1
             v->vec[i] = new_obj;
           }
         vm->sp = sp; // refix the pop offset
@@ -956,7 +957,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         reg_t entry = ((bc.bc3 << 8) | bc.bc4);
         VM_DEBUG ("(closure-on-heap %d %d 0x%x)\n", arity, size, entry);
         closure_t closure = create_closure (vm, arity, size, entry);
-        Object obj = {.attr = {.type = closure_on_heap, .gc = 0},
+        Object obj = {.attr = {.type = closure_on_heap, .gc = FREE_OBJ},
                       .value = (closure_t)closure};
         gc_inner_obj_book (closure_on_heap, &obj);
         PUSH_OBJ (obj);
@@ -969,7 +970,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         reg_t entry = ((bc.bc3 << 8) | bc.bc4);
         reg_t env = vm->sp + sizeof (Object); // skip closure object
         VM_DEBUG ("(closure-on-stack %d 0x%x)\n", size, entry);
-        Object obj = {.attr = {.type = closure_on_stack, .gc = 0},
+        Object obj = {.attr = {.type = closure_on_stack, .gc = FREE_OBJ},
                       .value = (void *)((env | (size << 10) | (entry << 16)))};
         PUSH_OBJ (obj);
         break;
@@ -1037,7 +1038,8 @@ static void interp_special (vm_t vm, bytecode8_t bc)
             {
               Object sym
                 = {.attr = {.type = symbol,
-                            .gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 0},
+                            .gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ
+                                                                 : FREE_OBJ},
                    .value = NULL};
               u16_t offset = vm_get_u16 (vm);
               const char *str_buf = GET_SYMBOL (offset);
@@ -1050,7 +1052,8 @@ static void interp_special (vm_t vm, bytecode8_t bc)
             {
               Object obj
                 = {.attr = {.type = character,
-                            .gc = (VM_INIT_GLOBALS == vm->state) ? 3 : 0},
+                            .gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ
+                                                                 : FREE_OBJ},
                    .value = NULL};
               u8_t ch = NEXT_DATA ();
               obj.value = (void *)ch;
@@ -1377,7 +1380,7 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
       *ret = POP_OBJ ();
       /* NOTE: Since we use the deref tick here for copying,
        *       we must reset gc to 1 again!!! */
-      ret->attr.gc = 1;
+      ret->attr.gc = GEN_1_OBJ;
 
       if (VM_EXCPT_CONT == vm->state)
         {

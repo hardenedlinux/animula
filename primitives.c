@@ -1537,7 +1537,7 @@ static object_t _os_get_board_id (vm_t vm)
   // static char[] board_id = "GNU/Linux";
   // return board_id;
   // object_t obj;
-  // Object obj = {.attr = {.type = mut_string, .gc = 0}, .value = 0};
+  // Object obj = {.attr = {.type = mut_string, .gc = FREE_OBJ}, .value = 0};
   // obj = {.attr = {.type = } };
   // FIXME: return create a mut_string and return
   return (object_t)NULL;

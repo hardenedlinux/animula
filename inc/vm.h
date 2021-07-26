@@ -37,9 +37,9 @@ extern GLOBAL_DEF (size_t, VM_STKSEG_SIZE);
  * The magic here is to set gc=1. Although ret_obj is on the stack, this magic
  * can prevent GC mis-recycle the sub-object of ret_obj.
  */
-#define CREATE_RET_OBJ() \
-  {                      \
-    .attr = {.gc = 1 }   \
+#define CREATE_RET_OBJ()       \
+  {                            \
+    .attr = {.gc = GEN_1_OBJ } \
   }
 
 #define FETCH_NEXT_BYTECODE() (vm->fetch_next_bytecode (vm))
@@ -195,10 +195,10 @@ static inline void vm_stack_check (vm_t vm)
   })
 
 #define GLOBAL(index) (vm->globals[(index)])
-#define GLOBAL_ASSIGN(index, var) \
-  ({                              \
-    (var).attr.gc = 3;            \
-    vm->globals[(index)] = (var); \
+#define GLOBAL_ASSIGN(index, var)  \
+  ({                               \
+    (var).attr.gc = PERMANENT_OBJ; \
+    vm->globals[(index)] = (var);  \
   })
 
 #define PUSH_FROM_SS(bc)             \

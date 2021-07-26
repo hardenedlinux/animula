@@ -56,7 +56,7 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
 
         if (next_node)
           {
-            ret->attr.gc = 0;
+            ret->attr.gc = FREE_OBJ;
             ret->attr.type = list;
             list_t l = NEW_INNER_OBJ (list);
             SLIST_INIT (&l->list);
