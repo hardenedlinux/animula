@@ -155,6 +155,10 @@ void *os_calloc (size_t n, size_t size)
 
 void os_free (void *ptr)
 {
+  // According to Linux library call, if ptr is NULL, no operation is performed.
+  // NULL ptr checking shall not be in this level
+  // Make it more strict to prevent future bug.
+  // FIXME: do not panic when free null pointer
   if (NULL != ptr)
     __free (ptr);
   else
