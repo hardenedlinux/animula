@@ -111,22 +111,28 @@ void create_symbol_table (symtab_t st)
 void clean_symbol_table (void)
 {
   SymbolNode *node = NULL;
-  SymbolNode *prev = NULL;
 
   if (RB_EMPTY (&SymbolInternTableHead))
     {
       return;
     }
 
+  // get first node
   RB_FOREACH (node, SymbolInternTable, &SymbolInternTableHead)
   {
-    if (prev)
-      {
-        os_free ((void *)prev);
-      }
-    prev = node;
+    break;
   }
-  os_free ((void *)prev);
+
+  while (node)
+    {
+      RB_REMOVE (SymbolInternTable, &SymbolInternTableHead, node);
+      os_free (node);
+      // if RB_tree is empty, node will be NULL
+      RB_FOREACH (node, SymbolInternTable, &SymbolInternTableHead)
+      {
+        break;
+      }
+    }
   os_free (GLOBAL_REF (symbol_table.entry));
 }
 
