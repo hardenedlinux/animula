@@ -188,24 +188,6 @@ static void insert_value (void *value)
 
 void free_object (object_t obj)
 {
-  /* NOTE: Integers are self-contained object, so we can just release the object
-   */
-  // obj_list_t node = NULL;
-  // bool node_exist = false;
-  // SLIST_FOREACH (node, &list_free_pool, next)
-  // {
-  //   if (node->obj == obj)
-  //     {
-  //       node_exist = true;
-  //       break;
-  //     }
-  // }
-
-  // if (!node_exist)
-  //   {
-  //     return;
-  //   }
-
   if (0xDEADBEEF == (uintptr_t)obj)
     {
       printf ("active_root_insert: oh a half list node!\n");
@@ -245,8 +227,6 @@ void free_object (object_t obj)
       {
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
-
-        // free_object_from_pool (&pair_free_pool, obj->value);
         break;
       }
     case list:
@@ -277,22 +257,17 @@ void free_object (object_t obj)
                 cnt++;
               }
           }
-
-        // free_object_from_pool (&list_free_pool, (object_t)obj->value);
         break;
       }
     case continuation:
     case mut_string:
       {
         os_free ((void *)obj->value);
-        // free_object_from_pool (&obj_free_pool, obj);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        // printf ("free_object closure %p\n", obj->value);
-        // free_object_from_pool (&closure_free_pool, obj->value);
         break;
       }
     default:
@@ -301,7 +276,7 @@ void free_object (object_t obj)
       }
     }
 
-  // free_object_from_pool (&obj_free_pool, obj);
+  obj->attr.gc = FREE_OBJ;
 }
 
 void free_inner_object (otype_t type, void *value)
@@ -324,7 +299,7 @@ void free_inner_object (otype_t type, void *value)
       {
         free_object ((object_t) ((pair_t)value)->car);
         free_object ((object_t) ((pair_t)value)->cdr);
-        // free_object_from_pool (&pair_free_pool, value);
+        ((pair_t)value)->attr.gc = FREE_OBJ;
         break;
       }
     case list:
@@ -353,14 +328,13 @@ void free_inner_object (otype_t type, void *value)
                 cnt++;
               }
           }
-        // free_object_from_pool (&list_free_pool, (object_t)value);
+        ((list_t)value)->attr.gc = FREE_OBJ;
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        // printf ("free_inner_object closure %p\n", value);
-        // free_object_from_pool (&closure_free_pool, value);
+        ((closure_t)value)->attr.gc = FREE_OBJ;
         break;
       }
     default:
@@ -813,9 +787,12 @@ static void release_all_free_objects (obj_list_head_t *head, bool force)
           // composite object
           if ((FREE_OBJ == node->obj->attr.gc) || force)
             {
+              /* printf ("release node: %p, obj: %p, value: %p\n", node,
+               * node->obj, */
+              /*         node->obj->value); */
               os_free (node->obj);
               // instead of free node, put node into OLN for future use
-              SLIST_REMOVE_HEAD (head, next);
+              SLIST_REMOVE (head, node, ObjectList, next);
               nxt = SLIST_NEXT (node, next);
               object_list_node_recycle (node);
               node = nxt;
@@ -885,11 +862,7 @@ bool gc (const gc_info_t gci)
   collect_inner (&count, &vector_free_pool, closure_on_heap, false, false);
   collect_inner (&count, &list_free_pool, list, false, false);
   collect_inner (&count, &closure_free_pool, vector, false, false);
-  printf ("before----------\n");
-  FREE_LIST_PRINT (&obj_free_pool);
   collect (&count, &obj_free_pool, false, false);
-  printf ("after----------\n");
-  FREE_LIST_PRINT (&obj_free_pool);
 
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
@@ -940,10 +913,11 @@ bool gc (const gc_info_t gci)
 #endif
 
 #ifdef LAMBDACHIP_LINUX
-  printf ("%lld, %lld, %lld, %lld, %lld\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0,
-          t5 - t0);
+  VM_DEBUG ("%lld, %lld, %lld, %lld, %lld\n", t1 - t0, t2 - t0, t3 - t0,
+            t4 - t0, t5 - t0);
 #elif defined(LAMBDACHIP_ZEPHYR)
-  printf ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0, t5 - t0);
+  VM_DEBUG ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0,
+            t5 - t0);
 #endif
 
   return true;

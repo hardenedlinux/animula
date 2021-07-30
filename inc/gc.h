@@ -30,13 +30,11 @@
 #define GC()                                     \
   do                                             \
     {                                            \
-      printf ("GC start\n");                     \
       GCInfo gci = {.fp = vm->fp,                \
                     .sp = vm->sp,                \
                     .stack = vm->stack,          \
                     .hurt = LAMBDACHIP_GC_HURT}; \
       gc (&gci);                                 \
-      printf ("GC end\n");                       \
     }                                            \
   while (0)
 
@@ -184,17 +182,18 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                    \
   while (0)
 
-#define FREE_LIST_PRINT(head)                               \
-  do                                                        \
-    {                                                       \
-      obj_list_t node = NULL;                               \
-      os_printk ("^^^^^^^^^^^^^^^^^^^^^^^^^^\n");           \
-      SLIST_FOREACH (node, (head), next)                    \
-      {                                                     \
-        os_printk ("node: %p, obj: %p\n", node, node->obj); \
-      }                                                     \
-      os_printk ("vvvvvvvvvvvvvvvvvvvvvvvvvv\n");           \
-    }                                                       \
+#define FREE_LIST_PRINT(head)                                         \
+  do                                                                  \
+    {                                                                 \
+      obj_list_t node = NULL;                                         \
+      os_printk ("^^^^^^^^^^^^^^^^^^^^^^^^^^\n");                     \
+      SLIST_FOREACH (node, (head), next)                              \
+      {                                                               \
+        os_printk ("node: %p, obj: %p, value: %p\n", node, node->obj, \
+                   node->obj->value);                                 \
+      }                                                               \
+      os_printk ("vvvvvvvvvvvvvvvvvvvvvvvvvv\n");                     \
+    }                                                                 \
   while (0)
 
 static void object_list_node_recycle (obj_list_t node);
