@@ -325,6 +325,18 @@ static inline void vm_stack_check (vm_t vm)
     }                             \
   while (0)
 
+#define RESTORE_SIMPLE()            \
+  do                                \
+    {                               \
+      vm->sp = vm->fp + FPS;        \
+      vm->closure = POP_CLOSURE (); \
+      vm->attr.all = POP ();        \
+      vm->fp = POP_REG ();          \
+      vm->pc = POP_REG ();          \
+      vm->local = vm->fp + FPS;     \
+    }                               \
+  while (0)
+
 #define FIX_PC()                                           \
   do                                                       \
     {                                                      \

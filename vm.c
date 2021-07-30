@@ -383,27 +383,28 @@ void call_prim (vm_t vm, pn_t pn)
         Object thunk = POP_OBJ ();
         Object handler = POP_OBJ ();
         Object result = CREATE_RET_OBJ ();
-        Object k = GEN_PRIM (ret);
+        Object k = GEN_PRIM (restore);
+        reg_t local = 0;
 
         SAVE_ENV_SIMPLE ();
+        local = vm->local;
         PUSH_OBJ (k); // prim:return
-        PUSH_OBJ (result);
         apply_proc (vm, &thunk, &result);
 
       extent:
         if (VM_EXCPT_CONT == vm->state)
           {
-            u32_t sp = POP_REG ();
-            u32_t pc = POP_REG ();
+            reg_t sp = POP_REG ();
+            reg_t pc = POP_REG ();
             SAVE_ENV_SIMPLE ();
-
             PUSH_OBJ (k); // prim:return
             PUSH_OBJ (result);
             vm->state = VM_RUN;
             apply_proc (vm, &handler, &result);
-            // PUSH_OBJ (result);
-            RESTORE ();
+            PUSH_OBJ (result);
+            RESTORE_SIMPLE ();
             vm->sp = sp;
+            vm->local = local;
             PUSH_OBJ (result);
             thunk.proc.entry = pc;
             apply_proc (vm, &thunk, &result);
@@ -416,7 +417,7 @@ void call_prim (vm_t vm, pn_t pn)
             PUSH_OBJ (result);
             vm->state = VM_RUN;
             apply_proc (vm, &handler, NULL);
-            RESTORE ();
+            RESTORE_SIMPLE ();
             // Handle non-continuable exception
             os_printk ("Exception occurred with non-continuable object: ");
             object_printer (&result);
@@ -424,7 +425,8 @@ void call_prim (vm_t vm, pn_t pn)
             vm->state = VM_STOP;
           }
 
-        RESTORE ();
+        PUSH_OBJ (result);
+        RESTORE_SIMPLE ();
         break;
       }
     case is_null:
@@ -1365,7 +1367,7 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
       /* for (u32_t i = 0; i < bound / 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
-      /*     os_printk ("obj: local = %d, type = %d, value = %d\n", */
+      /*     os_printk ("obj: offset = %d, type = %d, value = %d\n", */
       /*                vm->local + i * 8, obj->attr.type,
        * (imm_int_t)obj->value); */
       /*   } */
