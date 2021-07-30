@@ -214,8 +214,13 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
   ret->attr.type = list;
   list_t l = NEW_INNER_OBJ (list);
   SLIST_INIT (&l->list);
+  l->non_shared = 0;
+  l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
+  ret->attr.type = list;
   ret->value = (void *)l;
   obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);
+
+  u16_t cnt = 0;
 
   if (list == l2->attr.type)
     {
@@ -244,12 +249,14 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
             SLIST_INSERT_AFTER (prev, new_node, next);
           }
         prev = new_node;
+        cnt;
       }
 
       obj_list_t l2_first = SLIST_FIRST (h2);
       // concatenate the newly generated list with the 2nd list
       // do not use SLIST_INSERT_AFTER since it will clear the element of next
       prev->next.sle_next = l2_first;
+      l->non_shared = cnt;
     }
   else
     {

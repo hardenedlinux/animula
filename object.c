@@ -151,7 +151,7 @@ object_t lambdachip_new_object (u8_t type)
         }
       else
         {
-          free_object (object);
+          object->attr.gc = FREE_OBJ;
         }
       return NULL;
     }

@@ -30,11 +30,13 @@
 #define GC()                                     \
   do                                             \
     {                                            \
+      printf ("GC start\n");                     \
       GCInfo gci = {.fp = vm->fp,                \
                     .sp = vm->sp,                \
                     .stack = vm->stack,          \
                     .hurt = LAMBDACHIP_GC_HURT}; \
       gc (&gci);                                 \
+      printf ("GC end\n");                       \
     }                                            \
   while (0)
 

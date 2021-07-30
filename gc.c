@@ -23,8 +23,6 @@
 
 #endif
 
-int gc_final = 0;
-
 static int get_gc_from_node (otype_t type, void *value);
 /* The GC in LambdaChip is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
@@ -49,6 +47,7 @@ static obj_list_head_t closure_free_pool;
 static obj_list_head_t obj_free_pool;
 
 static struct Pre_ARN _arn = {0};
+// TODO: static
 struct Pre_OLN _oln = {0};
 
 static void pre_allocate_active_nodes (void)
@@ -219,11 +218,7 @@ void free_object (object_t obj)
       PANIC ("BUG: free a null object!");
     }
 
-  u8_t gc = obj->attr.gc;
-  if (gc_final)
-    gc = FREE_OBJ;
-
-  if (PERMANENT_OBJ == gc)
+  if (PERMANENT_OBJ == obj->attr.gc)
     return;
 
   switch (obj->attr.type)
@@ -251,13 +246,15 @@ void free_object (object_t obj)
         free_object ((object_t) ((pair_t)obj->value)->car);
         free_object ((object_t) ((pair_t)obj->value)->cdr);
 
-        free_object_from_pool (&pair_free_pool, obj->value);
+        // free_object_from_pool (&pair_free_pool, obj->value);
         break;
       }
     case list:
       {
         obj_list_t node = NULL;
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        u16_t non_shared = LIST_OBJECT_SIDX (obj);
+        u16_t cnt = 0;
 
         if (!SLIST_EMPTY (head))
           {
@@ -266,28 +263,36 @@ void free_object (object_t obj)
               {
                 // call free_object recursively since node->obj can be a
                 // composite object
+                if (cnt == non_shared)
+                  {
+                    // Skip the shared partition
+                    break;
+                  }
+
                 free_object (node->obj);
-                // instead of free node, put node into OLN for future use
                 SLIST_REMOVE_HEAD (head, next);
                 os_free (node);
+                // instead of free node, put node into OLN for future use
                 node = SLIST_FIRST (head);
+                cnt++;
               }
           }
 
-        free_object_from_pool (&list_free_pool, (object_t)obj->value);
+        // free_object_from_pool (&list_free_pool, (object_t)obj->value);
         break;
       }
     case continuation:
     case mut_string:
       {
         os_free ((void *)obj->value);
-        free_object_from_pool (&obj_free_pool, obj);
+        // free_object_from_pool (&obj_free_pool, obj);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_pool, obj->value);
+        // printf ("free_object closure %p\n", obj->value);
+        // free_object_from_pool (&closure_free_pool, obj->value);
         break;
       }
     default:
@@ -296,10 +301,10 @@ void free_object (object_t obj)
       }
     }
 
-  free_object_from_pool (&obj_free_pool, obj);
+  // free_object_from_pool (&obj_free_pool, obj);
 }
 
-void free_inner_object (otype_t type, void *value /* , bool force */)
+void free_inner_object (otype_t type, void *value)
 {
   /* NOTE: Integers are self-contained object, so we can just release the object
    */
@@ -309,8 +314,7 @@ void free_inner_object (otype_t type, void *value /* , bool force */)
     }
 
   u8_t gc = get_gc_from_node (type, value);
-  if (gc_final)
-    gc = FREE_OBJ;
+
   if (PERMANENT_OBJ == gc)
     return;
 
@@ -320,39 +324,43 @@ void free_inner_object (otype_t type, void *value /* , bool force */)
       {
         free_object ((object_t) ((pair_t)value)->car);
         free_object ((object_t) ((pair_t)value)->cdr);
-        free_object_from_pool (&pair_free_pool, value);
+        // free_object_from_pool (&pair_free_pool, value);
         break;
       }
     case list:
       {
         obj_list_t node = NULL;
         obj_list_head_t *head = &((list_t)value)->list;
+        u16_t non_shared = ((list_t)value)->non_shared;
+        u16_t cnt = 0;
 
-        if (SLIST_EMPTY (head))
+        if (!SLIST_EMPTY (head))
           {
-            free_object_from_pool (&list_free_pool, value);
-            break;
-          }
-
-        node = SLIST_FIRST (head);
-        while (node)
-          {
-            // call free_object recursively since node->obj can be a composite
-            // object
-            free_object (node->obj);
-            // instead of free node, put node into OLN for future use
-            SLIST_REMOVE_HEAD (head, next);
-            os_free (node);
             node = SLIST_FIRST (head);
+            while (node)
+              {
+                // call free_object recursively since node->obj can be a
+                // composite object
+                if (cnt == non_shared)
+                  {
+                    break;
+                  }
+                free_object (node->obj);
+                SLIST_REMOVE_HEAD (head, next);
+                os_free (node);
+                // instead of free node, put node into OLN for future use
+                node = SLIST_FIRST (head);
+                cnt++;
+              }
           }
-
-        free_object_from_pool (&list_free_pool, (object_t)value);
+        // free_object_from_pool (&list_free_pool, (object_t)value);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_pool, value);
+        // printf ("free_inner_object closure %p\n", value);
+        // free_object_from_pool (&closure_free_pool, value);
         break;
       }
     default:
@@ -791,19 +799,49 @@ static size_t count_me (obj_list_head_t *head)
   return cnt;
 }
 
-/* static void sweep () */
-/* { */
-/*   printf ("obj\n"); */
-/*   FREE_OBJECTS (&obj_free_pool); */
-/*   printf ("pair\n"); */
-/*   FREE_OBJECTS (&pair_free_pool); */
-/*   printf ("vector\n"); */
-/*   FREE_OBJECTS (&vector_free_pool); */
-/*   printf ("list\n"); */
-/*   FREE_OBJECTS (&list_free_pool); */
-/*   printf ("closure\n"); */
-/*   FREE_OBJECTS (&closure_free_pool); */
-/* } */
+static void release_all_free_objects (obj_list_head_t *head, bool force)
+{
+  obj_list_t node = NULL;
+  obj_list_t nxt = NULL;
+
+  if (!SLIST_EMPTY (head))
+    {
+      node = SLIST_FIRST (head);
+      while (node)
+        {
+          // call free_object recursively since node->obj can be a
+          // composite object
+          if ((FREE_OBJ == node->obj->attr.gc) || force)
+            {
+              os_free (node->obj);
+              // instead of free node, put node into OLN for future use
+              SLIST_REMOVE_HEAD (head, next);
+              nxt = SLIST_NEXT (node, next);
+              object_list_node_recycle (node);
+              node = nxt;
+            }
+          else
+            {
+              node = SLIST_NEXT (node, next);
+            }
+        }
+    }
+}
+
+static void sweep (bool force)
+
+{
+  // printf ("sweep pair\n");
+  release_all_free_objects (&pair_free_pool, force);
+  // printf ("sweep vector\n");
+  release_all_free_objects (&vector_free_pool, force);
+  // printf ("sweep list\n");
+  release_all_free_objects (&list_free_pool, force);
+  // printf ("sweep closure\n");
+  release_all_free_objects (&closure_free_pool, force);
+  // printf ("sweep obj\n");
+  release_all_free_objects (&obj_free_pool, force);
+}
 
 bool gc (const gc_info_t gci)
 {
@@ -842,14 +880,17 @@ bool gc (const gc_info_t gci)
 #endif
 
   size_t count = 0;
-  size_t delta = 0;
-
-  gc_final = 0;
 
   collect_inner (&count, &pair_free_pool, vector, false, false);
   collect_inner (&count, &vector_free_pool, closure_on_heap, false, false);
   collect_inner (&count, &list_free_pool, list, false, false);
   collect_inner (&count, &closure_free_pool, vector, false, false);
+  printf ("before----------\n");
+  FREE_LIST_PRINT (&obj_free_pool);
+  collect (&count, &obj_free_pool, false, false);
+  printf ("after----------\n");
+  FREE_LIST_PRINT (&obj_free_pool);
+
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
   long long t2 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
@@ -857,13 +898,6 @@ bool gc (const gc_info_t gci)
   uint32_t t2 = k_cycle_get_32 ();
 #endif
 
-  gc_final = 1;
-
-  collect_inner (&count, &pair_free_pool, pair, false, false);
-  collect_inner (&count, &vector_free_pool, vector, false, false);
-  collect_inner (&count, &list_free_pool, list, false, false);
-  collect_inner (&count, &closure_free_pool, closure_on_heap, false, false);
-  collect (&count, &obj_free_pool, false, false);
   if (0 == count && gci->hurt)
     {
       /*
@@ -875,23 +909,14 @@ bool gc (const gc_info_t gci)
                Do we have better approach to avoid big hurt?
                Or do we really need hurt collect in embedded system?
       */
-      gc_final = 0;
-
       collect_inner (&count, &pair_free_pool, pair, true, false);
       collect_inner (&count, &vector_free_pool, vector, true, false);
       collect_inner (&count, &list_free_pool, list, true, false);
       collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
-
-      gc_final = 1;
-
-      collect_inner (&count, &pair_free_pool, pair, true, false);
-      collect_inner (&count, &vector_free_pool, vector, true, false);
-      collect_inner (&count, &list_free_pool, list, true, false);
-      collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
-      collect (&count, &obj_free_pool, true, false);
-
-      gc_final = 0;
+      collect (&count, &obj_free_pool, false, false);
     }
+
+  sweep (false);
 
 #ifdef LAMBDACHIP_LINUX
   gettimeofday (&tv, &tz);
@@ -932,13 +957,8 @@ void gc_clean_cache (void)
   collect_inner (&cnt, &list_free_pool, list, false, true);
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
 
-  gc_final = 1;
-
-  collect_inner (&cnt, &pair_free_pool, pair, false, true);
-  collect_inner (&cnt, &vector_free_pool, vector, false, true);
-  collect_inner (&cnt, &list_free_pool, list, false, true);
-  collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
-  collect (&cnt, &obj_free_pool, false, true);
+  // free self-contained object in sweek
+  sweep (true);
 }
 
 void gc_obj_book (void *obj)
@@ -958,10 +978,12 @@ void gc_inner_obj_book (otype_t t, void *obj)
 {
   obj_list_t node = NULL;
   node = object_list_node_alloc ();
+
   if (!node)
     {
       PANIC ("gc_book 0: We're doomed! There're even no RAMs for GC!\n");
     }
+
   node->obj = obj;
 
   switch (t)
@@ -1084,8 +1106,7 @@ void gc_try_to_recycle (void)
   /* NOTE:
    * Closures are not fixed size object, so we have to free it.
    */
-  size_t cnt = 0;
-  collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
+  release_all_free_objects (&closure_free_pool, true);
 }
 
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
@@ -1155,11 +1176,6 @@ void gc_clean (void)
 // remove first find object in LIST head
 static void free_object_from_pool (obj_list_head_t *head, object_t o)
 {
-  if (!gc_final)
-    {
-      return;
-    }
-
   obj_list_t node = NULL;
   SLIST_FOREACH (node, (head), next)
   {

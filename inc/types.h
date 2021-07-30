@@ -183,6 +183,11 @@ typedef struct ObjectList
 typedef struct List
 {
   oattr attr;
+  /* NOTE:
+   *   The count of the non-shared elements.
+   *   It's used for the index of the shared list, 0 for no.
+   */
+  u16_t non_shared;
   obj_list_head_t list;
 } List, *list_t;
 
@@ -261,6 +266,7 @@ typedef u16_t reg_t;
 #define NEXT_FP() (*((reg_t *)(stack + fp + sizeof (reg_t))))
 
 #define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
+#define LIST_OBJECT_SIDX(o) (((list_t) (o)->value)->non_shared)
 
 #define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
 

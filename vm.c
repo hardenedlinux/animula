@@ -571,6 +571,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         list_t l = NEW_INNER_OBJ (list);
         SLIST_INIT (&l->list);
         l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
+        l->non_shared = 0;
         obj->attr.type = list;
         obj->value = (void *)l;
 
@@ -960,7 +961,7 @@ static void interp_quadruple_encode (vm_t vm, bytecode32_t bc)
         closure_t closure = create_closure (vm, arity, size, entry);
         Object obj = {.attr = {.type = closure_on_heap, .gc = FREE_OBJ},
                       .value = (closure_t)closure};
-        gc_inner_obj_book (closure_on_heap, &obj);
+        gc_inner_obj_book (closure_on_heap, closure);
         PUSH_OBJ (obj);
         break;
       }
