@@ -218,7 +218,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
   list_t l = NEW_INNER_OBJ (list);
   SLIST_INIT (&l->list);
   l->non_shared = 0;
-  l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
+  l->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
   ret->attr.type = list;
   ret->value = (void *)l;
   obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);
@@ -266,6 +266,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
       return _cons (vm, ret, l1, l2);
     }
 
+  l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
   return ret;
 }
 
