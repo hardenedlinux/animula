@@ -60,6 +60,9 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
             ret->attr.type = list;
             list_t l = NEW_INNER_OBJ (list);
             SLIST_INIT (&l->list);
+            l->attr.gc
+              = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
+            l->non_shared = 0;
             ret->value = (void *)l;
             obj_list_head_t *new_head = &(l->list);
             new_head->slh_first = next_node;
