@@ -156,40 +156,21 @@ void call_prim (vm_t vm, pn_t pn)
         /* We always set k as return */
         Object k = GEN_PRIM (ret);
         list_t new_list = NEW_INNER_OBJ (list);
-        Object new_list_obj = {.attr = {.type = list, .gc = GEN_1_OBJ},
+        /* NOTE:
+         * To safely created a List, we have to consider that GC may happend
+         * unexpectedly.
+         */
+        Object new_list_obj = {.attr = {.type = list, .gc = PERMANENT_OBJ},
                                .value = (void *)new_list};
         obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_list_obj);
+        new_list->non_shared = 0;
 
-        PUSH_REG (vm->pc);
-        PUSH_REG (vm->fp);
-        PUSH (vm->attr.all);
-        PUSH_CLOSURE (vm->closure);
-        vm->fp = vm->sp - FPS;
-        vm->local = vm->sp;
+        SAVE_ENV_SIMPLE ();
+
         SLIST_FOREACH (node, head, next)
         {
-          object_t ret = NEW_OBJ (0);
           obj_list_t new_node = NEW_LIST_NODE ();
-          new_node->obj = ret;
-          vm->sp = vm->local;
-          PUSH_OBJ (k);
-          PUSH_OBJ (*node->obj);
-
-          switch (proc.attr.type)
-            {
-            case procedure:
-              {
-                apply_proc (vm, &proc, NULL);
-                break;
-              }
-            case primitive:
-              {
-                call_prim (vm, (pn_t)proc.value);
-                *ret = POP_OBJ ();
-                break;
-              }
-            }
-
+          new_node->obj = (void *)0xDEADBEEF;
           if (!prev)
             {
               // when the new list is still empty
@@ -198,6 +179,29 @@ void call_prim (vm_t vm, pn_t pn)
           else
             {
               SLIST_INSERT_AFTER (prev, new_node, next);
+            }
+
+          object_t new_obj = NEW_OBJ (0);
+          new_obj->attr.gc = GEN_1_OBJ;
+          new_node->obj = new_obj;
+          vm->sp = vm->local;
+
+          PUSH_OBJ (k);
+          PUSH_OBJ (*node->obj);
+
+          switch (proc.attr.type)
+            {
+            case procedure:
+              {
+                apply_proc (vm, &proc, new_obj);
+                break;
+              }
+            case primitive:
+              {
+                call_prim (vm, (pn_t)proc.value);
+                *new_obj = POP_OBJ ();
+                break;
+              }
             }
 
           prev = new_node;
@@ -210,8 +214,10 @@ void call_prim (vm_t vm, pn_t pn)
           vm->sp = vm->local;
         }
 
-        RESTORE ();
+        new_list->attr.gc
+          = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
         PUSH_OBJ (new_list_obj);
+        RESTORE_SIMPLE ();
         break;
       }
     case foreach:

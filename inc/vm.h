@@ -98,12 +98,22 @@ static inline void vm_stack_check (vm_t vm)
     }                                              \
   while (0)
 
-#define PUSH_OBJ(obj)          PUSHx (Object, sizeof (Object), obj)
-#define POP_OBJ()              POPx (Object, sizeof (Object))
-#define POP_OBJ_FROM(from)     POP_FROMx (from, Object, sizeof (Object))
-#define TOP_OBJ_PTR_FROM(from) TOP_FROMxp (from, Object, sizeof (Object))
-#define TOP_OBJ()              TOPx (Object, sizeof (Object))
-#define TOP_OBJ_PTR()          TOPxp (Object, sizeof (Object))
+#define PUSH_FROMx(from, t, size, data)                     \
+  do                                                        \
+    {                                                       \
+      *((t *)(vm->stack + (from) + vm->sp)) = ((t) (data)); \
+      vm->sp += (size);                                     \
+      vm_stack_check (vm);                                  \
+    }                                                       \
+  while (0)
+
+#define PUSH_OBJ(obj)            PUSHx (Object, sizeof (Object), obj)
+#define PUSH_OBJ_FROM(obj, from) PUSH_FROMx (from, Object, sizeof (Object), obj)
+#define POP_OBJ()                POPx (Object, sizeof (Object))
+#define POP_OBJ_FROM(from)       POP_FROMx (from, Object, sizeof (Object))
+#define TOP_OBJ_PTR_FROM(from)   TOP_FROMxp (from, Object, sizeof (Object))
+#define TOP_OBJ()                TOPx (Object, sizeof (Object))
+#define TOP_OBJ_PTR()            TOPxp (Object, sizeof (Object))
 
 #define PUSH_U32(obj) PUSHx (u32_t, sizeof (u32_t), obj)
 #define POP_U32()     POPx (u32_t, sizeof (u32_t))
@@ -328,12 +338,14 @@ static inline void vm_stack_check (vm_t vm)
 #define RESTORE_SIMPLE()            \
   do                                \
     {                               \
+      Object ret_obj = POP_OBJ ();  \
       vm->sp = vm->fp + FPS;        \
       vm->closure = POP_CLOSURE (); \
       vm->attr.all = POP ();        \
       vm->fp = POP_REG ();          \
       vm->pc = POP_REG ();          \
       vm->local = vm->fp + FPS;     \
+      PUSH_OBJ (ret_obj);           \
     }                               \
   while (0)
 
@@ -399,7 +411,7 @@ static inline void vm_stack_check (vm_t vm)
 #define RESTORE()                                   \
   do                                                \
     {                                               \
-      Object ret = POP_OBJ ();                      \
+      Object ret_obj = POP_OBJ ();                  \
       vm->sp = vm->fp + FPS;                        \
       vm->closure = POP_CLOSURE ();                 \
       vm->attr.all = POP ();                        \
@@ -407,7 +419,7 @@ static inline void vm_stack_check (vm_t vm)
       vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp); \
       vm->pc = POP_REG ();                          \
       vm->local = vm->fp + FPS;                     \
-      PUSH_OBJ (ret);                               \
+      PUSH_OBJ (ret_obj);                           \
     }                                               \
   while (0)
 
