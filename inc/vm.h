@@ -408,19 +408,20 @@ static inline void vm_stack_check (vm_t vm)
  * frame.
  */
 //      gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp);
-#define RESTORE()                                   \
-  do                                                \
-    {                                               \
-      Object ret_obj = POP_OBJ ();                  \
-      vm->sp = vm->fp + FPS;                        \
-      vm->closure = POP_CLOSURE ();                 \
-      vm->attr.all = POP ();                        \
-      vm->fp = POP_REG ();                          \
-      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp); \
-      vm->pc = POP_REG ();                          \
-      vm->local = vm->fp + FPS;                     \
-      PUSH_OBJ (ret_obj);                           \
-    }                                               \
+#define RESTORE()                                                 \
+  do                                                              \
+    {                                                             \
+      Object ret_obj = POP_OBJ ();                                \
+      gc_recycle_current_frame (vm->stack, vm->fp + FPS, vm->sp); \
+      vm->sp = vm->fp + FPS;                                      \
+      vm->closure = POP_CLOSURE ();                               \
+      vm->attr.all = POP ();                                      \
+      vm->fp = POP_REG ();                                        \
+      vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);               \
+      vm->pc = POP_REG ();                                        \
+      vm->local = vm->fp + FPS;                                   \
+      PUSH_OBJ (ret_obj);                                         \
+    }                                                             \
   while (0)
 
 #define CALL_PROCEDURE(obj)           \
