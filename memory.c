@@ -62,29 +62,31 @@ void raw_free (void *ptr)
 #endif
 }
 
+#ifdef FORCE_MEMORY_SIZE_TEST
 struct memory_block
 {
   void *ptr;
   size_t size;
 };
 
-#define MEMORY_TRACKER_SIZE 4000
-#define FREE_MEMORY_SIZE    19200
-struct memory_block g_used_memory[MEMORY_TRACKER_SIZE] = {0};
+static struct memory_block g_used_memory[MEMORY_TRACKER_SIZE] = {0};
+#endif
 
 void *os_malloc (size_t size)
 {
+#ifdef FORCE_MEMORY_SIZE_TEST
   uint32_t used_memory_size = 0;
   for (size_t i = 0; i < MEMORY_TRACKER_SIZE; i++)
     {
       used_memory_size += g_used_memory[i].size;
     }
 
-  if ((used_memory_size + size) > FREE_MEMORY_SIZE)
+  if ((used_memory_size + size) > FORCE_MEMORY_SIZE_TEST)
     {
       VM_DEBUG ("os_malloc: Failed to allocate memory!\n");
       return NULL;
     }
+#endif
 
   void *ptr = (void *)__malloc (size);
 
@@ -92,6 +94,7 @@ void *os_malloc (size_t size)
     {
       VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
     }
+#ifdef FORCE_MEMORY_SIZE_TEST
   else
     {
       size_t i = 0;
@@ -110,23 +113,26 @@ void *os_malloc (size_t size)
           PANIC ("os_malloc: memory tracker used up! %p\n", ptr);
         }
     }
+#endif
 
   return ptr;
 }
 
 void *os_calloc (size_t n, size_t size)
 {
+#ifdef FORCE_MEMORY_SIZE_TEST
   uint32_t used_memory_size = 0;
   for (size_t i = 0; i < MEMORY_TRACKER_SIZE; i++)
     {
       used_memory_size += g_used_memory[i].size;
     }
 
-  if ((used_memory_size + n * size) > FREE_MEMORY_SIZE)
+  if ((used_memory_size + n * size) > FORCE_MEMORY_SIZE_TEST)
     {
       VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
       return NULL;
     }
+#endif
 
   void *ptr = (void *)__calloc (n, size);
 
@@ -134,6 +140,7 @@ void *os_calloc (size_t n, size_t size)
     {
       VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
     }
+#ifdef FORCE_MEMORY_SIZE_TEST
   else
     {
       size_t i = 0;
@@ -151,6 +158,8 @@ void *os_calloc (size_t n, size_t size)
           PANIC ("os_calloc: memory tracker used up! %p\n", ptr);
         }
     }
+#endif
+
   return ptr;
 }
 
@@ -165,6 +174,7 @@ void os_free (void *ptr)
   else
     PANIC ("Free a NULL ptr");
 
+#ifdef FORCE_MEMORY_SIZE_TEST
   size_t i = 0;
   for (; i < MEMORY_TRACKER_SIZE; i++)
     {
@@ -180,4 +190,5 @@ void os_free (void *ptr)
     {
       PANIC ("os_free: freed a memory area not managed by us, ptr=%p\n", ptr);
     }
+#endif
 }
