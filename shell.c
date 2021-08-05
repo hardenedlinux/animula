@@ -110,11 +110,11 @@ static int serial_load (int argc, char **argv, vm_t vm)
       uint64_t nanoseconds_spent;
 
       vm_load_lef (vm, lef);
-      free_lef (lef);
 #ifdef LAMBDACHIP_ZEPHYR
       start_time0 = k_cycle_get_32 ();
 #endif /* LAMBDACHIP_ZEPHYR */
       vm_run (vm);
+      free_lef (lef);
 #ifdef LAMBDACHIP_ZEPHYR
       stop_time0 = k_cycle_get_32 ();
       cycles_spent = stop_time0 - start_time0;
@@ -156,9 +156,11 @@ static int run_program (int argc, char **argv, vm_t vm)
 
   vm_load_lef (vm, lef);
   if (lef)
-    free_lef (lef);
-  vm_run (vm);
-  os_printk ("Free LEF successfully!]\n");
+    {
+      vm_run (vm);
+      free_lef (lef);
+      os_printk ("Free LEF successfully!]\n");
+    }
 
   return 0;
 }
