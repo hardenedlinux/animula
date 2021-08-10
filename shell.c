@@ -110,6 +110,7 @@ static int serial_load (int argc, char **argv, vm_t vm)
       uint64_t nanoseconds_spent;
 
       vm_load_lef (vm, lef);
+
 #ifdef LAMBDACHIP_ZEPHYR
       start_time0 = k_cycle_get_32 ();
 #endif /* LAMBDACHIP_ZEPHYR */
@@ -128,9 +129,9 @@ static int serial_load (int argc, char **argv, vm_t vm)
       printk ("stop_time0        = %d ns\n", stop_time0);  // 29710362
 #endif /* LAMBDACHIP_ZEPHYR */
 
-      vm_init_environment (vm);
+      vm_clean (vm);
+      vm_init (vm);
     }
-
   os_printk ("Free LEF successfully!]\n");
 
 end:
