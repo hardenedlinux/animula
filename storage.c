@@ -43,28 +43,12 @@ static inline void zephyr_flash_init (void)
 
 static inline int zephyr_flash_erase (size_t offset, size_t size)
 {
-  int ret = flash_write_protection_set (flash_device, false);
-
-  if (0 != ret)
-    {
-      os_printk ("Flash error: failed to disable flash protection - %d\n", ret);
-      return ret;
-    }
-
-  ret = flash_erase (flash_device, offset, size);
+  int ret = flash_erase (flash_device, offset, size);
   if (0 != ret)
     {
       os_printk ("Flash error: flash_erase failed - %d\n", ret);
       return ret;
     }
-
-  ret = flash_write_protection_set (flash_device, true);
-  if (0 != ret)
-    {
-      os_printk ("Flash error: failed to enable flash protection - %d\n", ret);
-      return ret;
-    }
-
   return ret;
 }
 
