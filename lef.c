@@ -141,6 +141,7 @@ lef_t load_lef_from_file (const char *filename)
   if (!LEF_VERIFY (lef))
     {
       os_printk ("Wrong LEF file, please check it then re-upload!\n");
+      // FIXME: if load from zephyr, cannot exit directly
       exit (-1);
     }
 
