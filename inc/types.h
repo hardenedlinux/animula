@@ -33,6 +33,7 @@ typedef u16_t reg_t;
 #  define CONFIG_HEAP_MEM_POOL_SIZE 90000
 #  include "__types.h"
 #  include <stdint.h>
+#  include <stdbool.h>
 
 #else
 #  define CONFIG_HEAP_MEM_POOL_SIZE 90000
