@@ -121,12 +121,12 @@ static int serial_load (int argc, char **argv, vm_t vm)
       cycles_spent = stop_time0 - start_time0;
       nanoseconds_spent = k_cyc_to_ns_floor64 (cycles_spent);
 
-      printk ("cycles_spent      = %d\n", cycles_spent);        // 28800231
-      printk ("nanoseconds_spent = %lld\n", nanoseconds_spent); // 300002406
+      os_printk ("cycles_spent      = %d\n", cycles_spent);        // 28800231
+      os_printk ("nanoseconds_spent = %lld\n", nanoseconds_spent); // 300002406
 
       // affects by CONFIG_SYS_CLOCK_TICKS_PER_SEC
-      printk ("start_time0       = %d ns\n", start_time0); // 910108
-      printk ("stop_time0        = %d ns\n", stop_time0);  // 29710362
+      os_printk ("start_time0       = %d ns\n", start_time0); // 910108
+      os_printk ("stop_time0        = %d ns\n", stop_time0);  // 29710362
 #endif /* LAMBDACHIP_ZEPHYR */
 
       vm_clean (vm);
