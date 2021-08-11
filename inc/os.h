@@ -32,9 +32,10 @@
 #  define __calloc calloc
 #  define __free   free
 #  include <string.h>
-#  define os_memset     memset
-#  define os_memcpy     memcpy
-#  define os_strlen     strlen
+#  define os_memset memset
+#  define os_memcpy memcpy
+#  define os_strlen strlen
+#  include <math.h>
 #  define os_abs        abs
 #  define os_fabs       fabs
 #  define STATIC_ASSERT BUILD_ASSERT
