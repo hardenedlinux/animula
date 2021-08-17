@@ -858,10 +858,10 @@ bool gc (const gc_info_t gci)
 
   size_t count = 0;
 
-  collect_inner (&count, &pair_free_pool, vector, false, false);
-  collect_inner (&count, &vector_free_pool, closure_on_heap, false, false);
+  collect_inner (&count, &pair_free_pool, pair, false, false);
+  collect_inner (&count, &vector_free_pool, vector, false, false);
   collect_inner (&count, &list_free_pool, list, false, false);
-  collect_inner (&count, &closure_free_pool, vector, false, false);
+  collect_inner (&count, &closure_free_pool, closure_on_heap, false, false);
   collect (&count, &obj_free_pool, false, false);
 
 #ifdef LAMBDACHIP_LINUX
