@@ -26,14 +26,13 @@
 #  endif
 #  include <stddef.h>
 #  include <zephyr/types.h>
-#  define bool _Bool
+#  include <vos/zephyr_types.h>
 typedef u16_t reg_t;
 
 #elif defined LAMBDACHIP_LINUX
 #  define CONFIG_HEAP_MEM_POOL_SIZE 90000
 #  include "__types.h"
 #  include <stdint.h>
-#  include <stdbool.h>
 
 #else
 #  define CONFIG_HEAP_MEM_POOL_SIZE 90000

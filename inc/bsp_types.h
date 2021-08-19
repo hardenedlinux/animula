@@ -25,12 +25,15 @@
 // I DON'T KNOW if they work well under other compilers;
 
 #ifndef __ASSEMBLER__
+
+#  ifndef LAMBDACHIP_ZEPHYR
 // Represents true-or-false values
 typedef enum BOOL
 {
   true = 1,
   false = 0
 } __bool;
+#  endif /* not LAMBDACHIP_ZEPHYR */
 
 // Explicitly-sized versions of integer types
 typedef signed char __s8_t;
@@ -53,21 +56,29 @@ typedef __u32_t __longword;
 #  ifndef ADDRESS_64
 
 #    ifndef LAMBDACHIP_LINUX
+typedef __u32_t __physaddr_t;
+#    else  /* not LAMBDACHIP_LINUX */
 typedef __s32_t __intptr_t;
 typedef __u32_t __uintptr_t;
-typedef __u32_t __physaddr_t;
-#    endif
+#    endif /* not LAMBDACHIP_LINUX */
 
-#  else
+#  else /* not ADDRESS_64 */
 
 #    ifndef LAMBDACHIP_LINUX
+typedef __u64_t __physaddr_t;
+#    else
 typedef __s64_t __intptr_t;
 typedef __u64_t __uintptr_t;
-typedef __u64_t __physaddr_t;
-#    endif
+#    endif /* not LAMBDACHIP_LINUX */
+
+#    ifndef LAMBDACHIP_ZEPHYR
+// off_t is used for file offsets and lengths.
+typedef __s64_t __off_t;
+#    endif /* not LAMBDACHIP_ZEPHYR */
 
 #  endif // End of ADDRESS_64;
 
+// bit width irrelevant
 #  ifndef LAMBDACHIP_LINUX
 // size_t is used for memory object sizes.
 typedef __u32_t __size_t;
@@ -77,7 +88,7 @@ typedef __s32_t __ssize_t;
 
 // off_t is used for file offsets and lengths.
 typedef __s32_t __off_t;
-#  endif
+#  endif /* not LAMBDACHIP_LINUX */
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
 
