@@ -45,6 +45,7 @@ static obj_list_head_t vector_free_pool;
 static obj_list_head_t list_free_pool;
 static obj_list_head_t closure_free_pool;
 static obj_list_head_t obj_free_pool;
+static obj_list_head_t bytevector_free_pool;
 
 static struct Pre_ARN _arn = {0};
 // TODO: static
@@ -270,6 +271,11 @@ void free_object (object_t obj)
       {
         break;
       }
+    case bytevector:
+      {
+        os_free ((void *)obj->value);
+        break;
+      }
     default:
       {
         PANIC ("free_object: Invalid type %d!\n", obj->attr.type);
@@ -335,6 +341,13 @@ void free_inner_object (otype_t type, void *value)
     case closure_on_stack:
       {
         ((closure_t)value)->attr.gc = FREE_OBJ;
+        break;
+      }
+    case bytevector:
+      {
+        bytevector_t p = (bytevector_t)value;
+        p->attr.gc = FREE_OBJ;
+        os_free (p->vec);
         break;
       }
     default:
@@ -818,6 +831,8 @@ static void sweep (bool force)
   release_all_free_objects (&closure_free_pool, force);
   // printf ("sweep obj\n");
   release_all_free_objects (&obj_free_pool, force);
+  // printf ("sweep bytevector\n");
+  release_all_free_objects (&bytevector_free_pool, force);
 }
 
 bool gc (const gc_info_t gci)
@@ -862,6 +877,7 @@ bool gc (const gc_info_t gci)
   collect_inner (&count, &vector_free_pool, vector, false, false);
   collect_inner (&count, &list_free_pool, list, false, false);
   collect_inner (&count, &closure_free_pool, closure_on_heap, false, false);
+  collect_inner (&count, &bytevector_free_pool, bytevector, false, false);
   collect (&count, &obj_free_pool, false, false);
 
 #ifdef LAMBDACHIP_LINUX
@@ -886,6 +902,7 @@ bool gc (const gc_info_t gci)
       collect_inner (&count, &vector_free_pool, vector, true, false);
       collect_inner (&count, &list_free_pool, list, true, false);
       collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
+      collect_inner (&count, &bytevector_free_pool, vector, true, false);
       collect (&count, &obj_free_pool, false, false);
     }
 
@@ -930,6 +947,7 @@ void gc_clean_cache (void)
   collect_inner (&cnt, &vector_free_pool, vector, false, true);
   collect_inner (&cnt, &list_free_pool, list, false, true);
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
+  collect_inner (&cnt, &bytevector_free_pool, bytevector, false, true);
 
   // free self-contained object in sweek
   sweep (true);
@@ -981,6 +999,11 @@ void gc_inner_obj_book (otype_t t, void *obj)
     case closure_on_stack:
       {
         SLIST_INSERT_HEAD (&closure_free_pool, node, next);
+        break;
+      }
+    case bytevector:
+      {
+        SLIST_INSERT_HEAD (&bytevector_free_pool, node, next);
         break;
       }
     default:
@@ -1043,6 +1066,11 @@ void *gc_pool_malloc (otype_t type)
     case closure_on_stack:
       {
         PANIC ("BUG: closures are not allocated from pool!\n");
+        break;
+      }
+    case bytevector:
+      {
+        node = get_free_obj_node (&bytevector_free_pool);
         break;
       }
     default:
@@ -1139,6 +1167,7 @@ void gc_init (void)
   SLIST_INIT (&vector_free_pool);
   SLIST_INIT (&pair_free_pool);
   SLIST_INIT (&closure_free_pool);
+  SLIST_INIT (&bytevector_free_pool);
 }
 
 void gc_clean (void)

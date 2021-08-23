@@ -166,6 +166,7 @@ obj_list_t lambdachip_new_list_node (void);
 list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);
+bytevector_t lambdachip_new_bytevector (void);
 void *lambdachip_new_inner_object (object_t object, u8_t type);
 object_t lambdachip_new_object (u8_t type);
 

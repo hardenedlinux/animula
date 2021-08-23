@@ -85,6 +85,11 @@ closure_t lambdachip_new_closure (void)
   CREATE_NEW_OBJ (closure_t, closure_on_heap, Closure);
 }
 
+bytevector_t lambdachip_new_bytevector (void)
+{
+  CREATE_NEW_OBJ (bytevector_t, bytevector, ByteVector);
+}
+
 object_t lambdachip_new_object (u8_t type)
 {
   bool has_inner_obj = true;
