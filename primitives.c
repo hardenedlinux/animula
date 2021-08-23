@@ -887,7 +887,8 @@ static bool _eqv (object_t a, object_t b)
     {
       /* case record: */
       /* case bytevector: */
-    case float:
+    case rational_pos:
+    case rational_neg:
     case imm_int:
       {
         ret = _int_eq (a, b);
