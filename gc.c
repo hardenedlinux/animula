@@ -345,9 +345,8 @@ void free_inner_object (otype_t type, void *value)
       }
     case bytevector:
       {
-        bytevector_t p = (bytevector_t)value;
-        p->attr.gc = FREE_OBJ;
-        os_free (p->vec);
+        ((bytevector_t)value)->attr.gc = FREE_OBJ;
+        os_free (((bytevector_t)value)->vec);
         break;
       }
     default:
@@ -401,6 +400,11 @@ static void recycle_object (object_t obj)
     case closure_on_stack:
       {
         free_object_from_pool (&closure_free_pool, obj);
+        break;
+      }
+    case bytevector:
+      {
+        free_object_from_pool (&bytevector_free_pool, obj);
         break;
       }
     default:
@@ -680,6 +684,11 @@ static int get_gc_from_node (otype_t type, void *value)
     case closure_on_stack:
       {
         gc = ((closure_t)value)->attr.gc;
+        break;
+      }
+    case bytevector:
+      {
+        gc = ((vector_t)value)->attr.gc;
         break;
       }
     default:
@@ -1097,6 +1106,8 @@ void simple_collect (obj_list_head_t *head)
   }
 }
 
+// collect all composite object, including vector, list, pair
+// bytevector is not included, since it does not have child objects with attr.gc
 void gc_try_to_recycle (void)
 {
   /* FIXME: The runtime created globals shouldn't be recycled */

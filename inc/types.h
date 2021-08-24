@@ -25,8 +25,8 @@
 #    error "You must define CONFIG_HEAP_MEM_POOL_SIZE for Zephyr!"
 #  endif
 #  include <stddef.h>
-#  include <zephyr/types.h>
 #  include <vos/zephyr_types.h>
+#  include <zephyr/types.h>
 typedef u16_t reg_t;
 
 #elif defined LAMBDACHIP_LINUX
@@ -210,7 +210,7 @@ typedef struct ByteVector
 {
   oattr attr;
   u16_t size;
-  object_t *vec;
+  u8_t *vec;
 } __packed ByteVector, *bytevector_t;
 
 typedef struct MutString

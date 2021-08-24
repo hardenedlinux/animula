@@ -1662,6 +1662,18 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+struct super_device
+{
+  int dev;
+};
+
+int i2c_read (int dev, u8_t *rx_buf, int len_list, int addr)
+{
+  static u8_t data[] = {0x1C, 0x9A, 0x15, 0x34, 0xED, 0xAD, 0x00};
+  memcpy (rx_buf, data, len_list);
+  return 0;
+}
+
 static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
                                    object_t i2c_addr, object_t length)
 {
@@ -1671,6 +1683,50 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   os_printk ("i2c_reg_read_list (%s, 0x%02X, %d)\n", (const char *)dev->value,
              (imm_int_t)i2c_addr->value, (imm_int_t)length->value);
   *ret = GLOBAL_REF (false_const);
+}
+
+static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
+                                         object_t i2c_addr, object_t length)
+{
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  VALIDATE (length, imm_int);
+  struct super_device super_dev_0 = {0};
+  struct super_device *p = &super_dev_0;
+
+  imm_int_t len_list = (imm_int_t)length->value;
+  uint8_t *buf = (uint8_t *)GC_MALLOC (len_list);
+  if (!buf)
+    {
+      ret->attr.type = boolean;
+      ret->value = (object_t)&GLOBAL_REF (false_const);
+      PANIC ("GC_MALLOC fail\n");
+      return ret;
+    }
+
+  int status = i2c_read (p->dev, buf, len_list, (imm_int_t)i2c_addr->value);
+  if (status != 0)
+    {
+      // FIXME: ret is created outside, it may have memory leak here
+      *ret = GLOBAL_REF (false_const);
+      // ret->attr.type = boolean;
+      // ret->value = (object_t)&GLOBAL_REF (false_const);
+      os_free (buf);
+      buf = (void *)NULL;
+      return ret;
+    }
+
+  bytevector_t bv = NEW_INNER_OBJ (bytevector);
+  bv->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
+  bv->vec = buf;
+  ret->attr.type = bytevector;
+  ret->attr.gc = PERMANENT_OBJ;
+  ret->value = (void *)bv;
+
+  ret->attr.gc = GEN_1_OBJ;
+  bv->attr.gc = GEN_1_OBJ;
+  // the ownership of buf is transfered to ret->bv->vec
+  // do not need to free here
   return ret;
 }
 
@@ -1828,7 +1884,6 @@ void primitives_init (void)
   def_prim (24, "eqv", 2, (void *)_eqv);
   def_prim (25, "equal", 2, (void *)_equal);
   def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
-  // #ifdef LAMBDACHIP_ZEPHYR
   def_prim (27, "device_configure", 2, (void *)_os_device_configure);
   def_prim (28, "gpio_set", 2, (void *)_os_gpio_set);
   def_prim (29, "gpio_toggle", 1, (void *)_os_gpio_toggle);
@@ -1870,10 +1925,9 @@ void primitives_init (void)
   def_prim (65, "real?", 1, prim_real_p);
   def_prim (66, "rational?", 1, prim_rational_p);
   def_prim (67, "complex?", 1, prim_complex_p);
-
-  // // gpio_pin_set(dev_led0, LED0_PIN, (((cnt) % 5) == 0) ? 1 : 0);
-
-  // #endif /* LAMBDACHIP_ZEPHYR */
+  def_prim (68, "exact?", 1, prim_complex_p);
+  def_prim (69, "inexact?", 1, prim_complex_p);
+  def_prim (70, "i2c-read-bytevector!", 3, (void *)_os_i2c_read_bytevector);
 }
 
 char *prim_name (u16_t pn)

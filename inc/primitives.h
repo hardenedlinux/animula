@@ -29,7 +29,6 @@
 #include "vector.h"
 
 #define PRIM_NAME_SIZE 32
-#define PRIM_MAX       70
 #define BOARD_ID_LEN   25
 
 // NOTE: assign is not a primitive
@@ -99,9 +98,9 @@ typedef enum prim_num
   is_rational = 67,
   is_exact = 68,
   is_inexact = 69,
+  prim_i2c_read_bytevector = 70,
 
-  do_not_forget_modify_PRIM_MAX = 70
-
+  PRIM_MAX = 71,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \
