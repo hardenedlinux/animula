@@ -85,9 +85,6 @@ typedef __u32_t __size_t;
 // ssize_t is a signed version of ssize_t, used in case there might be an
 // error return.
 typedef __s32_t __ssize_t;
-
-// off_t is used for file offsets and lengths.
-typedef __s32_t __off_t;
 #  endif /* not LAMBDACHIP_LINUX */
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
