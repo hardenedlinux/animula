@@ -172,7 +172,7 @@ void os_free (void *ptr)
   if (NULL != ptr)
     __free (ptr);
   else
-    PANIC ("Free a NULL ptr");
+    PANIC ("Free a NULL ptr\n");
 
 #ifdef FORCE_MEMORY_SIZE_TEST
   size_t i = 0;
