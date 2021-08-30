@@ -678,6 +678,27 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)value;
         break;
       }
+    case bytevector:
+      {
+        u16_t size = NEXT_DATA ();
+        size = ((size << 8) | NEXT_DATA ());
+        VM_DEBUG ("(push-bytevector-object %d)\n", size);
+        bytevector_t v = NEW_INNER_OBJ (bytevector);
+        v->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
+        v->vec = (u8_t *)GC_MALLOC (sizeof (u8_t) * size);
+        v->size = size;
+        obj->attr.type = bytevector;
+        obj->value = (void *)v;
+        PUSH_OBJ (*obj);
+        u32_t sp = vm->sp - sizeof (Object);
+
+        for (u16_t i = 0; i < size; i++)
+          {
+            (v->vec)[i] = NEXT_DATA ();
+          }
+        vm->sp = sp; // refix the pop offset
+        break;
+      }
     default:
       {
         os_printk ("Oops, invalid object %d %d!\n", bc.type, bc.data);
