@@ -322,6 +322,7 @@ void call_prim (vm_t vm, pn_t pn)
         break;
       }
     case prim_i2c_read_list:
+    case prim_i2c_read_bytevector:
     case prim_i2c_write_list:
     case prim_i2c_read_byte: // 3 parameters
       {

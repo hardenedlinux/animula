@@ -1512,6 +1512,50 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
+                                         object_t i2c_addr, object_t length)
+{
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  VALIDATE (length, imm_int);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+
+  imm_int_t len_list = (imm_int_t)length->value;
+  uint8_t *buf = (uint8_t *)GC_MALLOC (len_list);
+  if (!buf)
+    {
+      ret->attr.type = boolean;
+      ret->value = (object_t)&GLOBAL_REF (false_const);
+      PANIC ("GC_MALLOC fail\n");
+      return ret;
+    }
+
+  int status = i2c_read (p->dev, buf, len_list, (imm_int_t)i2c_addr->value);
+  if (status != 0)
+    {
+      // FIXME: ret is created outside, it may have memory leak here
+      *ret = GLOBAL_REF (false_const);
+      // ret->attr.type = boolean;
+      // ret->value = (object_t)&GLOBAL_REF (false_const);
+      os_free (buf);
+      buf = (void *)NULL;
+      return ret;
+    }
+
+  bytevector_t bv = NEW_INNER_OBJ (bytevector);
+  bv->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
+  bv->vec = buf;
+  ret->attr.type = bytevector;
+  ret->attr.gc = PERMANENT_OBJ;
+  ret->value = (void *)bv;
+
+  ret->attr.gc = GEN_1_OBJ;
+  bv->attr.gc = GEN_1_OBJ;
+  // the ownership of buf is transfered to ret->bv->vec
+  // do not need to free here
+  return ret;
+}
+
 static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
                                     object_t spi_config, object_t send_buffer,
                                     object_t receive_buffer)
@@ -1531,7 +1575,8 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
-/* LAMBDACHIP_ZEPHYR */
+/* LAMBDACHIP_ZEPHYR *************************************** LAMBDACHIP_LINUX */
+
 #elif defined LAMBDACHIP_LINUX
 static object_t _os_get_board_id (vm_t vm)
 {
@@ -1662,6 +1707,7 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+#  ifdef SIMULATE
 struct super_device
 {
   int dev;
@@ -1673,6 +1719,7 @@ int i2c_read (int dev, u8_t *rx_buf, int len_list, int addr)
   memcpy (rx_buf, data, len_list);
   return 0;
 }
+#  endif /* SIMULATE*/
 
 static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
                                    object_t i2c_addr, object_t length)
@@ -1691,6 +1738,12 @@ static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
   VALIDATE (dev, symbol);
   VALIDATE (i2c_addr, imm_int);
   VALIDATE (length, imm_int);
+#  ifndef SIMULATE
+  os_printk ("i2c_read_bytevector (%s, 0x%02X, %d)\n", (const char *)dev->value,
+             (imm_int_t)i2c_addr->value, (imm_int_t)length->value);
+  *ret = GLOBAL_REF (false_const);
+  return ret;
+#  else
   struct super_device super_dev_0 = {0};
   struct super_device *p = &super_dev_0;
 
@@ -1728,6 +1781,7 @@ static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
   // the ownership of buf is transfered to ret->bv->vec
   // do not need to free here
   return ret;
+#  endif /* SIMULATE */
 }
 
 static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
