@@ -1727,9 +1727,79 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   VALIDATE (dev, symbol);
   VALIDATE (i2c_addr, imm_int);
   VALIDATE (length, imm_int);
+#  ifndef SIMULATE
   os_printk ("i2c_reg_read_list (%s, 0x%02X, %d)\n", (const char *)dev->value,
              (imm_int_t)i2c_addr->value, (imm_int_t)length->value);
   *ret = GLOBAL_REF (false_const);
+  return ret;
+#  else
+  struct super_device super_dev_0 = {0};
+  struct super_device *p = &super_dev_0;
+
+  imm_int_t len_list = (imm_int_t)length->value;
+  uint8_t *rx_buf = (uint8_t *)GC_MALLOC (len_list);
+  if (!rx_buf)
+    {
+      ret->attr.type = boolean;
+      ret->value = (object_t)&GLOBAL_REF (false_const);
+      PANIC ("Allocate buffer fail\n");
+      return ret;
+    }
+
+  int status = i2c_read (p->dev, rx_buf, len_list, (imm_int_t)i2c_addr->value);
+  if (status != 0)
+    {
+      // FIXME: ret is created outside, it may have memory leak here
+      *ret = GLOBAL_REF (false_const);
+      os_free (rx_buf);
+      rx_buf = (void *)NULL;
+      return ret;
+    }
+
+  list_t l = NEW_INNER_OBJ (list);
+  SLIST_INIT (&l->list);
+  l->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
+  l->non_shared = 0;
+  ret->attr.type = list;
+  ret->attr.gc = PERMANENT_OBJ;
+  ret->value = (void *)l;
+
+  /* NOTE:
+   * To safely created a List, we have to consider that GC may happend
+   * unexpectedly.
+   * 1. We must save list-obj to avoid to be freed by GC.
+   * 2. The POP operation must be fixed to skip list-obj.
+   * 3. oln must be created and inserted before the object allocation.
+   */
+
+  obj_list_t iter = NULL;
+  for (imm_int_t i = 0; i < len_list; i++)
+    {
+      obj_list_t bl = NEW_LIST_NODE ();
+      // avoid crash in case GC was triggered here
+      bl->obj = (void *)0xDEADBEEF;
+      object_t new_obj = NEW_OBJ (imm_int);
+      new_obj->attr.gc = GEN_1_OBJ;
+      bl->obj = new_obj;
+
+      new_obj->value = (void *)rx_buf[i];
+      if (0 == i)
+        {
+          SLIST_INSERT_HEAD (&l->list, bl, next);
+        }
+      else
+        {
+          SLIST_INSERT_AFTER (iter, bl, next);
+        }
+      iter = bl;
+    }
+
+  ret->attr.gc = GEN_1_OBJ;
+  l->attr.gc = GEN_1_OBJ;
+  os_free (rx_buf);
+  rx_buf = (void *)NULL;
+  return ret;
+#  endif /* SIMULATE */
 }
 
 static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
