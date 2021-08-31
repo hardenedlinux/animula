@@ -142,6 +142,10 @@ extern GLOBAL_DEF (prim_t, prim_table[]);
 static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
 {
   prim_t prim = (prim_t)os_calloc (1, sizeof (struct Primitive));
+  if (!prim)
+    {
+      PANIC ("def_prim calloc failed!\n");
+    }
 #if defined LAMBDACHIP_DEBUG
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
   os_memcpy (prim->name, name, len);
