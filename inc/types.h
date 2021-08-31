@@ -45,7 +45,7 @@ typedef u16_t reg_t;
 #  endif
 #endif
 
-typedef enum obj_encoding
+enum obj_encoding
 {
   FALSE = 0,
   TRUE,
@@ -54,7 +54,7 @@ typedef enum obj_encoding
   NULL_LIST,
   NONE,
   SYMBOL
-} obje_t;
+};
 
 typedef enum obj_type
 {
