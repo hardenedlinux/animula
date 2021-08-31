@@ -90,7 +90,7 @@ bytevector_t lambdachip_new_bytevector (void)
   CREATE_NEW_OBJ (bytevector_t, bytevector, ByteVector);
 }
 
-object_t lambdachip_new_object (u8_t type)
+object_t lambdachip_new_object (otype_t type)
 {
   bool has_inner_obj = true;
   bool new_alloc = false;
