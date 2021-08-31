@@ -512,7 +512,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)value;
         break;
       }
-    case string:
+    case string: // immutable string
       {
         const char *str = (char *)(vm->code + vm->pc);
         vm->pc += os_strnlen (str, MAX_STR_LEN) + 1;
@@ -679,7 +679,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)value;
         break;
       }
-    case bytevector:
+    case bytevector: // immutable bytevector
       {
         u16_t size = NEXT_DATA ();
         size = ((size << 8) | NEXT_DATA ());

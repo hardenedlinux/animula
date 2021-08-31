@@ -739,7 +739,7 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
 
   /* GC algo:
       1. Skip permanent object.
-      2. If it 's in active root, it get aged if it' s gen-1, keep age if it's
+      2. If it's in active root, it get aged if it's gen-1, keep age if it's
          gen-2.
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.

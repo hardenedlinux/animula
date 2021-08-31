@@ -69,19 +69,19 @@ struct memory_block
   size_t size;
 };
 
-static struct memory_block g_used_memory[MEMORY_TRACKER_SIZE] = {0};
+static struct memory_block g_used_memory[MEMORY_TRACKER_ARRAY_LENGTH] = {0};
 #endif
 
 void *os_malloc (size_t size)
 {
 #ifdef FORCE_MEMORY_SIZE_TEST
   uint32_t used_memory_size = 0;
-  for (size_t i = 0; i < MEMORY_TRACKER_SIZE; i++)
+  for (size_t i = 0; i < MEMORY_TRACKER_ARRAY_LENGTH; i++)
     {
       used_memory_size += g_used_memory[i].size;
     }
 
-  if ((used_memory_size + size) > FORCE_MEMORY_SIZE_TEST)
+  if ((used_memory_size + size) > MEMORY_HARD_LIMIT)
     {
       VM_DEBUG ("os_malloc: Failed to allocate memory!\n");
       return NULL;
@@ -98,7 +98,7 @@ void *os_malloc (size_t size)
   else
     {
       size_t i = 0;
-      for (; i < MEMORY_TRACKER_SIZE; i++)
+      for (; i < MEMORY_TRACKER_ARRAY_LENGTH; i++)
         {
           if (NULL == g_used_memory[i].ptr)
             {
@@ -108,7 +108,7 @@ void *os_malloc (size_t size)
             }
         }
 
-      if (MEMORY_TRACKER_SIZE == i)
+      if (MEMORY_TRACKER_ARRAY_LENGTH == i)
         {
           PANIC ("os_malloc: memory tracker used up! %p\n", ptr);
         }
@@ -122,12 +122,12 @@ void *os_calloc (size_t n, size_t size)
 {
 #ifdef FORCE_MEMORY_SIZE_TEST
   uint32_t used_memory_size = 0;
-  for (size_t i = 0; i < MEMORY_TRACKER_SIZE; i++)
+  for (size_t i = 0; i < MEMORY_TRACKER_ARRAY_LENGTH; i++)
     {
       used_memory_size += g_used_memory[i].size;
     }
 
-  if ((used_memory_size + n * size) > FORCE_MEMORY_SIZE_TEST)
+  if ((used_memory_size + n * size) > MEMORY_HARD_LIMIT)
     {
       VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
       return NULL;
@@ -144,7 +144,7 @@ void *os_calloc (size_t n, size_t size)
   else
     {
       size_t i = 0;
-      for (; i < MEMORY_TRACKER_SIZE; i++)
+      for (; i < MEMORY_TRACKER_ARRAY_LENGTH; i++)
         {
           if (NULL == g_used_memory[i].ptr)
             {
@@ -153,7 +153,7 @@ void *os_calloc (size_t n, size_t size)
               break;
             }
         }
-      if (MEMORY_TRACKER_SIZE == i)
+      if (MEMORY_TRACKER_ARRAY_LENGTH == i)
         {
           PANIC ("os_calloc: memory tracker used up! %p\n", ptr);
         }
@@ -176,7 +176,7 @@ void os_free (void *ptr)
 
 #ifdef FORCE_MEMORY_SIZE_TEST
   size_t i = 0;
-  for (; i < MEMORY_TRACKER_SIZE; i++)
+  for (; i < MEMORY_TRACKER_ARRAY_LENGTH; i++)
     {
       if (ptr == g_used_memory[i].ptr)
         {
@@ -186,7 +186,7 @@ void os_free (void *ptr)
         }
     }
 
-  if (MEMORY_TRACKER_SIZE == i)
+  if (MEMORY_TRACKER_ARRAY_LENGTH == i)
     {
       PANIC ("os_free: freed a memory area not managed by us, ptr=%p\n", ptr);
     }
