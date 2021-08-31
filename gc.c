@@ -84,7 +84,7 @@ static void object_list_node_pre_allocate (void)
   int i = 0;
   for (; i < PRE_OLN; i++)
     {
-      obj_list_t ptr = (obj_list_t)os_malloc (sizeof (ObjectList));
+      list_node_t ptr = (list_node_t)os_malloc (sizeof (ObjectList));
       if (NULL == ptr)
         {
           PANIC ("GC: We're doomed! Did you set a too large PRE_OLN?"
@@ -101,9 +101,9 @@ static void object_list_node_pre_allocate (void)
             PRE_OLN * sizeof (ObjectList));
 }
 
-obj_list_t object_list_node_alloc (void)
+list_node_t object_list_node_alloc (void)
 {
-  obj_list_t ret = NULL;
+  list_node_t ret = NULL;
 
   if (!object_list_node_available ())
     {
@@ -122,8 +122,8 @@ obj_list_t object_list_node_alloc (void)
   return ret;
 }
 
-// put obj_list_t back into OLN for future use
-static void object_list_node_recycle (obj_list_t node)
+// put list_node_t back into OLN for future use
+static void object_list_node_recycle (list_node_t node)
 {
   _oln.oln[--_oln.index] = node;
 }
@@ -232,7 +232,7 @@ void free_object (object_t obj)
       }
     case list:
       {
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
         u16_t non_shared = LIST_OBJECT_SIDX (obj);
         u16_t cnt = 0;
@@ -310,7 +310,7 @@ void free_inner_object (otype_t type, void *value)
       }
     case list:
       {
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
         obj_list_head_t *head = &((list_t)value)->list;
         u16_t non_shared = ((list_t)value)->non_shared;
         u16_t cnt = 0;
@@ -387,7 +387,7 @@ static void recycle_object (object_t obj)
       }
     case list:
       {
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
         obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
 
         SLIST_FOREACH (node, head, next)
@@ -450,7 +450,7 @@ static void active_root_insert (object_t obj)
       }
     case list:
       {
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
         obj_list_head_t *head = &((list_t)obj->value)->list;
 
         SLIST_FOREACH (node, head, next)
@@ -530,7 +530,7 @@ static void active_root_inner_insert (otype_t type, void *value)
       }
     case list:
       {
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
         obj_list_head_t *head = &((list_t)value)->list;
 
         SLIST_FOREACH (node, head, next)
@@ -607,7 +607,7 @@ static void clean_active_root ()
 static void collect (size_t *count, obj_list_head_t *head, bool hurt,
                      bool force)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   /* GC algo:
       1. Skip permanent object.
@@ -735,7 +735,7 @@ static void set_gc_to_node (otype_t type, void *value, int gc)
 static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
                            bool hurt, bool force)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   /* GC algo:
       1. Skip permanent object.
@@ -785,7 +785,7 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
 
 static size_t count_me (obj_list_head_t *head)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
   size_t cnt = 0;
 
   SLIST_FOREACH (node, head, next)
@@ -797,8 +797,8 @@ static size_t count_me (obj_list_head_t *head)
 
 static void release_all_free_objects (obj_list_head_t *head, bool force)
 {
-  obj_list_t node = NULL;
-  obj_list_t nxt = NULL;
+  list_node_t node = NULL;
+  list_node_t nxt = NULL;
 
   if (!SLIST_EMPTY (head))
     {
@@ -964,7 +964,7 @@ void gc_clean_cache (void)
 
 void gc_obj_book (void *obj)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   node = object_list_node_alloc ();
   if (!node)
@@ -977,7 +977,7 @@ void gc_obj_book (void *obj)
 
 void gc_inner_obj_book (otype_t t, void *obj)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
   node = object_list_node_alloc ();
 
   if (!node)
@@ -1036,7 +1036,7 @@ void *gc_pool_malloc (otype_t type)
   /* NOTE: If object was freed, then the internal obj was freed, so we don't
    *       have to maintain `gc' fields in the internal obj.
    */
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   switch (type)
     {
@@ -1093,7 +1093,7 @@ void *gc_pool_malloc (otype_t type)
 
 void simple_collect (obj_list_head_t *head)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   SLIST_FOREACH (node, head, next)
   {
@@ -1190,7 +1190,7 @@ void gc_clean (void)
 // remove first find object in LIST head
 static void free_object_from_pool (obj_list_head_t *head, object_t o)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
   SLIST_FOREACH (node, (head), next)
   {
     if (node->obj == (o))

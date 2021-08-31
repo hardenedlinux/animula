@@ -179,7 +179,7 @@ typedef struct ObjectList
 {
   SLIST_ENTRY (ObjectList) next;
   object_t obj;
-} __packed ObjectList, *obj_list_t;
+} __packed ObjectList, *list_node_t;
 
 typedef struct List
 {

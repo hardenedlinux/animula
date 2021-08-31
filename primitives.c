@@ -983,8 +983,8 @@ static bool _equal (object_t a, object_t b)
           {
             obj_list_head_t *h1 = LIST_OBJECT_HEAD (a);
             obj_list_head_t *h2 = LIST_OBJECT_HEAD (b);
-            obj_list_t n1 = NULL;
-            obj_list_t n2 = SLIST_FIRST (h2);
+            list_node_t n1 = NULL;
+            list_node_t n2 = SLIST_FIRST (h2);
 
             SLIST_FOREACH (n1, h1, next)
             {
@@ -1441,14 +1441,14 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
   ret->attr.gc = 1;
   ret->value = (void *)l;
 
-  obj_list_t iter = NULL;
+  list_node_t iter = NULL;
   for (imm_int_t i = 0; i < len_list; i++)
     {
       object_t new_obj = NEW_OBJ (0);
 
       // FIXME: check if pop is needed?
       // *new_obj = (object_t)POP_OBJ ();
-      obj_list_t bl = NEW_LIST_NODE ();
+      list_node_t bl = NEW_LIST_NODE ();
       bl->obj = new_obj;
       bl->obj->value = (void *)rx_buf[i];
       if (0 == i)
@@ -1493,7 +1493,7 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
 
   list_t obj_lst = (list_t) (lst->value);
   obj_list_head_t head = obj_lst->list;
-  obj_list_t iter = {0};
+  list_node_t iter = {0};
   imm_int_t index = 0;
   SLIST_FOREACH (iter, &head, next)
   {
@@ -1676,7 +1676,7 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   // typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
   // obj_list_head_t head = send_buffer_raw->list;
   obj_list_head_t *send_buffer_head = LIST_OBJECT_HEAD (send_buffer);
-  obj_list_t send_buffer_node = SLIST_FIRST (send_buffer_head);
+  list_node_t send_buffer_node = SLIST_FIRST (send_buffer_head);
 
   u8_t *send_buffer_array = (u8_t *)GC_MALLOC ((imm_int_t) (len_ptr->value));
   if (!send_buffer_array)
@@ -1772,10 +1772,10 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
    * 3. oln must be created and inserted before the object allocation.
    */
 
-  obj_list_t iter = NULL;
+  list_node_t iter = NULL;
   for (imm_int_t i = 0; i < len_list; i++)
     {
-      obj_list_t bl = NEW_LIST_NODE ();
+      list_node_t bl = NEW_LIST_NODE ();
       // avoid crash in case GC was triggered here
       bl->obj = (void *)0xDEADBEEF;
       object_t new_obj = NEW_OBJ (imm_int);

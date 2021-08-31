@@ -20,7 +20,7 @@
 static inline void list_printer (const object_t obj)
 {
   obj_list_head_t head = ((list_t)obj->value)->list;
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   os_printk ("(");
   SLIST_FOREACH (node, &head, next)

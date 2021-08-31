@@ -59,9 +59,9 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   return closure;
 }
 
-obj_list_t lambdachip_new_list_node (void)
+list_node_t lambdachip_new_list_node (void)
 {
-  return (obj_list_t)os_malloc (sizeof (ObjectList));
+  return (list_node_t)os_malloc (sizeof (ObjectList));
 }
 
 u32_t list_cnt = 0;

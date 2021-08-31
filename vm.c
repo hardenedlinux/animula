@@ -33,7 +33,7 @@ static void handle_optional_args (vm_t vm, object_t proc)
       object_t new_obj = NEW_OBJ (0);
       *new_obj = POP_OBJ ();
       new_obj->attr.gc = GEN_1_OBJ; // don't forget to reset gc to GEN_1_OBJ
-      obj_list_t bl = (obj_list_t)GC_MALLOC (sizeof (ObjectList));
+      list_node_t bl = (list_node_t)GC_MALLOC (sizeof (ObjectList));
       bl->obj = new_obj;
       SLIST_INSERT_HEAD (head, bl, next);
     }
@@ -151,8 +151,8 @@ void call_prim (vm_t vm, pn_t pn)
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
-        obj_list_t node = NULL;
-        obj_list_t prev = NULL;
+        list_node_t node = NULL;
+        list_node_t prev = NULL;
         /* We always set k as return */
         Object k = GEN_PRIM (ret);
         list_t new_list = NEW_INNER_OBJ (list);
@@ -169,7 +169,7 @@ void call_prim (vm_t vm, pn_t pn)
 
         SLIST_FOREACH (node, head, next)
         {
-          obj_list_t new_node = NEW_LIST_NODE ();
+          list_node_t new_node = NEW_LIST_NODE ();
           new_node->obj = (void *)0xDEADBEEF;
           if (!prev)
             {
@@ -227,7 +227,7 @@ void call_prim (vm_t vm, pn_t pn)
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
 
         PUSH_REG (vm->pc);
         PUSH_REG (vm->fp);
@@ -268,7 +268,7 @@ void call_prim (vm_t vm, pn_t pn)
         Object proc = POP_OBJ ();
         Object ret = CREATE_RET_OBJ ();
         obj_list_head_t *head = LIST_OBJECT_HEAD (&args);
-        obj_list_t node = NULL;
+        list_node_t node = NULL;
 
         SLIST_FOREACH (node, head, next)
         {
@@ -595,7 +595,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         for (u16_t i = 0; i < size; i++)
           {
             // POP_OBJ_FROM (sp);
-            obj_list_t bl = NEW_LIST_NODE ();
+            list_node_t bl = NEW_LIST_NODE ();
             // avoid crash in case GC was triggered here
             bl->obj = (void *)0xDEADBEEF;
             SLIST_INSERT_HEAD (&l->list, bl, next);

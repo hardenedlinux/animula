@@ -73,7 +73,7 @@
 
 #define NEW_LIST_NODE()                   \
   ({                                      \
-    obj_list_t ol = NULL;                 \
+    list_node_t ol = NULL;                 \
     do                                    \
       {                                   \
         ol = lambdachip_new_list_node (); \
@@ -127,7 +127,7 @@ struct Pre_ARN
 struct Pre_OLN
 {
   int index;
-  obj_list_t oln[PRE_OLN];
+  list_node_t oln[PRE_OLN];
 };
 
 static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
@@ -136,9 +136,9 @@ static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
   return ((intptr_t)b->value - (intptr_t)a->value);
 }
 
-static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
+static inline list_node_t get_free_obj_node (obj_list_head_t *lst)
 {
-  obj_list_t node = NULL;
+  list_node_t node = NULL;
 
   SLIST_FOREACH (node, lst, next)
   {
@@ -154,9 +154,9 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
   return node;
 }
 
-/* static inline obj_list_t get_free_node (obj_list_head_t *lst) */
+/* static inline list_node_t get_free_node (obj_list_head_t *lst) */
 /* { */
-/*   obj_list_t node = NULL; */
+/*   list_node_t node = NULL; */
 
 /*   if (!SLIST_EMPTY (lst)) */
 /*     { */
@@ -170,7 +170,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
 #define RECYCLE_OBJ(lst, obj)            \
   do                                     \
     {                                    \
-      obj_list_t node = NULL;            \
+      list_node_t node = NULL;           \
       SLIST_FOREACH (node, &(lst), next) \
       {                                  \
         if (node->obj == obj)            \
@@ -185,7 +185,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
 #define FREE_LIST_PRINT(head)                                         \
   do                                                                  \
     {                                                                 \
-      obj_list_t node = NULL;                                         \
+      list_node_t node = NULL;                                        \
       os_printk ("^^^^^^^^^^^^^^^^^^^^^^^^^^\n");                     \
       SLIST_FOREACH (node, (head), next)                              \
       {                                                               \
@@ -196,7 +196,7 @@ static inline obj_list_t get_free_obj_node (obj_list_head_t *lst)
     }                                                                 \
   while (0)
 
-static void object_list_node_recycle (obj_list_t node);
+static void object_list_node_recycle (list_node_t node);
 static void free_object_from_pool (obj_list_head_t *head, object_t o);
 void free_object (object_t obj);
 void gc_init (void);
@@ -208,6 +208,6 @@ void gc_obj_book (void *obj);
 void gc_try_to_recycle (void);
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp);
 size_t object_list_node_available (void);
-obj_list_t object_list_node_alloc (void);
+list_node_t object_list_node_alloc (void);
 void gc_clean (void);
 #endif // End of __LAMBDACHIP_GC_H__
