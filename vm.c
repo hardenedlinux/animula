@@ -1188,8 +1188,7 @@ void vm_init_globals (vm_t vm, lef_t lef)
   /* NOTE: We have to create a temporary global code in gsize, and set it to
    *       vm->code, since the size of code_seg may be smaller than data_seg.
    */
-  vm->code = (void *)os_malloc (lef->gsize);
-  os_memcpy (vm->code, LEF_GLOBAL (lef), lef->gsize);
+  vm->code = LEF_GLOBAL (lef);
   vm->pc = 0;
   vm->state = VM_INIT_GLOBALS;
 
@@ -1197,6 +1196,7 @@ void vm_init_globals (vm_t vm, lef_t lef)
   size_t size = vm->sp;
   vm->globals = (object_t)os_malloc (size);
   os_memcpy (vm->globals, vm->stack, size);
+  vm->code = code; // restore code segment
 
   /* #ifdef LAMBDACHIP_DEBUG */
   /*   os_printk ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp); */
@@ -1217,8 +1217,6 @@ void vm_init_globals (vm_t vm, lef_t lef)
   /*     } */
   /* #endif */
 
-  os_free (vm->code); // free temporary global code seg
-  vm->code = code;    // restore code seg
   vm_init_environment (vm);
 }
 
