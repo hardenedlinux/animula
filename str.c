@@ -71,7 +71,7 @@ object_t _read_line (vm_t vm, object_t ret)
 object_t _list_to_string (vm_t vm, object_t ret, object_t lst)
 {
   char buf[MAX_STR_LEN] = {0};
-  obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
+  ListHead *head = LIST_OBJECT_HEAD (lst);
   list_node_t node = NULL;
   ret->attr.type = mut_string;
   int cnt = 0;

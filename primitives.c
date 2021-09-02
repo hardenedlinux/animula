@@ -981,8 +981,8 @@ static bool _equal (object_t a, object_t b)
           }
         else
           {
-            obj_list_head_t *h1 = LIST_OBJECT_HEAD (a);
-            obj_list_head_t *h2 = LIST_OBJECT_HEAD (b);
+            ListHead *h1 = LIST_OBJECT_HEAD (a);
+            ListHead *h2 = LIST_OBJECT_HEAD (b);
             list_node_t n1 = NULL;
             list_node_t n2 = SLIST_FIRST (h2);
 
@@ -1492,7 +1492,7 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
     }
 
   list_t obj_lst = (list_t) (lst->value);
-  obj_list_head_t head = obj_lst->list;
+  ListHead head = obj_lst->list;
   list_node_t iter = {0};
   imm_int_t index = 0;
   SLIST_FOREACH (iter, &head, next)
@@ -1673,9 +1673,7 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   object_printer (len_ptr);
   os_printk ("\n");
 
-  // typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
-  // obj_list_head_t head = send_buffer_raw->list;
-  obj_list_head_t *send_buffer_head = LIST_OBJECT_HEAD (send_buffer);
+  ListHead *send_buffer_head = LIST_OBJECT_HEAD (send_buffer);
   list_node_t send_buffer_node = SLIST_FIRST (send_buffer_head);
 
   u8_t *send_buffer_array = (u8_t *)GC_MALLOC ((imm_int_t) (len_ptr->value));

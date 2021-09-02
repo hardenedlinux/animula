@@ -73,7 +73,7 @@
 
 #define NEW_LIST_NODE()                   \
   ({                                      \
-    list_node_t ol = NULL;                 \
+    list_node_t ol = NULL;                \
     do                                    \
       {                                   \
         ol = lambdachip_new_list_node (); \
@@ -136,7 +136,7 @@ static inline int active_root_compare (ActiveRootNode *a, ActiveRootNode *b)
   return ((intptr_t)b->value - (intptr_t)a->value);
 }
 
-static inline list_node_t get_free_obj_node (obj_list_head_t *lst)
+static inline list_node_t get_free_obj_node (ListHead *lst)
 {
   list_node_t node = NULL;
 
@@ -154,14 +154,14 @@ static inline list_node_t get_free_obj_node (obj_list_head_t *lst)
   return node;
 }
 
-/* static inline list_node_t get_free_node (obj_list_head_t *lst) */
+/* static inline list_node_t get_free_node (ListHead *lst) */
 /* { */
 /*   list_node_t node = NULL; */
 
 /*   if (!SLIST_EMPTY (lst)) */
 /*     { */
 /*       node = SLIST_FIRST (lst); */
-/*       SLIST_REMOVE (lst, node, ObjectList, next); */
+/*       SLIST_REMOVE (lst, node, ListNode, next); */
 /*     } */
 
 /*   return node; */
@@ -197,7 +197,7 @@ static inline list_node_t get_free_obj_node (obj_list_head_t *lst)
   while (0)
 
 static void object_list_node_recycle (list_node_t node);
-static void free_object_from_pool (obj_list_head_t *head, object_t o);
+static void free_object_from_pool (ListHead *head, object_t o);
 void free_object (object_t obj);
 void gc_init (void);
 bool gc (const gc_info_t gci);

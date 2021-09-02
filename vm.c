@@ -26,14 +26,14 @@ static void handle_optional_args (vm_t vm, object_t proc)
   u8_t cnt = COUNT_ARGS () - proc->proc.opt;
   Object varg = {.attr = {.type = list, .gc = FREE_OBJ},
                  .value = (void *)NEW_INNER_OBJ (list)};
-  obj_list_head_t *head = LIST_OBJECT_HEAD (&varg);
+  ListHead *head = LIST_OBJECT_HEAD (&varg);
 
   for (int i = 0; i < cnt; i++)
     {
       object_t new_obj = NEW_OBJ (0);
       *new_obj = POP_OBJ ();
       new_obj->attr.gc = GEN_1_OBJ; // don't forget to reset gc to GEN_1_OBJ
-      list_node_t bl = (list_node_t)GC_MALLOC (sizeof (ObjectList));
+      list_node_t bl = (list_node_t)GC_MALLOC (sizeof (ListNode));
       bl->obj = new_obj;
       SLIST_INSERT_HEAD (head, bl, next);
     }
@@ -150,7 +150,7 @@ void call_prim (vm_t vm, pn_t pn)
 
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
-        obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
+        ListHead *head = LIST_OBJECT_HEAD (&lst);
         list_node_t node = NULL;
         list_node_t prev = NULL;
         /* We always set k as return */
@@ -162,7 +162,7 @@ void call_prim (vm_t vm, pn_t pn)
          */
         Object new_list_obj = {.attr = {.type = list, .gc = PERMANENT_OBJ},
                                .value = (void *)new_list};
-        obj_list_head_t *new_head = LIST_OBJECT_HEAD (&new_list_obj);
+        ListHead *new_head = LIST_OBJECT_HEAD (&new_list_obj);
         new_list->non_shared = 0;
 
         SAVE_ENV_SIMPLE ();
@@ -226,7 +226,7 @@ void call_prim (vm_t vm, pn_t pn)
         Object k = GEN_PRIM (ret);
         Object lst = POP_OBJ ();
         Object proc = POP_OBJ ();
-        obj_list_head_t *head = LIST_OBJECT_HEAD (&lst);
+        ListHead *head = LIST_OBJECT_HEAD (&lst);
         list_node_t node = NULL;
 
         PUSH_REG (vm->pc);
@@ -267,7 +267,7 @@ void call_prim (vm_t vm, pn_t pn)
         Object args = POP_OBJ ();
         Object proc = POP_OBJ ();
         Object ret = CREATE_RET_OBJ ();
-        obj_list_head_t *head = LIST_OBJECT_HEAD (&args);
+        ListHead *head = LIST_OBJECT_HEAD (&args);
         list_node_t node = NULL;
 
         SLIST_FOREACH (node, head, next)

@@ -40,12 +40,12 @@ static RB_HEAD (ActiveRoot, ActiveRootNode)
 
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
-static obj_list_head_t pair_free_pool;
-static obj_list_head_t vector_free_pool;
-static obj_list_head_t list_free_pool;
-static obj_list_head_t closure_free_pool;
-static obj_list_head_t obj_free_pool;
-static obj_list_head_t bytevector_free_pool;
+static ListHead pair_free_pool;
+static ListHead vector_free_pool;
+static ListHead list_free_pool;
+static ListHead closure_free_pool;
+static ListHead bytevector_free_pool;
+static ListHead obj_free_pool;
 
 static struct Pre_ARN _arn = {0};
 // TODO: static
@@ -84,7 +84,7 @@ static void object_list_node_pre_allocate (void)
   int i = 0;
   for (; i < PRE_OLN; i++)
     {
-      list_node_t ptr = (list_node_t)os_malloc (sizeof (ObjectList));
+      list_node_t ptr = (list_node_t)os_malloc (sizeof (ListNode));
       if (NULL == ptr)
         {
           PANIC ("GC: We're doomed! Did you set a too large PRE_OLN?"
@@ -98,7 +98,7 @@ static void object_list_node_pre_allocate (void)
 
   _oln.index = 0;
   VM_DEBUG ("PRE_OLN: %d, cnt: %d, pre-allocate %d bytes.\n", PRE_OLN, i - 1,
-            PRE_OLN * sizeof (ObjectList));
+            PRE_OLN * sizeof (ListNode));
 }
 
 list_node_t object_list_node_alloc (void)
@@ -233,7 +233,7 @@ void free_object (object_t obj)
     case list:
       {
         list_node_t node = NULL;
-        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        ListHead *head = LIST_OBJECT_HEAD (obj);
         u16_t non_shared = LIST_OBJECT_SIDX (obj);
         u16_t cnt = 0;
 
@@ -311,7 +311,7 @@ void free_inner_object (otype_t type, void *value)
     case list:
       {
         list_node_t node = NULL;
-        obj_list_head_t *head = &((list_t)value)->list;
+        ListHead *head = &((list_t)value)->list;
         u16_t non_shared = ((list_t)value)->non_shared;
         u16_t cnt = 0;
 
@@ -388,7 +388,7 @@ static void recycle_object (object_t obj)
     case list:
       {
         list_node_t node = NULL;
-        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        ListHead *head = LIST_OBJECT_HEAD (obj);
 
         SLIST_FOREACH (node, head, next)
         {
@@ -451,7 +451,7 @@ static void active_root_insert (object_t obj)
     case list:
       {
         list_node_t node = NULL;
-        obj_list_head_t *head = &((list_t)obj->value)->list;
+        ListHead *head = &((list_t)obj->value)->list;
 
         SLIST_FOREACH (node, head, next)
         {
@@ -531,7 +531,7 @@ static void active_root_inner_insert (otype_t type, void *value)
     case list:
       {
         list_node_t node = NULL;
-        obj_list_head_t *head = &((list_t)value)->list;
+        ListHead *head = &((list_t)value)->list;
 
         SLIST_FOREACH (node, head, next)
         {
@@ -604,7 +604,7 @@ static void clean_active_root ()
   RB_INIT (&ActiveRootHead);
 }
 
-static void collect (size_t *count, obj_list_head_t *head, bool hurt,
+static void collect (size_t *count, ListHead *head, bool hurt,
                      bool force)
 {
   list_node_t node = NULL;
@@ -732,7 +732,7 @@ static void set_gc_to_node (otype_t type, void *value, int gc)
     }
 }
 
-static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
+static void collect_inner (size_t *count, ListHead *head, otype_t type,
                            bool hurt, bool force)
 {
   list_node_t node = NULL;
@@ -783,7 +783,7 @@ static void collect_inner (size_t *count, obj_list_head_t *head, otype_t type,
   }
 }
 
-static size_t count_me (obj_list_head_t *head)
+static size_t count_me (ListHead *head)
 {
   list_node_t node = NULL;
   size_t cnt = 0;
@@ -795,7 +795,7 @@ static size_t count_me (obj_list_head_t *head)
   return cnt;
 }
 
-static void release_all_free_objects (obj_list_head_t *head, bool force)
+static void release_all_free_objects (ListHead *head, bool force)
 {
   list_node_t node = NULL;
   list_node_t nxt = NULL;
@@ -814,7 +814,7 @@ static void release_all_free_objects (obj_list_head_t *head, bool force)
               /*         node->obj->value); */
               os_free (node->obj);
               // instead of free node, put node into OLN for future use
-              SLIST_REMOVE (head, node, ObjectList, next);
+              SLIST_REMOVE (head, node, ListNode, next);
               nxt = SLIST_NEXT (node, next);
               object_list_node_recycle (node);
               node = nxt;
@@ -1091,7 +1091,7 @@ void *gc_pool_malloc (otype_t type)
   return node ? node->obj : NULL;
 }
 
-void simple_collect (obj_list_head_t *head)
+void simple_collect (ListHead *head)
 {
   list_node_t node = NULL;
 
@@ -1188,7 +1188,7 @@ void gc_clean (void)
 }
 
 // remove first find object in LIST head
-static void free_object_from_pool (obj_list_head_t *head, object_t o)
+static void free_object_from_pool (ListHead *head, object_t o)
 {
   list_node_t node = NULL;
   SLIST_FOREACH (node, (head), next)
@@ -1197,7 +1197,7 @@ static void free_object_from_pool (obj_list_head_t *head, object_t o)
       {
         os_free (node->obj);
         node->obj = NULL;
-        SLIST_REMOVE (head, node, ObjectList, next);
+        SLIST_REMOVE (head, node, ListNode, next);
         object_list_node_recycle (node);
         break;
       }

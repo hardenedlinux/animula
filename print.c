@@ -19,7 +19,7 @@
 
 static inline void list_printer (const object_t obj)
 {
-  obj_list_head_t head = ((list_t)obj->value)->list;
+  ListHead head = ((list_t)obj->value)->list;
   list_node_t node = NULL;
 
   os_printk ("(");

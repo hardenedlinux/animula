@@ -61,7 +61,7 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 
 list_node_t lambdachip_new_list_node (void)
 {
-  return (list_node_t)os_malloc (sizeof (ObjectList));
+  return (list_node_t)os_malloc (sizeof (ListNode));
 }
 
 u32_t list_cnt = 0;

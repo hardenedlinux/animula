@@ -24,7 +24,7 @@ object_t _car (vm_t vm, object_t ret, object_t obj)
     {
     case list:
       {
-        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        ListHead *head = LIST_OBJECT_HEAD (obj);
         list_node_t first = SLIST_FIRST (head);
         *ret = *(first->obj);
         break;
@@ -50,7 +50,7 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
     {
     case list:
       {
-        obj_list_head_t *head = LIST_OBJECT_HEAD (obj);
+        ListHead *head = LIST_OBJECT_HEAD (obj);
         list_node_t first = SLIST_FIRST (head);
         list_node_t next_node = SLIST_NEXT (first, next);
 
@@ -64,7 +64,7 @@ object_t _cdr (vm_t vm, object_t ret, object_t obj)
               = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
             l->non_shared = 0;
             ret->value = (void *)l;
-            obj_list_head_t *new_head = &(l->list);
+            ListHead *new_head = &(l->list);
             new_head->slh_first = next_node;
           }
         else
@@ -124,7 +124,7 @@ object_t _list_ref (vm_t vm, object_t ret, object_t lst, object_t idx)
   VALIDATE (lst, list);
   VALIDATE (idx, imm_int);
 
-  obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
+  ListHead *head = LIST_OBJECT_HEAD (lst);
   list_node_t node = NULL;
   imm_int_t cnt = (imm_int_t)idx->value;
   imm_int_t lst_idx = cnt;
@@ -169,7 +169,7 @@ object_t _list_set (vm_t vm, object_t ret, object_t lst, object_t idx,
   VALIDATE (idx, imm_int);
 
   list_node_t node = NULL;
-  obj_list_head_t *head = LIST_OBJECT_HEAD (lst);
+  ListHead *head = LIST_OBJECT_HEAD (lst);
   imm_int_t cnt = (imm_int_t)idx->value;
 
   if (SLIST_EMPTY (head))
@@ -221,14 +221,14 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
   l->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
   ret->attr.type = list;
   ret->value = (void *)l;
-  obj_list_head_t *new_head = LIST_OBJECT_HEAD (ret);
+  ListHead *new_head = LIST_OBJECT_HEAD (ret);
 
   u16_t cnt = 0;
 
   if (list == l2->attr.type)
     {
-      obj_list_head_t *h1 = LIST_OBJECT_HEAD (l1);
-      obj_list_head_t *h2 = LIST_OBJECT_HEAD (l2);
+      ListHead *h1 = LIST_OBJECT_HEAD (l1);
+      ListHead *h2 = LIST_OBJECT_HEAD (l2);
       list_node_t node = NULL;
       list_node_t prev = NULL;
 
@@ -275,7 +275,7 @@ object_t _list_length (vm_t vm, object_t ret, object_t l1)
   VALIDATE (l1, list);
   ret->attr.type = imm_int;
   list_t lst = (list_t)l1->value;
-  obj_list_head_t *head = LIST_OBJECT_HEAD (l1);
+  ListHead *head = LIST_OBJECT_HEAD (l1);
   list_node_t n1 = SLIST_FIRST (head);
   imm_int_t len = 0;
   SLIST_FOREACH (n1, head, next)
@@ -286,13 +286,13 @@ object_t _list_length (vm_t vm, object_t ret, object_t l1)
   return ret;
 }
 
-void _list_sort_obj_ascending (obj_list_head_t head)
+void _list_sort_obj_ascending (ListHead *head)
 {
   // int sorted = false;
   // bubble sort O(n^2)
   list_node_t node = NULL;
   list_node_t next_node = NULL;
-  if (SLIST_EMPTY (&head))
+  if (SLIST_EMPTY (head))
     {
       return;
     }
@@ -300,7 +300,7 @@ void _list_sort_obj_ascending (obj_list_head_t head)
   bool swapped = false;
   while (1)
     {
-      node = SLIST_FIRST (&head);
+      node = SLIST_FIRST (head);
       next_node = SLIST_NEXT (node, next);
       swapped = false;
       while (next_node)

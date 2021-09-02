@@ -174,12 +174,18 @@ typedef union Continuation
   uintptr_t all;
 } __packed *cont_t;
 
-typedef SLIST_HEAD (ObjectListHead, ObjectList) obj_list_head_t;
-typedef struct ObjectList
+// typedef SLIST_HEAD (ListHead, ListNode) list_head_t;
+// expands to:
+typedef struct ListHead
 {
-  SLIST_ENTRY (ObjectList) next;
+  struct ListNode *slh_first;
+} ListHead, *list_head_t;
+
+typedef struct ListNode
+{
+  SLIST_ENTRY (ListNode) next;
   object_t obj;
-} __packed ObjectList, *list_node_t;
+} __packed ListNode, *list_node_t;
 
 typedef struct List
 {
@@ -189,7 +195,7 @@ typedef struct List
    *   It's used for the index of the shared list, 0 for no.
    */
   u16_t non_shared;
-  obj_list_head_t list;
+  ListHead list;
 } List, *list_t;
 
 typedef struct Pair
