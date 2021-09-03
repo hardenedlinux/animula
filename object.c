@@ -140,6 +140,13 @@ object_t lambdachip_new_object (otype_t type)
         ((closure_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
+    case bytevector:
+      {
+        value = (void *)lambdachip_new_bytevector ();
+        ((bytevector_t)value)->attr.type = type;
+        ((bytevector_t)value)->attr.gc = GEN_1_OBJ;
+        break;
+      }
     default:
       {
         has_inner_obj = false;
