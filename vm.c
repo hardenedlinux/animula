@@ -680,6 +680,21 @@ static object_t generate_object (vm_t vm, object_t obj)
         obj->value = (void *)value;
         break;
       }
+    case mut_bytevector:
+      {
+        u16_t size = NEXT_DATA ();
+        size = ((size << 8) | NEXT_DATA ());
+        VM_DEBUG ("(push-mut_bytevector-object %d)\n", size);
+        mut_bytevector_t v = NEW_INNER_OBJ (mut_bytevector);
+        v->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
+        v->size = size;
+        obj->attr.gc = v->attr.gc;
+        obj->attr.type = mut_bytevector;
+        v->vec = (u8_t *)os_malloc (size);
+        obj->value = (void *)v;
+        vm->pc += size;
+        break;
+      }
     case bytevector: // immutable bytevector
       {
         u16_t size = NEXT_DATA ();

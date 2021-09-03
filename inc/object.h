@@ -167,6 +167,7 @@ list_t lambdachip_new_list (void);
 vector_t lambdachip_new_vector (void);
 pair_t lambdachip_new_pair (void);
 bytevector_t lambdachip_new_bytevector (void);
+mut_bytevector_t lambdachip_new_mut_bytevector (void);
 object_t lambdachip_new_object (otype_t type);
 
 #endif // End of __LAMBDACHIP_OBJECT_H__

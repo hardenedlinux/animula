@@ -90,6 +90,11 @@ bytevector_t lambdachip_new_bytevector (void)
   CREATE_NEW_OBJ (bytevector_t, bytevector, ByteVector);
 }
 
+mut_bytevector_t lambdachip_new_mut_bytevector (void)
+{
+  CREATE_NEW_OBJ (mut_bytevector_t, mut_bytevector, MutByteVector);
+}
+
 object_t lambdachip_new_object (otype_t type)
 {
   bool has_inner_obj = true;
@@ -145,6 +150,13 @@ object_t lambdachip_new_object (otype_t type)
         value = (void *)lambdachip_new_bytevector ();
         ((bytevector_t)value)->attr.type = type;
         ((bytevector_t)value)->attr.gc = GEN_1_OBJ;
+        break;
+      }
+    case mut_bytevector:
+      {
+        value = (void *)lambdachip_new_mut_bytevector ();
+        ((mut_bytevector_t)value)->attr.type = type;
+        ((mut_bytevector_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     default:

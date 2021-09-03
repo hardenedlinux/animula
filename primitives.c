@@ -1542,10 +1542,10 @@ static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
       return ret;
     }
 
-  bytevector_t bv = NEW_INNER_OBJ (bytevector);
+  mut_bytevector_t bv = NEW_INNER_OBJ (mut_bytevector);
   bv->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
   bv->vec = buf;
-  ret->attr.type = bytevector;
+  ret->attr.type = mut_bytevector;
   ret->attr.gc = PERMANENT_OBJ;
   ret->value = (void *)bv;
 
@@ -1975,7 +1975,18 @@ static Object prim_complex_p (object_t obj)
 
 static Object prim_bytevector_p (object_t obj)
 {
-  return CHECK_OBJECT_TYPE (obj, bytevector);
+  switch (obj->attr.type)
+    {
+    case bytevector:
+    case mut_bytevector:
+      {
+        return GLOBAL_REF (true_const);
+      }
+    default:
+      {
+        return GLOBAL_REF (false_const);
+      }
+    }
 }
 
 void primitives_init (void)

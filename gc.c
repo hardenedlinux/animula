@@ -45,6 +45,7 @@ static ListHead vector_free_pool;
 static ListHead list_free_pool;
 static ListHead closure_free_pool;
 static ListHead bytevector_free_pool;
+static ListHead mut_bytevector_free_pool;
 static ListHead obj_free_pool;
 
 static struct Pre_ARN _arn = {0};
@@ -276,6 +277,12 @@ void free_object (object_t obj)
         os_free ((void *)obj->value);
         break;
       }
+    case mut_bytevector:
+      {
+        os_free ((void *)(((mut_bytevector_t) (obj->value))->vec));
+        os_free ((void *)obj->value);
+        break;
+      }
     default:
       {
         PANIC ("free_object: Invalid type %d!\n", obj->attr.type);
@@ -348,6 +355,12 @@ void free_inner_object (otype_t type, void *value)
         ((bytevector_t)value)->attr.gc = FREE_OBJ;
         break;
       }
+    case mut_bytevector:
+      {
+        ((mut_bytevector_t)value)->attr.gc = FREE_OBJ;
+        os_free (((mut_bytevector_t)value)->vec);
+        break;
+      }
     default:
       {
         PANIC ("free_inner_object: Invalid type %d!\n", type);
@@ -404,6 +417,11 @@ static void recycle_object (object_t obj)
     case bytevector:
       {
         free_object_from_pool (&bytevector_free_pool, obj);
+        break;
+      }
+    case mut_bytevector:
+      {
+        free_object_from_pool (&mut_bytevector_free_pool, obj);
         break;
       }
     default:
@@ -685,7 +703,12 @@ static int get_gc_from_node (otype_t type, void *value)
       }
     case bytevector:
       {
-        gc = ((vector_t)value)->attr.gc;
+        gc = ((bytevector_t)value)->attr.gc;
+        break;
+      }
+    case mut_bytevector:
+      {
+        gc = ((mut_bytevector_t)value)->attr.gc;
         break;
       }
     default:
@@ -837,6 +860,8 @@ static void sweep (bool force)
   release_all_free_objects (&closure_free_pool, force);
   VM_DEBUG ("sweep bytevector\n");
   release_all_free_objects (&bytevector_free_pool, force);
+  VM_DEBUG ("sweep mut_bytevector\n");
+  release_all_free_objects (&mut_bytevector_free_pool, force);
   VM_DEBUG ("sweep obj\n");
   release_all_free_objects (&obj_free_pool, force);
 }
@@ -884,6 +909,8 @@ bool gc (const gc_info_t gci)
   collect_inner (&count, &list_free_pool, list, false, false);
   collect_inner (&count, &closure_free_pool, closure_on_heap, false, false);
   collect_inner (&count, &bytevector_free_pool, bytevector, false, false);
+  collect_inner (&count, &mut_bytevector_free_pool, mut_bytevector, false,
+                 false);
   collect (&count, &obj_free_pool, false, false);
 
 #ifdef LAMBDACHIP_LINUX
@@ -908,7 +935,9 @@ bool gc (const gc_info_t gci)
       collect_inner (&count, &vector_free_pool, vector, true, false);
       collect_inner (&count, &list_free_pool, list, true, false);
       collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
-      collect_inner (&count, &bytevector_free_pool, vector, true, false);
+      collect_inner (&count, &bytevector_free_pool, bytevector, true, false);
+      collect_inner (&count, &mut_bytevector_free_pool, mut_bytevector, true,
+                     false);
       collect (&count, &obj_free_pool, false, false);
     }
 
@@ -954,6 +983,7 @@ void gc_clean_cache (void)
   collect_inner (&cnt, &list_free_pool, list, false, true);
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
   collect_inner (&cnt, &bytevector_free_pool, bytevector, false, true);
+  collect_inner (&cnt, &mut_bytevector_free_pool, mut_bytevector, false, true);
 
   // free self-contained object in sweep
   sweep (true);
@@ -1010,6 +1040,11 @@ void gc_inner_obj_book (otype_t t, void *obj)
     case bytevector:
       {
         SLIST_INSERT_HEAD (&bytevector_free_pool, node, next);
+        break;
+      }
+    case mut_bytevector:
+      {
+        SLIST_INSERT_HEAD (&mut_bytevector_free_pool, node, next);
         break;
       }
     default:
@@ -1075,6 +1110,11 @@ void *gc_pool_malloc (otype_t type)
         break;
       }
     case bytevector:
+      {
+        node = get_free_obj_node (&bytevector_free_pool);
+        break;
+      }
+    case mut_bytevector:
       {
         node = get_free_obj_node (&bytevector_free_pool);
         break;
@@ -1176,6 +1216,7 @@ void gc_init (void)
   SLIST_INIT (&pair_free_pool);
   SLIST_INIT (&closure_free_pool);
   SLIST_INIT (&bytevector_free_pool);
+  SLIST_INIT (&mut_bytevector_free_pool);
 }
 
 void gc_clean (void)

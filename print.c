@@ -32,6 +32,7 @@ static inline void list_printer (const object_t obj)
   os_printk (")");
 }
 
+// bytevector and mut_bytevector use the same printer function
 static inline void bytevector_printer (const object_t obj)
 {
   bytevector_t bv = (bytevector_t)obj->value;
@@ -202,6 +203,7 @@ void object_printer (const object_t obj)
         complex_inexact_printer (obj);
         break;
       }
+    case mut_bytevector:
     case bytevector:
       {
         bytevector_printer (obj);

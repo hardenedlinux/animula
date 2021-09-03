@@ -81,6 +81,7 @@ typedef enum obj_type
   mut_list = 19,
   character = 20,
   bytevector = 21,
+  mut_bytevector = 22,
 
   boolean = 61,
   null_obj = 62,
@@ -218,6 +219,13 @@ typedef struct ByteVector
   u16_t size;
   u8_t *vec;
 } __packed ByteVector, *bytevector_t;
+
+typedef struct MutByteVector
+{
+  oattr attr;
+  u16_t size;
+  u8_t *vec;
+} __packed MutByteVector, *mut_bytevector_t;
 
 typedef struct MutString
 {
