@@ -346,7 +346,6 @@ void free_inner_object (otype_t type, void *value)
     case bytevector:
       {
         ((bytevector_t)value)->attr.gc = FREE_OBJ;
-        os_free (((bytevector_t)value)->vec);
         break;
       }
     default:
