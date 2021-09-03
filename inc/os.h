@@ -141,7 +141,7 @@ int zephyr_stat (const char *path, struct fs_dirent *entry);
 
 #ifdef FORCE_MEMORY_SIZE_TEST
 #  define MEMORY_TRACKER_ARRAY_LENGTH 4000
-#  define MEMORY_HARD_LIMIT   12000
+#  define MEMORY_HARD_LIMIT           12000
 #endif
 
 #ifndef PRE_ARN

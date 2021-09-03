@@ -604,8 +604,7 @@ static void clean_active_root ()
   RB_INIT (&ActiveRootHead);
 }
 
-static void collect (size_t *count, ListHead *head, bool hurt,
-                     bool force)
+static void collect (size_t *count, ListHead *head, bool hurt, bool force)
 {
   list_node_t node = NULL;
 
@@ -616,7 +615,6 @@ static void collect (size_t *count, ListHead *head, bool hurt,
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.
    */
-
   SLIST_FOREACH (node, head, next)
   {
     if (force)
@@ -636,7 +634,7 @@ static void collect (size_t *count, ListHead *head, bool hurt,
             if (GEN_1_OBJ == gc)
               {
                 // younger object aged
-                node->obj->attr.gc++;
+                node->obj->attr.gc = GEN_2_OBJ;
               }
             else if (GEN_2_OBJ == gc && hurt)
               {
@@ -757,7 +755,7 @@ static void collect_inner (size_t *count, ListHead *head, otype_t type,
         if (GEN_1_OBJ == gc)
           {
             // younger object aged
-            gc++;
+            gc = GEN_2_OBJ;
           }
         else if (GEN_2_OBJ == gc && hurt)
           {
@@ -830,18 +828,18 @@ static void release_all_free_objects (ListHead *head, bool force)
 static void sweep (bool force)
 
 {
-  // printf ("sweep pair\n");
+  VM_DEBUG ("sweep pair\n");
   release_all_free_objects (&pair_free_pool, force);
-  // printf ("sweep vector\n");
+  VM_DEBUG ("sweep vector\n");
   release_all_free_objects (&vector_free_pool, force);
-  // printf ("sweep list\n");
+  VM_DEBUG ("sweep list\n");
   release_all_free_objects (&list_free_pool, force);
-  // printf ("sweep closure\n");
+  VM_DEBUG ("sweep closure\n");
   release_all_free_objects (&closure_free_pool, force);
-  // printf ("sweep obj\n");
-  release_all_free_objects (&obj_free_pool, force);
-  // printf ("sweep bytevector\n");
+  VM_DEBUG ("sweep bytevector\n");
   release_all_free_objects (&bytevector_free_pool, force);
+  VM_DEBUG ("sweep obj\n");
+  release_all_free_objects (&obj_free_pool, force);
 }
 
 bool gc (const gc_info_t gci)
@@ -958,7 +956,7 @@ void gc_clean_cache (void)
   collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
   collect_inner (&cnt, &bytevector_free_pool, bytevector, false, true);
 
-  // free self-contained object in sweek
+  // free self-contained object in sweep
   sweep (true);
 }
 
