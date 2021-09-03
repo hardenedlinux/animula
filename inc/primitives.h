@@ -99,8 +99,9 @@ typedef enum prim_num
   is_exact = 68,
   is_inexact = 69,
   prim_i2c_read_bytevector = 70,
+  is_bytevector = 71,
 
-  PRIM_MAX = 71,
+  PRIM_MAX = 72,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \

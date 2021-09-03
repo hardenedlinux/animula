@@ -1973,6 +1973,11 @@ static Object prim_complex_p (object_t obj)
     }
 }
 
+static Object prim_bytevector_p (object_t obj)
+{
+  return CHECK_OBJECT_TYPE (obj, bytevector);
+}
+
 void primitives_init (void)
 {
   /* NOTE: If fn is NULL, then it's inlined to call_prim
@@ -2050,6 +2055,7 @@ void primitives_init (void)
   def_prim (68, "exact?", 1, prim_complex_p);
   def_prim (69, "inexact?", 1, prim_complex_p);
   def_prim (70, "i2c-read-bytevector!", 3, (void *)_os_i2c_read_bytevector);
+  def_prim (71, "bytevector?", 1, prim_bytevector_p);
 }
 
 char *prim_name (u16_t pn)

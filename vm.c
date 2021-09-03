@@ -451,6 +451,7 @@ void call_prim (vm_t vm, pn_t pn)
     case is_real:
     case is_rational:
     case is_complex:
+    case is_bytevector:
       {
         Object o = POP_OBJ ();
         pred_t fn = (pred_t)prim->fn;
