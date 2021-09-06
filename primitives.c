@@ -18,7 +18,6 @@
 #include "primitives.h"
 #include "type_cast.h"
 #ifdef LAMBDACHIP_ZEPHYR
-// #  include <string.h> // memncpy
 #  include <drivers/gpio.h>
 #  include <vos/drivers/gpio.h>
 #endif /* LAMBDACHIP_ZEPHYR */
@@ -1408,6 +1407,7 @@ static object_t _os_i2c_write_byte (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+// return #f if read fail
 static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
                                    object_t i2c_addr, object_t length)
 {
@@ -1437,32 +1437,45 @@ static object_t _os_i2c_read_list (vm_t vm, object_t ret, object_t dev,
 
   list_t l = NEW_INNER_OBJ (list);
   SLIST_INIT (&l->list);
+  l->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
+  l->non_shared = 0;
   ret->attr.type = list;
-  ret->attr.gc = 1;
+  ret->attr.gc = GEN_1_OBJ;
   ret->value = (void *)l;
+
+  /* NOTE:
+   * To safely created a List, we have to consider that GC may happend
+   * unexpectedly.
+   * 1. We must save list-obj to avoid to be freed by GC.
+   * 2. The POP operation must be fixed to skip list-obj.
+   * 3. oln must be created and inserted before the object allocation.
+   */
 
   list_node_t iter = NULL;
   for (imm_int_t i = 0; i < len_list; i++)
     {
-      object_t new_obj = NEW_OBJ (0);
-
-      // FIXME: check if pop is needed?
-      // *new_obj = (object_t)POP_OBJ ();
       list_node_t bl = NEW_LIST_NODE ();
+      // avoid crash in case GC was triggered here
+      bl->obj = (void *)0xDEADBEEF;
+
+      object_t new_obj = NEW_OBJ (imm_int);
+      new_obj->attr.gc = GEN_1_OBJ;
+      new_obj->value = (void *)rx_buf[i];
+
       bl->obj = new_obj;
-      bl->obj->value = (void *)rx_buf[i];
+
       if (0 == i)
         {
           SLIST_INSERT_HEAD (&l->list, bl, next);
-          iter = bl;
         }
       else
         {
           SLIST_INSERT_AFTER (iter, bl, next);
-          iter = bl;
         }
+      iter = bl;
     }
 
+  l->attr.gc = GEN_1_OBJ;
   os_free (rx_buf);
   rx_buf = (void *)NULL;
   return ret;
