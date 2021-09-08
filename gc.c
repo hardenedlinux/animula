@@ -279,8 +279,8 @@ void free_object (object_t obj)
       }
     case mut_bytevector:
       {
-        os_free ((void *)(((mut_bytevector_t) (obj->value))->vec));
-        os_free ((void *)obj->value);
+        os_free (((mut_bytevector_t) (obj->value))->vec);
+        os_free (obj->value);
         break;
       }
     default:
@@ -421,6 +421,7 @@ static void recycle_object (object_t obj)
       }
     case mut_bytevector:
       {
+        os_free (((mut_bytevector_t) (obj->value))->vec);
         free_object_from_pool (&mut_bytevector_free_pool, obj);
         break;
       }
@@ -1116,7 +1117,7 @@ void *gc_pool_malloc (otype_t type)
       }
     case mut_bytevector:
       {
-        node = get_free_obj_node (&bytevector_free_pool);
+        node = get_free_obj_node (&mut_bytevector_free_pool);
         break;
       }
     default:
