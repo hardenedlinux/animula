@@ -120,6 +120,9 @@ typedef object_t (*func_3_args_with_ret_t) (vm_t, object_t, object_t, object_t,
                                             object_t);
 typedef object_t (*func_4_args_with_ret_t) (vm_t, object_t, object_t, object_t,
                                             object_t, object_t);
+typedef object_t (*func_5_args_with_ret_t) (vm_t, object_t, object_t, object_t,
+                                            object_t, object_t, object_t);
+
 typedef object_t (*func_0_args_t) (vm_t);
 typedef object_t (*func_1_args_t) (vm_t, object_t);
 typedef object_t (*func_2_args_t) (vm_t, object_t, object_t);
