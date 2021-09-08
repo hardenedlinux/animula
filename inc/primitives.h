@@ -18,6 +18,7 @@
  */
 
 #include "bytecode.h"
+#include "bytevector.h"
 #include "debug.h"
 #include "list.h"
 #include "memory.h"
@@ -100,8 +101,15 @@ typedef enum prim_num
   is_inexact = 69,
   prim_i2c_read_bytevector = 70,
   is_bytevector = 71,
+  prim_make_bytevector = 72,
+  prim_bytevector_length = 73,
+  prim_bytevector_u8_ref = 74,
+  prim_bytevector_u8_set = 75,
+  prim_bytevector_copy = 76,
+  prim_bytevector_copy_overwrite = 77,
+  prim_bytevector_append = 78,
 
-  PRIM_MAX = 72,
+  PRIM_MAX = 79,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \

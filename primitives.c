@@ -2081,6 +2081,13 @@ void primitives_init (void)
   def_prim (69, "inexact?", 1, prim_complex_p);
   def_prim (70, "i2c-read-bytevector!", 3, (void *)_os_i2c_read_bytevector);
   def_prim (71, "bytevector?", 1, prim_bytevector_p);
+  def_prim (72, "make-bytevector", 2, (void *)_make_bytevector);
+  def_prim (73, "bytevector-length", 1, (void *)_bytevector_length);
+  def_prim (74, "bytevector-u8-ref", 2, (void *)_bytevector_u8_ref);
+  def_prim (75, "bytevector-u8-set!", 3, (void *)_bytevector_u8_set);
+  def_prim (76, "bytevector-copy", 3, (void *)_bytevector_copy);
+  def_prim (77, "bytevector-copy!", 5, (void *)_bytevector_copy_overwrite);
+  def_prim (78, "bytevector-append", 2, (void *)_bytevector_append);
 }
 
 char *prim_name (u16_t pn)

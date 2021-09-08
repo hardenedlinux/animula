@@ -308,6 +308,19 @@ void call_prim (vm_t vm, pn_t pn)
           }
         break;
       }
+    case prim_bytevector_copy_overwrite: // 5 parameters
+      {
+        func_5_args_with_ret_t fn = (func_5_args_with_ret_t)prim->fn;
+        Object o5 = POP_OBJ ();
+        Object o4 = POP_OBJ ();
+        Object o3 = POP_OBJ ();
+        Object o2 = POP_OBJ ();
+        Object o1 = POP_OBJ ();
+        Object ret = CREATE_RET_OBJ ();
+        ret = *(fn (vm, &ret, &o1, &o2, &o3, &o4, &o5));
+        PUSH_OBJ (ret);
+        break;
+      }
     case prim_i2c_write_byte: // 4 parameters
     case prim_spi_transceive:
       {
@@ -321,10 +334,12 @@ void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-    case prim_i2c_read_list:
+    case prim_i2c_read_list: // 3 parameters
     case prim_i2c_read_bytevector:
     case prim_i2c_write_list:
-    case prim_i2c_read_byte: // 3 parameters
+    case prim_i2c_read_byte:
+    case prim_bytevector_u8_set:
+    case prim_bytevector_copy:
       {
         func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
         Object o3 = POP_OBJ ();
@@ -335,10 +350,13 @@ void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-    case list_append:
+    case list_append: // 2 parameters
     case list_ref:
     case cons:
     case prim_gpio_set:
+    case prim_make_bytevector:
+    case prim_bytevector_u8_ref:
+    case prim_bytevector_append:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();
@@ -348,12 +366,13 @@ void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (ret);
         break;
       }
-    case prim_usleep:
+    case prim_usleep: // 1 parameter
     case prim_device_configure:
     case prim_gpio_toggle:
     case list_to_string:
     case car:
     case cdr:
+    case prim_bytevector_length:
       {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o = POP_OBJ ();
