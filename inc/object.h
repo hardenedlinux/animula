@@ -104,28 +104,38 @@ static inline bool is_unspecified (object_t obj)
     }                                     \
   while (0)
 
-#define VALIDATE(obj, t)                                                     \
-  do                                                                         \
-    {                                                                        \
-      if ((t) != (obj)->attr.type)                                           \
-        {                                                                    \
-          os_printk ("%s:%d, %s: Invalid type, expect %d, but it's %d\n",    \
-                     __FILE__, __LINE__, __FUNCTION__, t, (obj)->attr.type); \
-          panic ("");                                                        \
-        }                                                                    \
-    }                                                                        \
+#define VALIDATE(obj, t)                                      \
+  do                                                          \
+    {                                                         \
+      if ((t) != (obj)->attr.type)                            \
+        {                                                     \
+          PANIC ("Invalid type, expect %d, but it's %d\n", t, \
+                 (obj)->attr.type);                           \
+        }                                                     \
+    }                                                         \
   while (0)
 
-#define VALIDATE_STRING(obj)                                                  \
-  do                                                                          \
-    {                                                                         \
-      if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type))   \
-        {                                                                     \
-          os_printk ("%s:%d, %s: Invalid type, expect string, but it's %d\n", \
-                     __FILE__, __LINE__, __FUNCTION__, (obj)->attr.type);     \
-          panic ("");                                                         \
-        }                                                                     \
-    }                                                                         \
+#define VALIDATE_STRING(obj)                                                \
+  do                                                                        \
+    {                                                                       \
+      if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type)) \
+        {                                                                   \
+          PANIC ("Invalid type, expect string, but it's %d\n", t,           \
+                 (obj)->attr.type);                                         \
+        }                                                                   \
+    }                                                                       \
+  while (0)
+
+#define VALIDATE_BYTEVECTOR(obj)                                   \
+  do                                                               \
+    {                                                              \
+      if ((bytevector != (obj)->attr.type)                         \
+          && (mut_bytevector != (obj)->attr.type))                 \
+        {                                                          \
+          PANIC ("Invalid type, expect bytevector, but it's %d\n", \
+                 (obj)->attr.type);                                \
+        }                                                          \
+    }                                                              \
   while (0)
 
 #define MAX_REAL_DENOMINATOR 0xFFFF
