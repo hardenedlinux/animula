@@ -36,10 +36,10 @@ static inline void list_printer (const object_t obj)
 static inline void bytevector_printer (const object_t obj)
 {
   bytevector_t bv = (bytevector_t)obj->value;
-  os_printk ("#vu8(");
+  os_printk ("#u8(");
   for (u16_t i = 0; i < (bv->size - 1); i++)
     {
-      os_printk ("%u, ", bv->vec[i]);
+      os_printk ("%u ", bv->vec[i]);
     }
   os_printk ("%u)", bv->vec[bv->size - 1]);
 }
