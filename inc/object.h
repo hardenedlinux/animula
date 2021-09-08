@@ -134,6 +134,10 @@ static inline bool is_unspecified (object_t obj)
 #define MIN_REAL_NUMERATOR   -65535
 #define MIN_INT32            -2147483648
 #define MAX_INT32            2147483647
+#define MIN_UINT8            0
+#define MAX_UINT8            255
+#define MIN_UINT16           0
+#define MAX_UINT16           65535
 
 #define VALIDATE_NUMERATOR(x)                                             \
   do                                                                      \
