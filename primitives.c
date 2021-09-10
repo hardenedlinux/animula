@@ -1558,6 +1558,7 @@ static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
   mut_bytevector_t bv = NEW_INNER_OBJ (mut_bytevector);
   bv->attr.gc = PERMANENT_OBJ; // avoid unexpected collection by GC before done
   bv->vec = buf;
+  bv->size = len_list;
   ret->attr.type = mut_bytevector;
   ret->attr.gc = PERMANENT_OBJ;
   ret->value = (void *)bv;
