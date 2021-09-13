@@ -26,5 +26,38 @@ void cast_imm_int_to_rational (object_t ret);
 void cast_rational_to_imm_int_if_denominator_is_1 (object_t v);
 void cast_rational_to_float (object_t v);
 void cast_int_or_fractal_to_float (object_t v);
+static inline bool only_32_bit_signed (s64_t a)
+{
+  if ((a & 0xFFFFFFFF00000000) == 0
+      || (a & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000)
+    return true;
+  else
+    return false;
+}
+
+static inline bool only_32_bit_unsigned (u64_t a)
+{
+  if ((a & 0xFFFFFFFF00000000) == 0)
+    return true;
+  else
+    return false;
+}
+
+static inline bool only_16_bit_signed (s64_t a)
+{
+  if ((a & 0xFFFFFFFFFFFF0000) == 0
+      || (a & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000)
+    return true;
+  else
+    return false;
+}
+
+static inline bool only_16_bit_unsigned (u64_t a)
+{
+  if ((a & 0xFFFFFFFFFFFF0000) == 0)
+    return true;
+  else
+    return false;
+}
 
 #endif /* __LAMBDACHIP_TYPE_CAST_H__ */
