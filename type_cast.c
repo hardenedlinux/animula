@@ -76,6 +76,8 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
   return;
 }
 
+// TODO: rename to __cast_rational_to_real
+// side effect
 void cast_rational_to_float (object_t v)
 {
   if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
@@ -85,21 +87,17 @@ void cast_rational_to_float (object_t v)
     }
   int sign = (v->attr.type == rational_pos) ? 1 : -1;
   imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
-  imm_int_t d = ((imm_int_t)v->value) & 0xFFFF;
+  imm_int_t d = ((imm_int_t)v->value) & 0xFFFF; // v = c/d
   float a = sign * c;
-  float b = a / d;
+  real_t b = {0};
+  b.f = a / d;
   v->attr.type = real;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-  memcpy (&(v->value), &b, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+  v->value = (void *)b.v;
 }
 
+// side effect
 void cast_int_or_fractal_to_float (object_t v)
 {
-  // #warning("%s:%d, %s: side effect\n", __FILE__, __LINE__, __FUNCTION__);
-
   oattr t;
   t.type = v->attr.type;
   // if (t.type == complex_inexact)
@@ -118,12 +116,9 @@ void cast_int_or_fractal_to_float (object_t v)
     {
       v->attr.type = real;
       imm_int_t b = (imm_int_t) (v->value);
-      float a = (float)b;
-#ifdef LAMBDACHIP_LITTLE_ENDIAN
-      memcpy (&(v->value), &a, 4);
-#else
-#  error "BIG_ENDIAN not provided"
-#endif
+      real_t a = {0};
+      a.f = (float)b;
+      v->value = (void *)a.v;
       return;
     }
   else
