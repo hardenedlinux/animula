@@ -501,6 +501,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
   Object y_ = *yy;
   object_t x = &x_;
   object_t y = &y_;
+  real_t fx = {0};
+  real_t fy = {0};
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
       PANIC ("Complex_inexact is not supported yet!\n");
@@ -511,21 +513,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
-      real_t a, b;
-      cast_int_or_fractal_to_float (x);
-      cast_int_or_fractal_to_float (y);
-      a.v = (uintptr_t)x->value;
-      b.v = (uintptr_t)y->value;
-      if (b.f != 0.0f)
-        {
-          b.f = a.f / b.f;
-        }
-      else
-        {
-          PANIC ("Div by 0 error!\n");
-        }
-      ret->value = (void *)b.v;
-      ret->attr.type = real;
+      goto _int_div_float_div_float;
     }
   else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
            || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
@@ -541,6 +529,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       s64_t dd = 0;
       s64_t common_divisor64 = 0;
 
+      // x is rational number
       if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
           nx = (((imm_int_t) (x->value)) >> 16) & 0xFFFF;
@@ -552,6 +541,10 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
           nx = (imm_int_t) (x->value);
           dx = 1;
           sign_x = (nx >= 0) ? 1 : -1;
+          if (MIN_INT32 == nx)
+            {
+              goto _int_div_float_div_float;
+            }
           nx = abs (nx);
         }
       else
@@ -559,6 +552,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
           PANIC ("Invalid type, expect %d, %d or %d, but it's %d\n",
                  rational_pos, rational_neg, imm_int, x->attr.type);
         }
+
+      // y is rational number
       if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
           ny = (((imm_int_t) (y->value)) >> 16) & 0xFFFF;
@@ -570,6 +565,10 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
           ny = (imm_int_t) (y->value);
           dy = 1;
           sign_y = (ny >= 0) ? 1 : -1;
+          if (MIN_INT32 == ny)
+            {
+              goto _int_div_float_div_float;
+            }
           ny = abs (ny);
         }
       else
@@ -577,6 +576,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
           PANIC ("Invalid type, expect %d, %d or %d, but it's %d\n",
                  rational_pos, rational_neg, imm_int, x->attr.type);
         }
+
       nn = nx * dy;
       dd = dx * ny;
       nn = abs64 (nn);
@@ -592,10 +592,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       if (nn < MIN_REAL_DENOMINATOR || nn > MAX_REAL_DENOMINATOR
           || dd < MIN_REAL_DENOMINATOR || dd > MAX_REAL_DENOMINATOR)
         {
-          real_t a;
-          a.f = (float)(nn * sign) / (float)dd;
-          ret->value = (void *)a.v;
-          ret->attr.type = real;
+          goto _int_div_float_div_float;
         }
       else // nn and dd are in range
         {
@@ -611,6 +608,13 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       imm_int_t d = (imm_int_t) (y->value);
       imm_int_t sign = (n >= 0) ? 1 : -1;
       sign = sign * ((d >= 0) ? 1 : -1);
+      // when (MIN_INT32 == n && -1 == d) division will cause an error
+      // but abs will cause an error no matter what value d is
+      // so check if d or n is MIN_INT32
+      if (MIN_INT32 == n || MIN_INT32 == d)
+        {
+          goto _int_div_float_div_float;
+        }
       n = abs (n);
       d = abs (d);
 
@@ -625,10 +629,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       if (n < MIN_REAL_DENOMINATOR || n > MAX_REAL_DENOMINATOR
           || d < MIN_REAL_DENOMINATOR || d > MAX_REAL_DENOMINATOR)
         {
-          ret->attr.type = real;
-          real_t c;
-          c.f = sign * (float)n / (float)d;
-          ret->value = (void *)c.v;
+          goto _int_div_float_div_float;
         }
       else
         {
@@ -648,9 +649,25 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
     {
       PANIC ("Type error, x->attr.type == %d && y->attr.type == %d\n",
              x->attr.type, y->attr.type);
-      return ret;
     }
 
+  return ret;
+
+_int_div_float_div_float:
+  cast_int_or_fractal_to_float (x);
+  cast_int_or_fractal_to_float (y);
+  fx.v = (uintptr_t)x->value;
+  fy.v = (uintptr_t)y->value;
+  if (fy.f != 0.0f)
+    {
+      fy.f = fx.f / fy.f;
+    }
+  else
+    {
+      PANIC ("Div by 0 error!\n");
+    }
+  ret->value = (void *)fy.v;
+  ret->attr.type = real;
   return ret;
 }
 
