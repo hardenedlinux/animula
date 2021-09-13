@@ -47,165 +47,85 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == x->attr.type || real == y->attr.type)
     {
-      real_t a, b;
-      a.v = 0;
-      b.v = 0;
-      if (real == x->attr.type)
-        {
-          a.v = (uintptr_t) (x->value);
-        }
-      else if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
-        {
-          int sign = (rational_pos == x->attr.type) ? 1 : -1;
-          // FIXME: may lose precision
-          a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
-                / (float)((imm_int_t) (x->value) & 0xFFFF);
-        }
-      else if (imm_int == x->attr.type)
-        {
-          // FIXME: may lose precision
-          a.f = (float)(imm_int_t) (x->value);
-        }
-      else
-        {
-          PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
-                 x->attr.type);
-        }
-
-      if (real == y->attr.type)
-        {
-          b.v = (uintptr_t) (y->value);
-        }
-      else if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
-        {
-          int sign = (rational_pos == y->attr.type) ? 1 : -1;
-          b.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
-                / (float)((imm_int_t) (x->value) & 0xFFFF);
-        }
-      else if ((imm_int == y->attr.type))
-        {
-          b.f = (float)(imm_int_t) (y->value);
-        }
-      else
-        {
-          PANIC ("Invalid type, expect %d or %d, but it's %d\n", imm_int, real,
-                 y->attr.type);
-        }
-      real_t c;
-      c.f = a.f + b.f;
-      ret->attr.type = real;
-      ret->value = (void *)c.v;
+      goto _int_add_float_add_float;
     }
+  // rational add other type
   else if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type)
            || (rational_neg == y->attr.type) || (rational_pos == y->attr.type))
     {
-      if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
-        {
-          if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
-            {
-            }
-          else if (imm_int == y->attr.type)
-            {
-              // side effect
-              // FIXME: if integer canont convert to rational
-              cast_imm_int_to_rational (y);
-            }
-          else
-            {
-              PANIC ("Type error, %d\n", y->attr.type);
-            }
-        }
-      if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
-        {
-          if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
-            {
-            }
-          else if (imm_int == x->attr.type)
-            {
-              // side effect
-              // FIXME: if integer canont convert to rational
-              cast_imm_int_to_rational (x);
-            }
-          else
-            {
-              PANIC ("Type error, %d\n", x->attr.type);
-            }
-        }
       // TODO: check if s32 enough
       s64_t xd, xn, yd, yn, x_sign, y_sign;
       s64_t denominator, numerator, common_divisor;
-      xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
-      xd = ((imm_int_t) (x->value) & 0xFFFF);
-      x_sign = (rational_pos == x->attr.type) ? 1 : -1;
-      yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
-      yd = ((imm_int_t) (y->value) & 0xFFFF);
-      y_sign = (rational_pos == y->attr.type) ? 1 : -1;
-
-      // a/b+c/d = (a*d+b*c)/(b*d)
-      denominator = xd * yd; // safe, s32 * s32 is s64
-      // denominator = xn*yn; // safe
-      // safe, s32 * s32 + s32 * s32 is s64
-      numerator = xn * yd * x_sign + yn * xd * y_sign;
-
-      // only 32 bit is used, no overflow
-      if (((numerator & 0xFFFFFFFF00000000) == 0)
-          || ((numerator & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000))
+      s32_t sign;
+      if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
         {
-          common_divisor = gcd (denominator, numerator);
-          denominator /= common_divisor;
-          numerator /= common_divisor;
+          xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
+          xd = ((imm_int_t) (x->value) & 0xFFFF);
+          x_sign = (rational_pos == x->attr.type) ? 1 : -1;
+        }
+      else if (imm_int == x->attr.type)
+        {
+          xn = (imm_int_t)x->value;
+          xd = 1;
+          x_sign = xn > 0 ? 1 : -1;
+          xn = x_sign * xn;
         }
       else
         {
-          // side effect
-          cast_rational_to_float (x);
-          // side effect
-          cast_rational_to_float (y);
-          real_t a;
-          real_t b;
-          a.v = (uintptr_t)x->value;
-          b.v = (uintptr_t)y->value;
-          b.f = a.f + b.f;
-          ret->attr.type = real;
-          ret->value = (void *)b.v;
-          return ret;
+          PANIC ("Type not supported");
         }
+
+      if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
+        {
+          yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
+          yd = ((imm_int_t) (y->value) & 0xFFFF);
+          y_sign = (rational_pos == y->attr.type) ? 1 : -1;
+        }
+      else if (imm_int == y->attr.type)
+        {
+          yn = (imm_int_t)y->value;
+          yd = 1;
+          y_sign = yn > 0 ? 1 : -1;
+          yn = y_sign * yn;
+        }
+      else
+        {
+          PANIC ("Type not supported");
+        }
+
+      // a/b+c/d = (a*d+b*c)/(b*d)
+      denominator = xd * yd; // safe, s32 * s32 is s64, positive
+      // denominator = xn*yn; // safe
+      // safe, s32 * s32 + s32 * s32 is s64
+      numerator = xn * yd * x_sign + yn * xd * y_sign; // may not be positive
+      sign = numerator > 0 ? 1 : -1;
+      numerator = sign * numerator;
+
+      common_divisor = gcd (denominator, numerator);
+      denominator /= common_divisor;
+      numerator /= common_divisor;
+
+      // only 32 bit is used, no overflow
       // gcd
       // if ((abs (denominator) <= 32678) && (abs (numerator) <= 32678))
       // check if only 16 bit LSB is effective
       // BOOL abs(int) cannot hold arguments with the type of s64_t
-      if ((((numerator & 0xFFFFFFFFFFFF0000) == 0)
-           || ((numerator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000))
-          && (((denominator & 0xFFFFFFFFFFFF0000) == 0)
-              || ((denominator & 0xFFFFFFFFFFFF0000) == 0xFFFFFFFFFFFF0000)))
-        {
-          int sign = (denominator < 0) ? -1 : 1;
-          sign = sign * ((numerator < 0) ? -1 : 1);
 
-          // u16_t dd = abs (denominator) & 0xffff;
-          // u16_t nn = abs (numerator) & 0xffff;
-          u16_t dd = ((denominator < 0) ? -1 : 1) * denominator;
-          u16_t nn = ((numerator < 0) ? -1 : 1) * numerator;
+      // FIXME: whether signed or unsigned, numerator is signed, but d is
+      // unsigned
+      if (only_16_bit_signed (numerator) && only_16_bit_signed (denominator))
+        {
           // value of shift left is correct with signed int
-          ret->value = (void *)((nn << 16) | dd);
+          ret->value = (void *)((numerator << 16) | denominator);
           ret->attr.type = (sign > 0) ? rational_pos : rational_neg;
+
+          cast_rational_to_imm_int_if_denominator_is_1 (ret);
+          return ret;
         }
       else
         {
-          cast_rational_to_float (x);
-          cast_rational_to_float (y);
-          real_t a;
-          real_t b;
-          a.v = (uintptr_t)x->value;
-          b.v = (uintptr_t)y->value;
-          b.f = a.f / b.f;
-          ret->attr.type = real;
-          ret->value = (void *)b.v;
+          goto _int_add_float_add_float;
         }
-
-      // ret->attr.type == (numerator>0)?rational_pos:rational_neg;
-      // ret->value == ()
-      return ret;
     }
   else if (imm_int == x->attr.type && imm_int == y->attr.type)
     {
@@ -214,24 +134,35 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
       real_t result3;
       if (result2 != result) // if overflow, convert to real
         {
-          result3.f = (float)result;
-          ret->attr.type = real;
-          ret->value = (void *)(result3.v);
+          goto _int_add_float_add_float;
         }
       else
         {
           ret->value = (void *)result2;
           ret->attr.type = imm_int;
+          return ret;
         }
-      return ret;
     }
   else
     {
       PANIC ("Type error, x->attr.type == %d && y->attr.type == %d\n",
              x->attr.type, y->attr.type);
-      return ret;
     }
 
+  PANIC ("code shall not run until here");
+
+_int_add_float_add_float:
+  // side effect
+  cast_int_or_fractal_to_float (x);
+  // side effect
+  cast_int_or_fractal_to_float (y);
+  real_t a;
+  real_t b;
+  a.v = (uintptr_t)x->value;
+  b.v = (uintptr_t)y->value;
+  b.f = a.f + b.f;
+  ret->attr.type = real;
+  ret->value = (void *)b.v;
   return ret;
 }
 
@@ -242,6 +173,7 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
   Object y_ = *yy;
   object_t x = &x_;
   object_t y = &y_;
+  real_t opposite;
   if (complex_inexact == xx->attr.type || complex_inexact == yy->attr.type)
     {
       PANIC ("Complex_inexact is not supported yet!\n");
@@ -252,9 +184,9 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == y->attr.type)
     {
-      real_t *pa;
-      pa = (real_t *)(y->value);
-      pa->f = -pa->f;
+      opposite.v = (uintptr_t) (y->value);
+      opposite.f = -opposite.f;
+      y->value = (void *)(opposite.v);
     }
   else if (rational_pos == y->attr.type)
     {
@@ -268,8 +200,11 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
     {
       if ((imm_int_t) (y->value) == MIN_INT32) // -1*2^31
         {
-          PANIC ("Out of range, cannot calculate opposite number of %d\n",
-                 (imm_int_t) (y->value));
+          // side effect
+          cast_int_or_fractal_to_float (y);
+          opposite.v = (uintptr_t) (y->value);
+          opposite.f = -opposite.f;
+          y->value = (void *)(opposite.v);
         }
       else
         {
