@@ -184,7 +184,15 @@ void object_printer (const object_t obj)
     case real:
       {
         real_t r = {.v = (uintptr_t)obj->value};
-        os_printk ("%f", r.f);
+        // TODO: if number is too big, how to display
+        if (r.f > -0.001 && r.f < 0.001)
+          {
+            os_printk ("%e", r.f);
+          }
+        else
+          {
+            os_printk ("%f", r.f);
+          }
         break;
       }
     case rational_pos:
