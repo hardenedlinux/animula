@@ -1444,6 +1444,26 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+static object_t _i2c_write_bytevector (vm_t vm, object_t ret, object_t dev,
+                                       object_t i2c_addr, object_t bv)
+{
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  VALIDATE (bv, bytevector);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+
+  const u16_t len = ((bytevector_t) (bv->value))->size;
+  const u8_t *buf = ((bytevector_t) (bv->value))->vec;
+
+  int status = i2c_write (p->dev, buf, len, (imm_int_t)i2c_addr->value);
+
+  if (status != 0)
+    *ret = GLOBAL_REF (false_const);
+  else
+    *ret = GLOBAL_REF (none_const);
+  return ret;
+}
+
 static object_t _os_i2c_read_bytevector (vm_t vm, object_t ret, object_t dev,
                                          object_t i2c_addr, object_t length)
 {
@@ -1800,6 +1820,25 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+static object_t _i2c_write_bytevector (vm_t vm, object_t ret, object_t dev,
+                                       object_t i2c_addr, object_t bv)
+{
+  VALIDATE (dev, symbol);
+  VALIDATE (i2c_addr, imm_int);
+  VALIDATE (bv, bytevector);
+
+  const u16_t len = ((bytevector_t) (bv->value))->size;
+  const u8_t *buf = ((bytevector_t) (bv->value))->vec;
+
+  os_printk ("i2c_reg_write_bytevector (%s, 0x%02X, ", (const char *)dev->value,
+             (imm_int_t)i2c_addr->value);
+  object_printer (bv);
+  os_printk (")\n");
+
+  *ret = GLOBAL_REF (none_const);
+  return ret;
+}
+
 #endif /* LAMBDACHIP_LINUX */
 
 static Object prim_procedure_p (object_t obj)
@@ -2008,6 +2047,7 @@ void primitives_init (void)
   def_prim (76, "bytevector-copy", 3, (void *)_bytevector_copy);
   def_prim (77, "bytevector-copy!", 5, (void *)_bytevector_copy_overwrite);
   def_prim (78, "bytevector-append", 2, (void *)_bytevector_append);
+  def_prim (79, "i2c-write-bytevector!", 3, (void *)_i2c_write_bytevector);
 }
 
 char *prim_name (u16_t pn)

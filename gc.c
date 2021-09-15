@@ -1191,9 +1191,25 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
             free_object_from_pool (&closure_free_pool, obj);
             break;
           }
-        default:
+        case pair:
+        case list:
+        case mut_list:
+        case vector:
+        case bytevector:
+        case mut_bytevector:
+        case mut_string:
+        case keyword:
+        case continuation:
           {
             recycle_object (obj);
+            break;
+          }
+        case complex_exact:
+        case complex_inexact:
+        default:
+          {
+            // defensive programming
+            PANIC ("Type not implemented, type: %d", obj->attr.type);
           }
         }
     }

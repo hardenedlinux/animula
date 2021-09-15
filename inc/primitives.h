@@ -108,8 +108,9 @@ typedef enum prim_num
   prim_bytevector_copy = 76,
   prim_bytevector_copy_overwrite = 77,
   prim_bytevector_append = 78,
+  prim_i2c_write_bytevector = 79,
 
-  PRIM_MAX = 79,
+  PRIM_MAX = 80,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \
