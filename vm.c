@@ -709,7 +709,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         v->size = size;
         obj->attr.gc = v->attr.gc;
         obj->attr.type = mut_bytevector;
-        v->vec = (u8_t *)os_malloc (size);
+        v->vec = (u8_t *)GC_MALLOC (size);
         obj->value = (void *)v;
         vm->pc += size;
         break;
