@@ -415,7 +415,6 @@ static void recycle_object (object_t obj)
       }
     case mut_bytevector:
       {
-        os_free (((mut_bytevector_t) (obj->value))->vec);
         free_object_from_pool (&mut_bytevector_free_pool, obj);
         break;
       }
