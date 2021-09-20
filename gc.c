@@ -192,8 +192,8 @@ void free_object (object_t obj)
 {
   if (0xDEADBEEF == (uintptr_t)obj)
     {
-      printf ("active_root_insert: oh a half list node!\n");
-      printf ("let's skip it safely!\n");
+      os_printk ("active_root_insert: oh a half list node!\n");
+      os_printk ("let's skip it safely!\n");
       return;
     }
 
@@ -263,15 +263,8 @@ void free_object (object_t obj)
       }
     case continuation:
     case mut_string:
-      {
-        os_free ((void *)obj->value);
-        break;
-      }
     case closure_on_heap:
     case closure_on_stack:
-      {
-        break;
-      }
     case bytevector:
       {
         os_free ((void *)obj->value);
@@ -294,7 +287,8 @@ void free_object (object_t obj)
 
 void free_inner_object (otype_t type, void *value)
 {
-  /* NOTE: Integers are self-contained object, so we can just release the object
+  /* NOTE: Integers are self-contained object, so we can just release the
+   * object
    */
   if (!value)
     {
@@ -1145,7 +1139,8 @@ void simple_collect (ListHead *head)
 }
 
 // collect all composite object, including vector, list, pair
-// bytevector is not included, since it does not have child objects with attr.gc
+// bytevector is not included, since it does not have child objects with
+// attr.gc
 void gc_try_to_recycle (void)
 {
   /* FIXME: The runtime created globals shouldn't be recycled */
