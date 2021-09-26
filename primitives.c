@@ -1991,8 +1991,8 @@ void primitives_init (void)
   def_prim (20, "list_ref", 2, (void *)_list_ref);
   def_prim (21, "list_set", 3, (void *)_list_set);
   def_prim (22, "list_append", 2, (void *)_list_append);
-  def_prim (23, "eq", 2, (void *)_eq);
-  def_prim (24, "eqv", 2, (void *)_eqv);
+  def_prim (23, "eqv", 2, (void *)_eqv);
+  def_prim (24, "eq", 2, (void *)_eq);
   def_prim (25, "equal", 2, (void *)_equal);
   def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
   def_prim (27, "device_configure", 2, (void *)_os_device_configure);
