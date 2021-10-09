@@ -358,6 +358,13 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_make_bytevector:
     case prim_bytevector_u8_ref:
     case prim_bytevector_append:
+    case prim_floor_div:
+    case prim_floor_quotient:
+    case prim_floor_remainder:
+    case prim_truncate_div:
+    case prim_truncate_quotient:
+    case prim_truncate_remainder:
+    case prim_expt:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();
@@ -374,6 +381,25 @@ void call_prim (vm_t vm, pn_t pn)
     case car:
     case cdr:
     case prim_bytevector_length:
+    case prim_floor:
+    case prim_ceiling:
+    case prim_truncate:
+    case prim_round:
+    case prim_rationalize:
+    case prim_numerator:
+    case prim_denominator:
+    case prim_is_exact_integer:
+    case prim_is_finite:
+    case prim_is_infinite:
+    case prim_is_nan:
+    case prim_is_zero:
+    case prim_is_positive:
+    case prim_is_negative:
+    case prim_is_odd:
+    case prim_is_even:
+    case prim_square:
+    case prim_sqrt:
+    case prim_exact_integer_sqrt:
       {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o = POP_OBJ ();

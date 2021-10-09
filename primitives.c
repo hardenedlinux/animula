@@ -23,7 +23,34 @@
 #endif /* LAMBDACHIP_ZEPHYR */
 #include "lib.h"
 
-static bool _int_gt (object_t x, object_t y);
+extern object_t _floor (vm_t vm, object_t ret, object_t xx, object_t yy);
+extern object_t _floor_div (vm_t vm, object_t ret, object_t xx, object_t yy);
+extern object_t _ceiling (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate (vm_t vm, object_t ret, object_t xx);
+extern object_t _round (vm_t vm, object_t ret, object_t xx);
+extern object_t _rationalize (vm_t vm, object_t ret, object_t xx);
+extern object_t _floor_quotient (vm_t vm, object_t ret, object_t xx);
+extern object_t _floor_remainder (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate_div (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate_quotient (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate_remainder (vm_t vm, object_t ret, object_t xx);
+extern object_t _numerator (vm_t vm, object_t ret, object_t xx);
+extern object_t _denominator (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_exact_integer (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_finite (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_infinite (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_nan (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_zero (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_positive (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_negative (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_odd (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_even (vm_t vm, object_t ret, object_t xx);
+extern object_t _square (vm_t vm, object_t ret, object_t xx);
+extern object_t _sqrt (vm_t vm, object_t ret, object_t xx);
+extern object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx);
+extern object_t _expt (vm_t vm, object_t ret, object_t xx);
+
+bool _int_gt (object_t x, object_t y);
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
 
@@ -590,7 +617,7 @@ void _object_print (object_t obj)
   object_printer (obj);
 }
 
-static bool _int_eq (object_t xx, object_t yy)
+bool _int_eq (object_t xx, object_t yy)
 {
   Object x_ = *xx;
   Object y_ = *yy;
@@ -613,8 +640,6 @@ static bool _int_eq (object_t xx, object_t yy)
           || imm_int == x->attr.type)
         {
           cast_int_or_fractal_to_float (x);
-          a.v = (uintptr_t)x->value;
-          b.v = (uintptr_t)y->value;
         }
       if (rational_pos == y->attr.type || rational_neg == y->attr.type
           || imm_int == y->attr.type)
@@ -687,7 +712,7 @@ static bool _int_eq (object_t xx, object_t yy)
   return false;
 }
 
-static bool _int_lt (object_t x, object_t y)
+bool _int_lt (object_t x, object_t y)
 {
   if (false == (_int_eq (x, y)) && false == (_int_gt (x, y)))
     {
@@ -696,8 +721,11 @@ static bool _int_lt (object_t x, object_t y)
   return false;
 }
 
-static bool _int_gt (object_t x, object_t y)
+bool _int_gt (object_t x, object_t y)
 {
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
       PANIC ("Complex_inexact is not supported yet!\n");
@@ -759,14 +787,24 @@ static bool _int_le (object_t x, object_t y)
 {
   VALIDATE (x, imm_int);
   VALIDATE (y, imm_int);
-  return (imm_int_t)x->value <= (imm_int_t)y->value;
+
+  if (false == _int_gt (x, y))
+    {
+      return true;
+    }
+  return false;
 }
 
 static bool _int_ge (object_t x, object_t y)
 {
   VALIDATE (x, imm_int);
   VALIDATE (y, imm_int);
-  return (imm_int_t)x->value >= (imm_int_t)y->value;
+
+  if (true == _int_eq (x, y) || true == _int_gt (x, y))
+    {
+      return true;
+    }
+  return false;
 }
 
 static bool _not (object_t obj)
@@ -1859,7 +1897,7 @@ static Object prim_boolean_p (object_t obj)
   return CHECK_OBJECT_TYPE (obj, boolean);
 }
 
-static Object prim_number_p (object_t obj)
+Object prim_number_p (object_t obj)
 {
   bool ret = false;
 
@@ -1991,17 +2029,17 @@ void primitives_init (void)
   def_prim (17, "remainder", 2, (void *)_int_remainder);
   def_prim (18, "foreach", 2, NULL);
   def_prim (19, "map", 2, NULL);
-  def_prim (20, "list_ref", 2, (void *)_list_ref);
-  def_prim (21, "list_set", 3, (void *)_list_set);
-  def_prim (22, "list_append", 2, (void *)_list_append);
+  def_prim (20, "list-ref", 2, (void *)_list_ref);
+  def_prim (21, "list-set!", 3, (void *)_list_set);
+  def_prim (22, "append", 2, (void *)_list_append);
   def_prim (23, "eqv", 2, (void *)_eqv);
   def_prim (24, "eq", 2, (void *)_eq);
   def_prim (25, "equal", 2, (void *)_equal);
-  def_prim (26, "prim_usleep", 1, (void *)_os_usleep);
-  def_prim (27, "device_configure", 2, (void *)_os_device_configure);
-  def_prim (28, "gpio_set", 2, (void *)_os_gpio_set);
-  def_prim (29, "gpio_toggle", 1, (void *)_os_gpio_toggle);
-  def_prim (30, "get_board_id", 2, (void *)_os_get_board_id);
+  def_prim (26, "usleep", 1, (void *)_os_usleep);
+  def_prim (27, "device-configure!", 2, (void *)_os_device_configure);
+  def_prim (28, "gpio-set!", 2, (void *)_os_gpio_set);
+  def_prim (29, "gpio-toggle!", 1, (void *)_os_gpio_toggle);
+  def_prim (30, "get-board-id", 2, (void *)_os_get_board_id);
   def_prim (31, "cons", 2, (void *)_cons);
   def_prim (32, "car", 1, (void *)_car);
   def_prim (33, "cdr", 1, (void *)_cdr);
@@ -2051,6 +2089,32 @@ void primitives_init (void)
   def_prim (77, "bytevector-copy!", 5, (void *)_bytevector_copy_overwrite);
   def_prim (78, "bytevector-append", 2, (void *)_bytevector_append);
   def_prim (79, "i2c-write-bytevector!", 3, (void *)_i2c_write_bytevector);
+  def_prim (80, "floor", 1, (void *)_floor);
+  def_prim (81, "floor/", 2, (void *)_floor_div);
+  def_prim (82, "ceiling", 1, (void *)_ceiling);
+  def_prim (83, "truncate", 1, (void *)_truncate);
+  def_prim (84, "round", 1, (void *)_round);
+  def_prim (85, "rationalize", 1, (void *)_rationalize);
+  def_prim (86, "floor-quotient", 2, (void *)_floor_quotient);
+  def_prim (87, "floor-remainder", 2, (void *)_floor_remainder);
+  def_prim (88, "truncate/", 2, (void *)_truncate_div);
+  def_prim (89, "truncate-quotient", 2, (void *)_truncate_quotient);
+  def_prim (90, "truncate-remainder", 2, (void *)_truncate_remainder);
+  def_prim (91, "numerator", 1, (void *)_numerator);
+  def_prim (92, "denominator", 1, (void *)_denominator);
+  def_prim (93, "exact-integer?", 1, (void *)_is_exact_integer);
+  def_prim (94, "finite?", 1, (void *)_is_finite);
+  def_prim (95, "infinite?", 1, (void *)_is_infinite);
+  def_prim (96, "nan?", 1, (void *)_is_nan);
+  def_prim (97, "zero?", 1, (void *)_is_zero);
+  def_prim (98, "positive?", 1, (void *)_is_positive);
+  def_prim (99, "negative?", 1, (void *)_is_negative);
+  def_prim (100, "odd?", 1, (void *)_is_odd);
+  def_prim (101, "even?", 1, (void *)_is_even);
+  def_prim (102, "square", 1, (void *)_square);
+  def_prim (103, "sqrt", 1, (void *)_sqrt);
+  def_prim (104, "exact-integer-sqrt", 1, (void *)_exact_integer_sqrt);
+  def_prim (105, "expt", 2, (void *)_expt);
 }
 
 char *prim_name (u16_t pn)
