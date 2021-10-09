@@ -620,12 +620,15 @@ static bool _int_eq (object_t xx, object_t yy)
           || imm_int == y->attr.type)
         {
           cast_int_or_fractal_to_float (y);
-          a.v = (uintptr_t)x->value;
-          b.v = (uintptr_t)y->value;
         }
-      // since the decimal point is floated in the float point number
-      // There will be
-      if (os_fabs (a.f - b.f) <= DIFF_EPSILON)
+      a.v = (uintptr_t)x->value;
+      b.v = (uintptr_t)y->value;
+
+      // since +0.0 = -0.0 should return #true, so cannot write a.v == b.v
+      // since the sign bit maybe different
+      // exact same float number shall have exact same encoding
+      // compare the float will sure be enough
+      if (a.f == b.f)
         {
           return true;
         }
