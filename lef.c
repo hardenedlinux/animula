@@ -38,13 +38,12 @@ lef_t load_lef_from_flash (size_t offset)
 #if defined LAMBDACHIP_ZEPHYR
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
-  for (int i = 0; i < 3; i++)
-    os_flash_read (lef->ver, i, 4);
+  os_flash_read (&lef->sig, 0, 3);
 
-  os_flash_read ((void *)&lef->msize, 4, 4);
-  os_flash_read ((void *)&lef->gsize, 8, 4);
-  os_flash_read ((void *)&lef->psize, 12, 4);
-  os_flash_read ((void *)&lef->csize, 16, 4);
+  os_flash_read ((void *)&lef->msize, 7, 4);
+  os_flash_read ((void *)&lef->gsize, 11, 4);
+  os_flash_read ((void *)&lef->psize, 15, 4);
+  os_flash_read ((void *)&lef->csize, 19, 4);
 
   u32_t size = LEF_BODY_SIZE (lef);
   lef->body = (u8_t *)os_malloc (size);
@@ -96,7 +95,7 @@ lef_t load_lef_from_uart ()
   for (u32_t i = 0; i < size; i++)
     {
       u8_t ch = os_getchar ();
-      // print when sending 16 bytes or 10% of content
+      // print when every 16 bytes are sent or 10% of content
       if ((i == size - 1) || (i - last_index >= (MAX (16, one_tenth_of_size))))
         {
           os_printk ("Upload: %d%%\n", ((i + 1) * 100) / size);
