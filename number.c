@@ -91,8 +91,8 @@ object_t _floor (vm_t vm, object_t ret, object_t xx)
       real_t f;
       f.v = (uintptr_t)x->value;
       f.f = floor (f.f);
-      ret->value = (void *)f.v;
-      ret->attr.type = real;
+      ret->value = (void *)(imm_int_t)f.f;
+      ret->attr.type = imm_int;
       return ret;
     }
   else if (imm_int == x->attr.type)
@@ -144,8 +144,8 @@ object_t _ceiling (vm_t vm, object_t ret, object_t xx)
       real_t f;
       f.v = (uintptr_t)x->value;
       f.f = ceil (f.f);
-      ret->value = (void *)f.v;
-      ret->attr.type = real;
+      ret->value = (void *)(imm_int_t)f.f;
+      ret->attr.type = imm_int;
       return ret;
     }
   else if (imm_int == x->attr.type)
