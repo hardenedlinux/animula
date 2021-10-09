@@ -173,19 +173,16 @@ static inline bool is_unspecified (object_t obj)
     }                                                                       \
   while (0)
 
-#define VALIDATE_NUMBER(obj)                                      \
-  do                                                              \
-    {                                                             \
-      if (imm_int != (obj)->attr.type && real != (obj)->attr.type \
-          && rational_pos != (obj)->attr.type                     \
-          && rational_neg != (obj)->attr.type                     \
-          && complex_exact != (obj)->attr.type                    \
-          && complex_inexact != (obj)->attr.type)                 \
-        {                                                         \
-          PANIC ("Invalid type, expect numbers, but it's %d\n",   \
-                 (obj)->attr.type);                               \
-        }                                                         \
-    }                                                             \
+#define VALIDATE_NUMBER(obj)                                                  \
+  do                                                                          \
+    {                                                                         \
+      otype_t t = (obj)->attr.type;                                           \
+      if (imm_int != t && real != t && rational_pos != t && rational_neg != t \
+          && complex_exact != t && complex_inexact != t)                      \
+        {                                                                     \
+          PANIC ("Invalid type, expect numbers, but it's %d\n", t);           \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
