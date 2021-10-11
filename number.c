@@ -403,10 +403,10 @@ object_t _is_odd (vm_t vm, object_t ret, object_t xx)
     }
   else if (real == x->attr.type)
     {
+      real_t a;
+      a.v = (uintptr_t)x->value;
       if (_int_eq (x, _round (vm, ret, x)))
         {
-          real_t a;
-          a.v = (uintptr_t)x->value;
           imm_int_t b = (imm_int_t)a.f;
           if (b & 1) // LSB is 1
             {
@@ -423,8 +423,6 @@ object_t _is_odd (vm_t vm, object_t ret, object_t xx)
         }
       else
         {
-          real_t a;
-          a.v = (uintptr_t)x->value;
           PANIC ("Not an integer %f\n", a.f);
           return ret;
         }
@@ -471,10 +469,10 @@ object_t _is_even (vm_t vm, object_t ret, object_t xx)
     }
   else if (real == x->attr.type)
     {
+      real_t a;
+      a.v = (uintptr_t)x->value;
       if (_int_eq (x, _round (vm, ret, x)))
         {
-          real_t a;
-          a.v = (uintptr_t)x->value;
           imm_int_t b = (imm_int_t)a.f;
           if (b & 1) // LSB is 1
             {
@@ -491,8 +489,6 @@ object_t _is_even (vm_t vm, object_t ret, object_t xx)
         }
       else
         {
-          real_t a;
-          a.v = (uintptr_t)x->value;
           PANIC ("Not an integer %f\n", a.f);
           return ret;
         }
