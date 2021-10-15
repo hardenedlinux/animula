@@ -186,7 +186,18 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
       PANIC ("def_prim calloc failed!\n");
     }
 #if defined LAMBDACHIP_DEBUG
+
+    /* NOTE: The gcc8 adds a new feature to check the bound for string
+     *       functions. However, strnlen is safe from the consideration,
+     *       so we ignore it temporarily to make gcc happy.
+     * See here for more details:
+     https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
+     */
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstringop-truncation"
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
+#  pragma GCC diagnostic pop
+
   os_memcpy (prim->name, name, len);
   prim->arity = arity;
 #endif
