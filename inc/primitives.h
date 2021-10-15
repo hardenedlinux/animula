@@ -194,11 +194,11 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
      https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
      */
 #  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wstringop-overread"
+#  pragma GCC diagnostic ignored "-Werror=stringop-overread"
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
+  os_memcpy (prim->name, name, len);
 #  pragma GCC diagnostic pop
 
-  os_memcpy (prim->name, name, len);
   prim->arity = arity;
 #endif
   prim->fn = fn;
