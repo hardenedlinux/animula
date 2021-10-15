@@ -23,7 +23,6 @@
 #  include <vos/drivers/gpio.h>
 #endif /* LAMBDACHIP_ZEPHYR */
 #include "lib.h"
-#include "math.h"
 
 object_t _floor (vm_t vm, object_t ret, object_t xx);
 object_t _floor_div (vm_t vm, object_t ret, object_t xx, object_t yy);
