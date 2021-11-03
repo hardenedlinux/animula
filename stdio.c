@@ -21,7 +21,7 @@ static char line_buf[LINE_BUF_SIZE] = {0};
 
 char *read_line (const char *prompt)
 {
-  os_printk (prompt);
+  os_printk ("%s", prompt);
   for (int i = 0; i < LINE_BUF_SIZE; i++)
     {
       line_buf[i] = os_getchar ();
