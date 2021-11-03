@@ -18,8 +18,8 @@
 
 #ifdef LAMBDACHIP_ZEPHYR
 #  include <version.h>
-// match zephyr v2.6.0
-#  if KERNELVERSION != 0x2060000
+// match zephyr v2.7.0
+#  if KERNELVERSION != 0x2070000
 #    error version does not match
 #  endif
 #endif /* LAMBDACHIP_ZEPHYR */
