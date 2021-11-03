@@ -38,7 +38,8 @@ lef_t load_lef_from_flash (size_t offset)
 #if defined LAMBDACHIP_ZEPHYR
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
-  os_flash_read (&lef->sig, 0, 3);
+  // convert char (*)[3] to char*
+  os_flash_read ((char *)(&lef->sig), 0, 3);
 
   os_flash_read ((void *)&lef->msize, 7, 4);
   os_flash_read ((void *)&lef->gsize, 11, 4);
