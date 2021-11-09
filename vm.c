@@ -377,6 +377,7 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_usleep: // 1 parameter
     case prim_device_configure:
     case prim_gpio_toggle:
+    case prim_gpio_get:
     case list_to_string:
     case car:
     case cdr:

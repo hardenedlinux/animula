@@ -135,8 +135,9 @@ typedef enum prim_num
   prim_sqrt = 103,
   prim_exact_integer_sqrt = 104,
   prim_expt = 105,
+  prim_gpio_get = 106,
 
-  PRIM_MAX = 106,
+  PRIM_MAX = 107,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \

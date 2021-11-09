@@ -1301,7 +1301,6 @@ static object_t _os_device_configure (vm_t vm, object_t ret, object_t obj)
       PANIC ("device type not defined, cannot handle");
     }
 
-  // os_printk ("imm_int_t _os_gpio_toggle (%s)\n", str_buf);
   return ret;
 }
 
@@ -1323,6 +1322,17 @@ static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t dev)
   super_device *p = translate_supper_dev_from_symbol (dev);
   gpio_pin_toggle (p->dev, p->gpio_pin);
   *ret = GLOBAL_REF (none_const);
+  return ret;
+}
+
+static object_t _os_gpio_get (vm_t vm, object_t ret, object_t dev)
+{
+  VALIDATE (dev, symbol);
+  super_device *p = translate_supper_dev_from_symbol (dev);
+  imm_int_t val = 0;
+  val = gpio_pin_get (p->dev, p->gpio_pin);
+  ret->attr.type = imm_int;
+  ret->value = (void *)val;
   return ret;
 }
 
@@ -1603,11 +1613,18 @@ static object_t _os_gpio_set (vm_t vm, object_t ret, object_t dev, object_t v)
   return ret;
 }
 
-static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t obj)
+static object_t _os_gpio_toggle (vm_t vm, object_t ret, object_t dev)
 {
-  VALIDATE (obj, symbol);
+  VALIDATE (dev, symbol);
+  os_printk ("object_t _os_gpio_toggle (%s)\n", (const char *)dev->value);
+  *ret = GLOBAL_REF (none_const);
+  return ret;
+}
 
-  os_printk ("object_t _os_gpio_toggle (%s)\n", (const char *)obj->value);
+static object_t _os_gpio_get (vm_t vm, object_t ret, object_t dev)
+{
+  VALIDATE (dev, symbol);
+  os_printk ("object_t _os_gpio_get (%s)\n", (const char *)dev->value);
   *ret = GLOBAL_REF (none_const);
   return ret;
 }
@@ -2115,6 +2132,7 @@ void primitives_init (void)
   def_prim (103, "sqrt", 1, (void *)_sqrt);
   def_prim (104, "exact-integer-sqrt", 1, (void *)_exact_integer_sqrt);
   def_prim (105, "expt", 2, (void *)_expt);
+  def_prim (106, "gpio-get!", 1, (void *)_os_gpio_get);
 }
 
 char *prim_name (u16_t pn)
