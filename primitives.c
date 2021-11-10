@@ -2132,7 +2132,7 @@ void primitives_init (void)
   def_prim (103, "sqrt", 1, (void *)_sqrt);
   def_prim (104, "exact-integer-sqrt", 1, (void *)_exact_integer_sqrt);
   def_prim (105, "expt", 2, (void *)_expt);
-  def_prim (106, "gpio-get!", 1, (void *)_os_gpio_get);
+  def_prim (106, "gpio-get", 1, (void *)_os_gpio_get);
 }
 
 char *prim_name (u16_t pn)
