@@ -282,9 +282,9 @@ typedef u16_t reg_t;
 #endif
 
 /* Frame Pre-store Size =
- * sizeof(pc) + sizeof(fp) + sizeof(attr) + sizeof(closure_t)
+ * sizeof(pc) + sizeof(fp) + sizeof(local) + sizeof(attr) + sizeof(closure_t)
  */
-#define FPS       (2 * sizeof (reg_t) + 1 + sizeof (closure_t))
+#define FPS       (3 * sizeof (reg_t) + 1 + sizeof (closure_t))
 #define NEXT_FP() (*((reg_t *)(stack + fp + sizeof (reg_t))))
 
 #define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))

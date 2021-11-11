@@ -1401,8 +1401,8 @@ void vm_run (vm_t vm)
       /*   = vm->sp ? (vm->sp - (vm->fp == NO_PREV_FP ? 0 : vm->fp + FPS)) : 0;
        */
 
-      /* // for (u32_t i = 0; i < bound / 8; i++) */
-      /* for (u32_t i = 0; i < 5; i++) */
+      // for (u32_t i = 0; i < bound / 8; i++)
+      /* for (u32_t i = 0; i < 8; i++) */
       /*   { */
       /*     object_t obj = (object_t)LOCAL_FIX (i); */
       /*     os_printk ( */

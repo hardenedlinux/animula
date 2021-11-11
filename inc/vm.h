@@ -264,9 +264,11 @@ static inline void vm_stack_check (vm_t vm)
  +----------+---> fp
  | ret_addr |
  +----------+
+ |  local   |
+ |----------|
  | last_fp  |
  +----------+
- | attr     |
+ |  attr    |
  +----------+
  | closure  |
  +----------+---> local
@@ -310,6 +312,7 @@ static inline void vm_stack_check (vm_t vm)
           {                                                          \
             reg_t sp = vm->sp;                                       \
             PUSH_REG (NORMAL_JUMP);                                  \
+            PUSH_REG (vm->local);                                    \
             PUSH_REG (sp ? (vm->fp ? vm->fp : NO_PREV_FP) : vm->fp); \
             PUSH (vm->attr.all);                                     \
             PUSH_CLOSURE (vm->closure);                              \
@@ -327,6 +330,7 @@ static inline void vm_stack_check (vm_t vm)
   do                              \
     {                             \
       PUSH_REG (vm->pc);          \
+      PUSH_REG (vm->local);       \
       PUSH_REG (vm->fp);          \
       PUSH (vm->attr.all);        \
       PUSH_CLOSURE (vm->closure); \
@@ -343,8 +347,8 @@ static inline void vm_stack_check (vm_t vm)
       vm->closure = POP_CLOSURE (); \
       vm->attr.all = POP ();        \
       vm->fp = POP_REG ();          \
+      vm->local = POP_REG ();       \
       vm->pc = POP_REG ();          \
-      vm->local = vm->fp + FPS;     \
       PUSH_OBJ (ret_obj);           \
     }                               \
   while (0)
@@ -418,8 +422,8 @@ static inline void vm_stack_check (vm_t vm)
       vm->attr.all = POP ();                                      \
       vm->fp = POP_REG ();                                        \
       vm->fp = (NO_PREV_FP == vm->fp ? 0 : vm->fp);               \
+      vm->local = POP_REG ();                                     \
       vm->pc = POP_REG ();                                        \
-      vm->local = vm->fp + FPS;                                   \
       PUSH_OBJ (ret_obj);                                         \
     }                                                             \
   while (0)
