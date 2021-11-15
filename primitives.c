@@ -1579,6 +1579,20 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+#  define APP_ADDRESS (0x8020000)
+static object_t _os_vm_reset (vm_t vm, object_t ret)
+{
+  // TODO: make APP_ADDRESS configurable
+  // erase FLASH sector in bank need to be reconfigured, too
+  /* Jump to application */
+  // MSP, PSP, SCB->VTOR and MPU will be initialize again in the firmware
+  /* Boot the application from APP_ADDRESS */
+  (*(void (**) ()) (APP_ADDRESS + 4)) ();
+  *ret = GLOBAL_REF (none_const);
+  return ret;
+}
+#  undef APP_ADDRESS
+
 /* LAMBDACHIP_ZEPHYR *************************************** LAMBDACHIP_LINUX */
 
 #elif defined LAMBDACHIP_LINUX
@@ -1897,6 +1911,13 @@ static object_t _i2c_write_bytevector (vm_t vm, object_t ret, object_t dev,
   return ret;
 }
 
+static object_t _os_vm_reset (vm_t vm, object_t ret)
+{
+  os_printk ("vm-reset!() is not supported on lambdachip-linux");
+  *ret = GLOBAL_REF (none_const);
+  return ret;
+}
+
 #endif /* LAMBDACHIP_LINUX */
 
 static Object prim_procedure_p (object_t obj)
@@ -2133,6 +2154,7 @@ void primitives_init (void)
   def_prim (104, "exact-integer-sqrt", 1, (void *)_exact_integer_sqrt);
   def_prim (105, "expt", 2, (void *)_expt);
   def_prim (106, "gpio-get", 1, (void *)_os_gpio_get);
+  def_prim (107, "vm-reset!", 0, (void *)_os_vm_reset);
 }
 
 char *prim_name (u16_t pn)

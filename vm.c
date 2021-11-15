@@ -416,6 +416,7 @@ void call_prim (vm_t vm, pn_t pn)
       }
     case read_char:
     case readln:
+    case prim_vm_reset:
       {
         func_0_args_with_ret_t fn = (func_0_args_with_ret_t)prim->fn;
         Object ret = CREATE_RET_OBJ ();
