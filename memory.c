@@ -92,7 +92,7 @@ void *os_malloc (size_t size)
 
   if (NULL == ptr)
     {
-      VM_DEBUG ("os_calloc: Failed to allocate memory!\n");
+      VM_DEBUG ("os_malloc: Failed to allocate memory!\n");
     }
 #ifdef FORCE_MEMORY_SIZE_TEST
   else
