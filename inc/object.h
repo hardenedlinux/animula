@@ -92,6 +92,7 @@ static inline bool is_unspecified (object_t obj)
   return (null_obj == obj->attr.type);
 }
 
+// FIXME:shall the os_malloc be replaced by GC_MALLOC?
 #define CREATE_NEW_OBJ(t, te, to)         \
   do                                      \
     {                                     \

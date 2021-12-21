@@ -84,6 +84,17 @@ typedef enum prim_num
   with_exception_handler = 45,
   scm_raise = 46,
   scm_raise_continuable = 47,
+
+  // raise ; 16 + 30
+  // raise-continuable ; 16 + 31
+  // error ; 16 + 32
+  // error-object? ; 16 + 33
+  // error-object-message ; 16 + 34
+  // error-object-irritants ; 16 + 35
+  // read-error? ; 16 + 36
+  // file-error? ; 16 + 37
+  // dynamic-wind ; 16 + 38
+
   is_list = 55,
   is_string = 56,
   is_char = 57,
@@ -137,8 +148,14 @@ typedef enum prim_num
   prim_expt = 105,
   prim_gpio_get = 106,
   prim_vm_reset = 107,
+  prim_make_string = 108,
+  prim_string = 109,
+  prim_string_length = 110,
+  prim_string_ref = 111,
+  prim_string_set = 112,
+  prim_string_eq = 113,
 
-  PRIM_MAX = 108,
+  PRIM_MAX = 114,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \
@@ -189,17 +206,17 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
     }
 #if defined LAMBDACHIP_DEBUG
 
-    /* NOTE: The gcc8 adds a new feature to check the bound for string
-     *       functions. However, strnlen is safe from the consideration,
-     *       so we ignore it temporarily to make gcc happy.
-     * See here for more details:
-     https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
-     */
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wstringop-overread"
+  /* NOTE: The gcc8 adds a new feature to check the bound for string
+   *       functions. However, strnlen is safe from the consideration,
+   *       so we ignore it temporarily to make gcc happy.
+   * See here for more details:
+   https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
+   */
+  // #  pragma GCC diagnostic push
+  // #  pragma GCC diagnostic ignored "-Wstringop-overread"
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
   os_memcpy (prim->name, name, len);
-#  pragma GCC diagnostic pop
+  // #  pragma GCC diagnostic pop
 
   prim->arity = arity;
 #endif

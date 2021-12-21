@@ -107,3 +107,52 @@ Object prim_keyword_p (object_t obj)
 {
   return CHECK_OBJECT_TYPE (obj, keyword);
 }
+
+object_t _make_string (vm_t vm, object_t ret, object_t length, object_t char0)
+{
+  VALIDATE (length, imm_int);
+  VALIDATE (char0, character);
+  // FIXME: what if length larger than 2^31-1
+  imm_int_t len = (imm_int_t)length->value;
+  imm_int_t cc = (imm_int_t)char0->value;
+  ret->attr.type = mut_string;
+  char c = '\0';
+  if (cc < 0 || cc > 255)
+    {
+      PANIC ("cannot convert %d to char", cc);
+    }
+  else
+    {
+      c = (char)cc;
+    }
+
+  char *p = (char *)GC_MALLOC (len + 1);
+  if (p)
+    {
+      memset (p, c, len);
+      p[len] = '\0';
+    }
+  ret->value = (void *)p;
+  return ret;
+}
+
+object_t _string (vm_t vm, object_t ret, object_t length, object_t char0)
+{
+  return ret;
+}
+object_t _string_length (vm_t vm, object_t ret, object_t length, object_t char0)
+{
+  return ret;
+}
+object_t _string_ref (vm_t vm, object_t ret, object_t length, object_t char0)
+{
+  return ret;
+}
+object_t _string_set (vm_t vm, object_t ret, object_t length, object_t char0)
+{
+  return ret;
+}
+object_t _string_eq (vm_t vm, object_t ret, object_t length, object_t char0)
+{
+  return ret;
+}

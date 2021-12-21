@@ -365,6 +365,7 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_truncate_quotient:
     case prim_truncate_remainder:
     case prim_expt:
+    case prim_make_string:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();

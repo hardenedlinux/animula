@@ -50,6 +50,20 @@ extern object_t _sqrt (vm_t vm, object_t ret, object_t xx);
 extern object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx);
 extern object_t _expt (vm_t vm, object_t ret, object_t xx);
 
+// string
+extern object_t _make_string (vm_t vm, object_t ret, object_t length,
+                              object_t char0);
+extern object_t _string (vm_t vm, object_t ret, object_t length,
+                         object_t char0);
+extern object_t _string_length (vm_t vm, object_t ret, object_t length,
+                                object_t char0);
+extern object_t _string_ref (vm_t vm, object_t ret, object_t length,
+                             object_t char0);
+extern object_t _string_set (vm_t vm, object_t ret, object_t length,
+                             object_t char0);
+extern object_t _string_eq (vm_t vm, object_t ret, object_t length,
+                            object_t char0);
+
 bool _int_gt (object_t x, object_t y);
 
 GLOBAL_DEF (prim_t, prim_table[PRIM_MAX]) = {0};
@@ -2155,6 +2169,12 @@ void primitives_init (void)
   def_prim (105, "expt", 2, (void *)_expt);
   def_prim (106, "gpio-get", 1, (void *)_os_gpio_get);
   def_prim (107, "vm-reset!", 0, (void *)_os_vm_reset);
+  def_prim (108, "make-string", 0, (void *)_make_string);
+  def_prim (109, "string", 0, (void *)_string);
+  def_prim (110, "string-length", 0, (void *)_string_length);
+  def_prim (111, "string-ref", 0, (void *)_string_ref);
+  def_prim (112, "string-set!", 0, (void *)_string_set);
+  def_prim (113, "string=?", 0, (void *)_string_eq);
 }
 
 char *prim_name (u16_t pn)
