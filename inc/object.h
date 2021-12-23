@@ -116,12 +116,14 @@ static inline bool is_unspecified (object_t obj)
     }                                                         \
   while (0)
 
+#define CHAR_VALUE_VALID(c) ((0 < c && c <= MAX_UINT8) ? true : false)
+
 #define VALIDATE_STRING(obj)                                                \
   do                                                                        \
     {                                                                       \
       if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type)) \
         {                                                                   \
-          PANIC ("Invalid type, expect string, but it's %d\n", t,           \
+          PANIC ("Invalid type, expect string, but it's %d\n",              \
                  (obj)->attr.type);                                         \
         }                                                                   \
     }                                                                       \
@@ -147,6 +149,8 @@ static inline bool is_unspecified (object_t obj)
 #define MAX_INT32            2147483647
 #define MIN_UINT8            0
 #define MAX_UINT8            255
+#define MIN_CHAR             1
+#define MAX_CHAR             MAX_UINT8
 #define MIN_UINT16           0
 #define MAX_UINT16           65535
 

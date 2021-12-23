@@ -341,6 +341,7 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_bytevector_u8_set:
     case prim_bytevector_copy:
     case prim_i2c_write_bytevector:
+    case prim_string_set:
       {
         func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
         Object o3 = POP_OBJ ();
@@ -366,6 +367,8 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_truncate_remainder:
     case prim_expt:
     case prim_make_string:
+    case prim_string_ref:
+    case prim_string_eq:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();
@@ -402,6 +405,7 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_square:
     case prim_sqrt:
     case prim_exact_integer_sqrt:
+    case prim_string_length:
       {
         func_1_args_with_ret_t fn = (func_1_args_with_ret_t)prim->fn;
         Object o = POP_OBJ ();
@@ -509,7 +513,7 @@ void call_prim (vm_t vm, pn_t pn)
       }
     default:
       {
-        os_printk ("Invalid prim number: %d\n", pn);
+        PANIC ("Invalid prim number: %d\n", pn);
       }
     }
 }

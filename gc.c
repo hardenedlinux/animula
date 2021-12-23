@@ -1043,7 +1043,7 @@ void gc_inner_obj_book (otype_t t, void *obj)
       }
     default:
       {
-        PANIC ("Invalid object type %d", t);
+        PANIC ("Invalid object type %d\n", t);
       }
     }
 }

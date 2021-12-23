@@ -115,17 +115,18 @@ object_t _make_string (vm_t vm, object_t ret, object_t length, object_t char0)
   // FIXME: what if length larger than 2^31-1
   imm_int_t len = (imm_int_t)length->value;
   imm_int_t cc = (imm_int_t)char0->value;
-  ret->attr.type = mut_string;
   char c = '\0';
-  if (cc < 0 || cc > 255)
-    {
-      PANIC ("cannot convert %d to char", cc);
-    }
-  else
+  if (CHAR_VALUE_VALID (cc))
     {
       c = (char)cc;
     }
+  else
+    {
+      PANIC (
+        "According to R7RS, LambdaChip VM doesn't support #\nul in string.\n");
+    }
 
+  // FIXME: Memory leaks here, there's no good way to free memory at this stage.
   char *p = (char *)GC_MALLOC (len + 1);
   if (p)
     {
@@ -133,6 +134,7 @@ object_t _make_string (vm_t vm, object_t ret, object_t length, object_t char0)
       p[len] = '\0';
     }
   ret->value = (void *)p;
+  ret->attr.type = mut_string;
   return ret;
 }
 
@@ -140,19 +142,78 @@ object_t _string (vm_t vm, object_t ret, object_t length, object_t char0)
 {
   return ret;
 }
-object_t _string_length (vm_t vm, object_t ret, object_t length, object_t char0)
+
+object_t _string_length (vm_t vm, object_t ret, object_t obj)
 {
+  VALIDATE_STRING (obj);
+  imm_int_t len = strnlen ((char *)obj->value, MAX_STR_LEN);
+
+  ret->value = imm_int;
+  ret->value = (void *)len;
   return ret;
 }
-object_t _string_ref (vm_t vm, object_t ret, object_t length, object_t char0)
+
+// In R6RS string_ref shall run in constant time while R7RS doesn't
+object_t _string_ref (vm_t vm, object_t ret, object_t obj, object_t index)
 {
+  VALIDATE_STRING (obj);
+  VALIDATE (index, imm_int);
+
+  imm_int_t idx = (imm_int_t)index->value;
+  imm_int_t len = strnlen ((char *)obj->value, MAX_STR_LEN);
+
+  if (idx < 0 || idx > len) // len is always less than MAX_STR_LEN
+    {
+      PANIC ("String index error, string_length = %d, index = %d\n", len, idx);
+    }
+  ret->value = (void *)((char *)obj->value)[idx];
+  ret->attr.type = character;
   return ret;
 }
-object_t _string_set (vm_t vm, object_t ret, object_t length, object_t char0)
+
+object_t _string_set (vm_t vm, object_t ret, object_t obj, object_t index,
+                      object_t char0)
 {
+  // only mut_string is allowed, string type is not allowed.
+  VALIDATE (obj, mut_string);
+  VALIDATE (index, imm_int);
+  VALIDATE (char0, character);
+
+  imm_int_t idx = (imm_int_t)index->value;
+  imm_int_t cc = (imm_int_t)char0->value;
+  if (!CHAR_VALUE_VALID (cc))
+    {
+      PANIC ("Char value (%d) not in range (%d, %d)\n", cc, MIN_CHAR, MAX_CHAR);
+    }
+
+  ((char *)obj->value)[idx] = cc;
+  ret->attr.type = none;
+  ret->value = (void *)0;
+
   return ret;
 }
-object_t _string_eq (vm_t vm, object_t ret, object_t length, object_t char0)
+
+object_t _string_eq (vm_t vm, object_t ret, object_t str0, object_t str1)
 {
+  VALIDATE_STRING (str0);
+  VALIDATE_STRING (str1);
+
+  // ret->attr.type = boolean;
+  if (str0->value == str1->value)
+    {
+      // ret->value = (void*)true;
+      *ret = GLOBAL_REF (true_const);
+    }
+
+  if (0 == strncmp ((char *)str0->value, (char *)str1->value, MAX_STR_LEN))
+    {
+      // ret->value = (void*)true;
+      *ret = GLOBAL_REF (true_const);
+    }
+  else
+    {
+      *ret = GLOBAL_REF (false_const);
+      // ret->value = (void*)false;
+    }
   return ret;
 }
