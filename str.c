@@ -217,3 +217,37 @@ object_t _string_eq (vm_t vm, object_t ret, object_t str0, object_t str1)
     }
   return ret;
 }
+
+object_t _substring (vm_t vm, object_t ret, object_t str0, object_t start,
+                     object_t end)
+{
+  VALIDATE_STRING (str0);
+  VALIDATE (start, imm_int);
+  VALIDATE (end, imm_int);
+
+  imm_int_t len = strnlen ((char *)str0->value, MAX_STR_LEN);
+
+  imm_int_t s = (imm_int_t)start->value;
+  imm_int_t e = (imm_int_t)end->value;
+
+  if (0 > s || s > len)
+    {
+      PANIC ("Value out of range %d to %d: %d", 0, len, s);
+    }
+
+  if (e < s || e > len)
+    {
+      PANIC ("Value out of range %d to %d: %d", s, len, e);
+    }
+
+  imm_int_t new_len = e - s;
+
+  // FIXME: Memory leaks here, there's no good way to free memory at this stage.
+  char *p = (char *)GC_MALLOC (new_len + 1);
+  p[new_len] = '\0';
+  strncpy (p, (char *)str0->value, new_len);
+
+  ret->attr.type = mut_string;
+  ret->value = (void *)p;
+  return ret;
+}

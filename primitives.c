@@ -55,14 +55,15 @@ extern object_t _make_string (vm_t vm, object_t ret, object_t length,
                               object_t char0);
 extern object_t _string (vm_t vm, object_t ret, object_t length,
                          object_t char0);
-extern object_t _string_length (vm_t vm, object_t ret, object_t length,
-                                object_t char0);
-extern object_t _string_ref (vm_t vm, object_t ret, object_t length,
-                             object_t char0);
-extern object_t _string_set (vm_t vm, object_t ret, object_t length,
-                             object_t char0);
-extern object_t _string_eq (vm_t vm, object_t ret, object_t length,
-                            object_t char0);
+extern object_t _string_length (vm_t vm, object_t ret, object_t obj);
+extern object_t _string_ref (vm_t vm, object_t ret, object_t obj,
+                             object_t index);
+extern object_t _string_set (vm_t vm, object_t ret, object_t obj,
+                             object_t index, object_t char0);
+extern object_t _string_eq (vm_t vm, object_t ret, object_t str0,
+                            object_t str1);
+extern object_t _substring (vm_t vm, object_t ret, object_t str0,
+                            object_t start, object_t end);
 
 bool _int_gt (object_t x, object_t y);
 
@@ -2169,12 +2170,13 @@ void primitives_init (void)
   def_prim (105, "expt", 2, (void *)_expt);
   def_prim (106, "gpio-get", 1, (void *)_os_gpio_get);
   def_prim (107, "vm-reset!", 0, (void *)_os_vm_reset);
-  def_prim (108, "make-string", 0, (void *)_make_string);
-  def_prim (109, "string", 0, (void *)_string);
-  def_prim (110, "string-length", 0, (void *)_string_length);
-  def_prim (111, "string-ref", 0, (void *)_string_ref);
-  def_prim (112, "string-set!", 0, (void *)_string_set);
-  def_prim (113, "string=?", 0, (void *)_string_eq);
+  def_prim (108, "make-string", 2, (void *)_make_string);
+  def_prim (109, "string", 1, (void *)_string);
+  def_prim (110, "string-length", 1, (void *)_string_length);
+  def_prim (111, "string-ref", 2, (void *)_string_ref);
+  def_prim (112, "string-set!", 3, (void *)_string_set);
+  def_prim (113, "string=?", 2, (void *)_string_eq);
+  def_prim (114, "substring", 3, (void *)_substring);
 }
 
 char *prim_name (u16_t pn)
