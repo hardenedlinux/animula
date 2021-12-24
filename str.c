@@ -334,3 +334,38 @@ object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
   ret->value = (void *)0;
   return ret;
 }
+
+object_t _string_fill (vm_t vm, object_t ret, object_t str0, object_t fill,
+                       object_t start, object_t end)
+{
+  VALIDATE_STRING (str0);
+  VALIDATE (fill, character);
+  VALIDATE (start, imm_int);
+  VALIDATE (end, imm_int);
+
+  imm_int_t len = strnlen ((char *)str0->value, MAX_STR_LEN);
+
+  char c = (char)fill->value;
+  imm_int_t s = (imm_int_t)start->value;
+  imm_int_t e = (imm_int_t)end->value;
+
+  if (0 > s || s > len)
+    {
+      PANIC ("Value out of range %d to %d: %d", 0, len, s);
+    }
+
+  if (e < s || e > len)
+    {
+      PANIC ("Value out of range %d to %d: %d", s, len, e);
+    }
+
+  char *p = (char *)str0->value;
+  for (imm_int_t i = s; i < e; i++)
+    {
+      p[i] = c;
+    }
+
+  ret->attr.type = none;
+  ret->value = (void *)0;
+  return ret;
+}

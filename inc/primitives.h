@@ -158,8 +158,9 @@ typedef enum prim_num
   prim_string_append = 115,
   prim_string_copy = 116,
   prim_string_copy_side_effect = 117,
+  prim_string_fill = 118,
 
-  PRIM_MAX = 118,
+  PRIM_MAX = 119,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \

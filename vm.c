@@ -324,6 +324,7 @@ void call_prim (vm_t vm, pn_t pn)
       }
     case prim_i2c_write_byte: // 4 parameters
     case prim_spi_transceive:
+    case prim_string_fill:
       {
         func_4_args_with_ret_t fn = (func_4_args_with_ret_t)prim->fn;
         Object o4 = POP_OBJ ();
