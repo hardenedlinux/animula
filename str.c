@@ -122,8 +122,8 @@ object_t _make_string (vm_t vm, object_t ret, object_t length, object_t char0)
     }
   else
     {
-      PANIC (
-        "According to R7RS, LambdaChip VM doesn't support #\nul in string.\n");
+      PANIC ("LambdaChip VM doesn't support #\nul in string. (R7RS allows such "
+             "a design)\n");
     }
 
   // FIXME: Memory leaks here, there's no good way to free memory at this stage.
