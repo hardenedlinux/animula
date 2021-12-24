@@ -68,6 +68,9 @@ extern object_t _string_append (vm_t vm, object_t ret, object_t str0,
                                 object_t str1);
 extern object_t _string_copy (vm_t vm, object_t ret, object_t str0,
                               object_t start, object_t end);
+extern object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
+                                          object_t at, object_t str1,
+                                          object_t start, object_t end);
 
 bool _int_gt (object_t x, object_t y);
 
@@ -2183,6 +2186,7 @@ void primitives_init (void)
   def_prim (114, "substring", 3, (void *)_substring);
   def_prim (115, "substring", 2, (void *)_string_append);
   def_prim (116, "string-copy", 3, (void *)_string_copy);
+  def_prim (117, "string-copy!", 5, (void *)_string_copy_side_effect);
 }
 
 char *prim_name (u16_t pn)

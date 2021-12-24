@@ -309,6 +309,7 @@ void call_prim (vm_t vm, pn_t pn)
         break;
       }
     case prim_bytevector_copy_overwrite: // 5 parameters
+    case prim_string_copy_side_effect:
       {
         func_5_args_with_ret_t fn = (func_5_args_with_ret_t)prim->fn;
         Object o5 = POP_OBJ ();

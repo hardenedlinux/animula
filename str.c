@@ -284,3 +284,53 @@ object_t _string_copy (vm_t vm, object_t ret, object_t str0, object_t start,
 {
   return _substring (vm, ret, str0, start, end);
 }
+
+object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
+                                   object_t at, object_t str1, object_t start,
+                                   object_t end)
+{
+  VALIDATE_STRING (str0);
+  VALIDATE (at, imm_int);
+  VALIDATE_STRING (str1);
+  VALIDATE (start, imm_int);
+  VALIDATE (end, imm_int);
+
+  imm_int_t len0 = strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len1 = strnlen ((char *)str0->value, MAX_STR_LEN);
+
+  imm_int_t a = (imm_int_t)at->value;
+  imm_int_t s = (imm_int_t)start->value;
+  imm_int_t e = (imm_int_t)end->value;
+
+  if (0 > a || a > len0)
+    {
+      PANIC ("Value out of range %d to %d: %d", 0, len0, a);
+    }
+
+  if (0 > s || s > len1)
+    {
+      PANIC ("Value out of range %d to %d: %d", 0, len1, s);
+    }
+
+  if (e < s || e > len1)
+    {
+      PANIC ("Value out of range %d to %d: %d", s, len1, e);
+    }
+
+  if (len0 - a < e - s)
+    {
+      PANIC ("In procedure string-copy!: Argument 3 out of range: %s",
+             (char *)str1->value);
+    }
+
+  imm_int_t new_len = e - s;
+
+  // FIXME: Memory leaks here, there's no good way to free memory at this stage.
+  char *p = (char *)GC_MALLOC (new_len + 1);
+  p[new_len] = '\0';
+  strncpy (a + (char *)str0->value, s + (char *)str1->value, e - s);
+
+  ret->attr.type = none;
+  ret->value = (void *)0;
+  return ret;
+}
