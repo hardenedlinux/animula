@@ -251,3 +251,30 @@ object_t _substring (vm_t vm, object_t ret, object_t str0, object_t start,
   ret->value = (void *)p;
   return ret;
 }
+
+object_t _string_append (vm_t vm, object_t ret, object_t str0, object_t str1)
+{
+  VALIDATE_STRING (str0);
+  VALIDATE_STRING (str1);
+  // VALIDATE (start, imm_int);
+  // VALIDATE (end, imm_int);
+
+  imm_int_t len0 = strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len1 = strnlen ((char *)str1->value, MAX_STR_LEN);
+
+  // FIXME: Memory leaks here, there's no good way to free memory at this stage.
+  char *p = (char *)GC_MALLOC (len0 + len1 + 1);
+  if (p)
+    {
+      strncpy (p, (char *)str0->value, len0);
+      strncpy (p + len0, (char *)str1->value, len1);
+    }
+  else
+    {
+      PANIC ("Memory allocation failed.");
+    }
+
+  ret->attr.type = mut_string;
+  ret->value = (void *)p;
+  return ret;
+}

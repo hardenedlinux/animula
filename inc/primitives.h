@@ -155,8 +155,9 @@ typedef enum prim_num
   prim_string_set = 112,
   prim_string_eq = 113,
   prim_substring = 114,
+  prim_string_append = 115,
 
-  PRIM_MAX = 115,
+  PRIM_MAX = 116,
 } pn_t;
 
 #define GEN_PRIM(t)                                                  \

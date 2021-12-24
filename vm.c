@@ -370,6 +370,7 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_make_string:
     case prim_string_ref:
     case prim_string_eq:
+    case prim_string_append:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
         Object o2 = POP_OBJ ();
