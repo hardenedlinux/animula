@@ -343,6 +343,7 @@ void call_prim (vm_t vm, pn_t pn)
     case prim_i2c_write_bytevector:
     case prim_string_set:
     case prim_substring:
+    case prim_string_copy:
       {
         func_3_args_with_ret_t fn = (func_3_args_with_ret_t)prim->fn;
         Object o3 = POP_OBJ ();

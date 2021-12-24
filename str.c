@@ -278,3 +278,9 @@ object_t _string_append (vm_t vm, object_t ret, object_t str0, object_t str1)
   ret->value = (void *)p;
   return ret;
 }
+
+object_t _string_copy (vm_t vm, object_t ret, object_t str0, object_t start,
+                       object_t end)
+{
+  return _substring (vm, ret, str0, start, end);
+}
