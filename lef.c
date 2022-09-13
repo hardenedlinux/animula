@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -35,7 +35,7 @@ void free_lef (lef_t lef)
 
 lef_t load_lef_from_flash (size_t offset)
 {
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
   // convert char (*)[3] to char*
@@ -67,7 +67,7 @@ lef_t load_lef_from_flash (size_t offset)
 
 lef_t load_lef_from_uart ()
 {
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
   lef_t lef = (lef_t)os_malloc (sizeof (struct LEF));
 
   for (int i = 0; i < 3; i++)
@@ -135,7 +135,7 @@ lef_t load_lef_from_file (const char *filename)
 {
   lef_t lef = NULL;
 
-#if defined(LAMBDACHIP_LINUX) || defined(LAMBDACHIP_ZEPHYR)
+#if defined(ANIMULA_LINUX) || defined(ANIMULA_ZEPHYR)
   if (!file_exist (filename))
     {
       os_printk ("File \"%s\" doesn't exist!\n", filename);

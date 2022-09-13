@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -111,12 +111,12 @@ static int serial_load (int argc, char **argv, vm_t vm)
 
       vm_load_lef (vm, lef);
 
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
       start_time0 = k_cycle_get_32 ();
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
       vm_run (vm);
       free_lef (lef);
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
       stop_time0 = k_cycle_get_32 ();
       cycles_spent = stop_time0 - start_time0;
       nanoseconds_spent = k_cyc_to_ns_floor64 (cycles_spent);
@@ -127,7 +127,7 @@ static int serial_load (int argc, char **argv, vm_t vm)
       // affects by CONFIG_SYS_CLOCK_TICKS_PER_SEC
       os_printk ("start_time0       = %d ns\n", start_time0); // 910108
       os_printk ("stop_time0        = %d ns\n", stop_time0);  // 29710362
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
 
       vm_clean (vm);
       vm_init (vm);
@@ -141,7 +141,7 @@ end:
 static int flash_test (int argc, char **argv, vm_t vm)
 {
   char buf[10] = {0};
-  int offset = LAMBDACHIP_FLASH_AVAILABLE_OFFSET;
+  int offset = ANIMULA_FLASH_AVAILABLE_OFFSET;
   os_printk ("offset: %d\n", offset);
 
   os_flash_write ("hello", offset, 6);

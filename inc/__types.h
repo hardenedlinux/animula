@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP___TYPES_H
-#define __LAMBDACHIP___TYPES_H
+#ifndef __ANIMULA___TYPES_H
+#define __ANIMULA___TYPES_H
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -67,7 +67,7 @@ typedef __l_cp l_cp;
 typedef __gptr_t gptr_t;
 typedef __cptr_t cptr_t;
 
-#  ifndef LAMBDACHIP_LINUX
+#  ifndef ANIMULA_LINUX
 typedef __stdptr_t stdptr_t;
 typedef __intptr_t intptr_t;
 typedef __uintptr_t uintptr_t;
@@ -109,4 +109,4 @@ typedef __mutex_t _mutex_t;
 
 #endif // !__ASSEMBLER__
 
-#endif // End of __LAMBDACHIP___TYPES_H;
+#endif // End of __ANIMULA___TYPES_H;

@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_TYPES_H
-#define __LAMBDACHIP_TYPES_H
+#ifndef __ANIMULA_TYPES_H
+#define __ANIMULA_TYPES_H
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -20,7 +20,7 @@
 #include "os.h"
 #include "qlist.h"
 
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
 #  ifndef CONFIG_HEAP_MEM_POOL_SIZE
 #    error "You must define CONFIG_HEAP_MEM_POOL_SIZE for Zephyr!"
 #  endif
@@ -29,7 +29,7 @@
 #  include <zephyr/types.h>
 typedef u16_t reg_t;
 
-#elif defined LAMBDACHIP_LINUX
+#elif defined ANIMULA_LINUX
 #  define CONFIG_HEAP_MEM_POOL_SIZE 90000
 #  include "__types.h"
 #  include <stdint.h>
@@ -247,7 +247,7 @@ typedef union ieee754_float
   /* This is the IEEE 754 single-precision format.  */
   struct
   {
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
     unsigned int negative : 1;
     unsigned int exponent : 8;
     unsigned int mantissa : 23;
@@ -295,7 +295,7 @@ typedef u16_t reg_t;
 static inline uintptr_t read_uintptr_from_ptr (char *ptr)
 {
   u8_t buf[sizeof (uintptr_t)] = {0};
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   buf[0] = *ptr++;
   buf[1] = *ptr++;
   buf[2] = *ptr++;
@@ -331,14 +331,14 @@ typedef union ByteCode8
 {
   struct
   {
-#if defined LAMBDACHIP_BITS_LITTLE
+#if defined ANIMULA_BITS_LITTLE
     unsigned type : 4;
     unsigned data : 4;
-#elif defined LAMBDACHIP_BITS_BIG
+#elif defined ANIMULA_BITS_BIG
     unsigned data : 4;
     unsigned type : 4;
 #else
-#  error "Please define LAMBDACHIP_BITS_BIG or LAMBDACHIP_BITS_LITTLE"
+#  error "Please define ANIMULA_BITS_BIG or ANIMULA_BITS_LITTLE"
 #endif
   };
   u8_t all;
@@ -346,7 +346,7 @@ typedef union ByteCode8
 
 typedef union ByteCode16
 {
-#if defined LAMBDACHIP_BITS_LITTLE
+#if defined ANIMULA_BITS_LITTLE
   struct
   {
     unsigned bc1 : 8;
@@ -358,7 +358,7 @@ typedef union ByteCode16
     unsigned type : 4;
     unsigned data : 8;
   };
-#elif defined LAMBDACHIP_BITS_BIG
+#elif defined ANIMULA_BITS_BIG
   struct
   {
     unsigned bc2 : 8;
@@ -376,7 +376,7 @@ typedef union ByteCode16
 
 typedef union ByteCode24
 {
-#if defined LAMBDACHIP_BITS_LITTLE
+#if defined ANIMULA_BITS_LITTLE
   struct
   {
     unsigned bc1 : 8;
@@ -389,7 +389,7 @@ typedef union ByteCode24
     unsigned type : 4;
     unsigned data : 16;
   };
-#elif defined LAMBDACHIP_BITS_BIG
+#elif defined ANIMULA_BITS_BIG
   struct
   {
     unsigned bc3 : 8;
@@ -407,7 +407,7 @@ typedef union ByteCode24
 
 typedef union ByteCode32
 {
-#if defined LAMBDACHIP_BITS_LITTLE
+#if defined ANIMULA_BITS_LITTLE
   struct
   {
     unsigned bc1 : 8;
@@ -421,7 +421,7 @@ typedef union ByteCode32
     unsigned type : 4;
     unsigned data : 24;
   };
-#elif defined LAMBDACHIP_BITS_BIG
+#elif defined ANIMULA_BITS_BIG
   struct
   {
     unsigned bc4 : 8;
@@ -481,4 +481,4 @@ typedef struct LambdaVM
   } attr;
 } __packed *vm_t;
 
-#endif // End of __LAMBDACHIP_TYPES_H;
+#endif // End of __ANIMULA_TYPES_H;

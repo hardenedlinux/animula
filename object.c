@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -59,43 +59,43 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   return closure;
 }
 
-list_node_t lambdachip_new_list_node (void)
+list_node_t animula_new_list_node (void)
 {
   return (list_node_t)os_malloc (sizeof (ListNode));
 }
 
 u32_t list_cnt = 0;
-pair_t lambdachip_new_pair (void)
+pair_t animula_new_pair (void)
 {
   CREATE_NEW_OBJ (pair_t, pair, Pair);
 }
 
-vector_t lambdachip_new_vector (void)
+vector_t animula_new_vector (void)
 {
   CREATE_NEW_OBJ (vector_t, vector, Vector);
 }
 
-list_t lambdachip_new_list (void)
+list_t animula_new_list (void)
 {
   CREATE_NEW_OBJ (list_t, list, List);
 }
 
-closure_t lambdachip_new_closure (void)
+closure_t animula_new_closure (void)
 {
   CREATE_NEW_OBJ (closure_t, closure_on_heap, Closure);
 }
 
-bytevector_t lambdachip_new_bytevector (void)
+bytevector_t animula_new_bytevector (void)
 {
   CREATE_NEW_OBJ (bytevector_t, bytevector, ByteVector);
 }
 
-mut_bytevector_t lambdachip_new_mut_bytevector (void)
+mut_bytevector_t animula_new_mut_bytevector (void)
 {
   CREATE_NEW_OBJ (mut_bytevector_t, mut_bytevector, MutByteVector);
 }
 
-object_t lambdachip_new_object (otype_t type)
+object_t animula_new_object (otype_t type)
 {
   bool has_inner_obj = true;
   bool new_alloc = false;
@@ -119,42 +119,42 @@ object_t lambdachip_new_object (otype_t type)
     {
     case pair:
       {
-        value = (void *)lambdachip_new_pair ();
+        value = (void *)animula_new_pair ();
         ((pair_t)value)->attr.type = type;
         ((pair_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case vector:
       {
-        value = (void *)lambdachip_new_vector ();
+        value = (void *)animula_new_vector ();
         ((vector_t)value)->attr.type = type;
         ((vector_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case list:
       {
-        value = (void *)lambdachip_new_list ();
+        value = (void *)animula_new_list ();
         ((list_t)value)->attr.type = type;
         ((list_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case closure_on_heap:
       {
-        value = (void *)lambdachip_new_closure ();
+        value = (void *)animula_new_closure ();
         ((closure_t)value)->attr.type = type;
         ((closure_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case bytevector:
       {
-        value = (void *)lambdachip_new_bytevector ();
+        value = (void *)animula_new_bytevector ();
         ((bytevector_t)value)->attr.type = type;
         ((bytevector_t)value)->attr.gc = GEN_1_OBJ;
         break;
       }
     case mut_bytevector:
       {
-        value = (void *)lambdachip_new_mut_bytevector ();
+        value = (void *)animula_new_mut_bytevector ();
         ((mut_bytevector_t)value)->attr.type = type;
         ((mut_bytevector_t)value)->attr.gc = GEN_1_OBJ;
         break;

@@ -1,14 +1,14 @@
-#ifndef __LAMBDACHIP_GPIO_H__
-#define __LAMBDACHIP_GPIO_H__
+#ifndef __ANIMULA_GPIO_H__
+#define __ANIMULA_GPIO_H__
 
 /*  Copyright (C) 2019,2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -18,7 +18,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 #  include "devicetree.h"
 #  include <drivers/gpio.h>
 #  include <drivers/i2c.h>
@@ -159,6 +159,6 @@ typedef struct super_device_t
 #  define GPIO_PB12_PIN   DT_GPIO_PIN (GPIO_PB12_NODE, gpios)
 #  define GPIO_PB12_FLAGS DT_GPIO_FLAGS (GPIO_PB12_NODE, gpios)
 
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
 
-#endif /* __LAMBDACHIP_GPIO_H__ */
+#endif /* __ANIMULA_GPIO_H__ */

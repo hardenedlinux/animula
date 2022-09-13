@@ -1,12 +1,12 @@
 /*
  *  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -17,7 +17,7 @@
  */
 
 #include "os.h"
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 #  include "vos/drivers/file_operation.h"
 #  include <disk/disk_access.h>
 #  include <kernel.h>
@@ -87,12 +87,12 @@ bool __file_exist (const char *filename)
   fs_close (&file);
   return true;
 }
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
 int mount_disk (void)
 {
   os_printk ("int mount_disk (void)\n");
   return 0;
 }
-#endif /* LAMBDACHIP_LINUX */
+#endif /* ANIMULA_LINUX */

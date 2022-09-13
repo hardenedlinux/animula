@@ -1,12 +1,12 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *        "Rafael Lee"                   <rafaellee.img@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -18,10 +18,10 @@
 
 #include "primitives.h"
 #include "type_cast.h"
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 #  include <drivers/gpio.h>
 #  include <vos/drivers/gpio.h>
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
 #include "lib.h"
 
 object_t _floor (vm_t vm, object_t ret, object_t xx);
@@ -53,9 +53,9 @@ object_t _expt (vm_t vm, object_t ret, object_t xx, object_t yy);
 
 extern Object prim_number_p (object_t obj);
 
-#ifdef LAMBDACHIP_ZEPHYR
-#elif defined LAMBDACHIP_LINUX
-#endif /* LAMBDACHIP_LINUX */
+#ifdef ANIMULA_ZEPHYR
+#elif defined ANIMULA_LINUX
+#endif /* ANIMULA_LINUX */
 
 // extrenal declarations
 extern bool _int_gt (object_t x, object_t y);

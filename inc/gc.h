@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_GC_H__
-#define __LAMBDACHIP_GC_H__
+#ifndef __ANIMULA_GC_H__
+#define __ANIMULA_GC_H__
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -33,7 +33,7 @@
       GCInfo gci = {.fp = vm->fp,                \
                     .sp = vm->sp,                \
                     .stack = vm->stack,          \
-                    .hurt = LAMBDACHIP_GC_HURT}; \
+                    .hurt = ANIMULA_GC_HURT}; \
       gc (&gci);                                 \
     }                                            \
   while (0)
@@ -62,7 +62,7 @@
             GC ();                              \
             continue;                           \
           }                                     \
-        obj = lambdachip_new_object (t);        \
+        obj = animula_new_object (t);        \
         if (obj)                                \
           break;                                \
         GC ();                                  \
@@ -76,7 +76,7 @@
     list_node_t ol = NULL;                \
     do                                    \
       {                                   \
-        ol = lambdachip_new_list_node (); \
+        ol = animula_new_list_node (); \
         if (ol)                           \
           {                               \
             break;                        \
@@ -97,7 +97,7 @@
             GC ();                              \
             continue;                           \
           }                                     \
-        x = lambdachip_new_##t ();              \
+        x = animula_new_##t ();              \
         if (x)                                  \
           {                                     \
             gc_inner_obj_book (t, x);           \
@@ -210,4 +210,4 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp);
 size_t object_list_node_available (void);
 list_node_t object_list_node_alloc (void);
 void gc_clean (void);
-#endif // End of __LAMBDACHIP_GC_H__
+#endif // End of __ANIMULA_GC_H__

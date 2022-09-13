@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_LEF_H__
-#define __LAMBDACHIP_LEF_H__
+#ifndef __ANIMULA_LEF_H__
+#define __ANIMULA_LEF_H__
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -25,7 +25,7 @@
 #include "symbol.h"
 #include "types.h"
 #include "vos.h"
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 #  include <fs/fs.h>
 #  include <kernel.h>
 #endif
@@ -59,7 +59,7 @@ static inline u16_t lef_get_u16 (u16_t offset, lef_t lef)
 {
   u8_t size[2] = {0};
 
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   size[0] = lef->body[offset + 0];
   size[1] = lef->body[offset + 1];
 #else
@@ -73,7 +73,7 @@ static inline u32_t lef_entry (u16_t offset, lef_t lef)
 {
   u8_t entry[4] = {0};
 
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   entry[0] = lef->body[offset + 0];
   entry[1] = lef->body[offset + 1];
   entry[2] = lef->body[offset + 2];
@@ -87,7 +87,7 @@ static inline u32_t lef_entry (u16_t offset, lef_t lef)
   return *((u32_t *)entry);
 }
 
-#if defined(LAMBDACHIP_LINUX) || defined(LAMBDACHIP_ZEPHYR)
+#if defined(ANIMULA_LINUX) || defined(ANIMULA_ZEPHYR)
 #  include <sys/stat.h>
 #  include <sys/types.h>
 #  include <unistd.h>
@@ -95,10 +95,10 @@ static inline u32_t lef_entry (u16_t offset, lef_t lef)
 
 static inline bool file_exist (const char *filename)
 {
-#if defined LAMBDACHIP_LINUX
+#if defined ANIMULA_LINUX
   struct stat st = {0};
   return (linux_stat (filename, &st) == 0);
-#elif defined LAMBDACHIP_ZEPHYR
+#elif defined ANIMULA_ZEPHYR
   struct fs_dirent entry = {0};
   return (zephyr_stat (filename, &entry) == 0);
 #endif
@@ -110,4 +110,4 @@ lef_t load_lef_from_file (const char *filename);
 lef_t load_lef_from_uart (void);
 lef_t load_lef_from_flash (size_t offset);
 
-#endif // End of __LAMBDACHIP_LEF_H__
+#endif // End of __ANIMULA_LEF_H__

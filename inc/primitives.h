@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_PRIMITIVE_H__
-#define __LAMBDACHIP_PRIMITIVE_H__
+#ifndef __ANIMULA_PRIMITIVE_H__
+#define __ANIMULA_PRIMITIVE_H__
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -193,7 +193,7 @@ typedef Object (*pred_t) (object_t);
 
 typedef struct Primitive
 {
-#if defined LAMBDACHIP_DEBUG
+#if defined ANIMULA_DEBUG
   char name[PRIM_NAME_SIZE];
   u8_t arity;
 #endif
@@ -209,7 +209,7 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
     {
       PANIC ("def_prim calloc failed!\n");
     }
-#if defined LAMBDACHIP_DEBUG
+#if defined ANIMULA_DEBUG
 
   /* NOTE: The gcc8 adds a new feature to check the bound for string
    *       functions. However, strnlen is safe from the consideration,
@@ -234,4 +234,4 @@ void primitives_init (void);
 void primitives_clean (void);
 prim_t get_prim (u16_t pn);
 
-#endif // End of __LAMBDACHIP_PRIMITIVE_H__
+#endif // End of __ANIMULA_PRIMITIVE_H__

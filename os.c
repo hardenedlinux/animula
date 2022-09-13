@@ -2,12 +2,12 @@
  *  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *        Rafael Lee <rafaellee.img@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -21,9 +21,9 @@
 #include "os.h"
 #include "debug.h"
 
-#if defined LAMBDACHIP_LINUX
+#if defined ANIMULA_LINUX
 //
-#elif defined LAMBDACHIP_ZEPHYR
+#elif defined ANIMULA_ZEPHYR
 #  include <fs/fs.h>           // fs_open
 #  include <fs/fs_interface.h> // fs_file_t
 GLOBAL_DEF (struct fs_file_t,
@@ -99,4 +99,4 @@ int zephyr_stat (const char *path, struct fs_dirent *entry)
 }
 
 #  endif /* CONFIG_MAXIMUM_NUMBER_OPEN_FILE_DESCRIPTOR */
-#endif   /* LAMBDACHIP_ZEPHYR */
+#endif   /* ANIMULA_ZEPHYR */

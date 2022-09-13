@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -527,7 +527,7 @@ static uintptr_t vm_get_uintptr (vm_t vm)
 {
   u8_t buf[sizeof (uintptr_t)] = {0};
 
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   buf[0] = NEXT_DATA ();
   buf[1] = NEXT_DATA ();
   buf[2] = NEXT_DATA ();
@@ -545,7 +545,7 @@ static u16_t vm_get_u16 (vm_t vm)
 {
   u8_t buf[sizeof (u16_t)] = {0};
 
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   buf[0] = NEXT_DATA ();
   buf[1] = NEXT_DATA ();
 #else
@@ -721,7 +721,7 @@ static object_t generate_object (vm_t vm, object_t obj)
     case complex_inexact:
       {
         const void *value = (void *)(vm->code + vm->pc);
-#ifdef LAMBDACHIP_DEBUG
+#ifdef ANIMULA_DEBUG
         real_t r = {.v = vm_get_uintptr (vm)};
         real_t i = {.v = vm_get_uintptr (vm)};
         if (i.f >= 0)
@@ -914,7 +914,7 @@ static void interp_double_encode (vm_t vm, bytecode16_t bc)
       {
         u8_t index = bc.bc2;
         Object var = POP_OBJ ();
-#ifdef LAMBDACHIP_DEBUG
+#ifdef ANIMULA_DEBUG
         if (GLOBAL_REF (vm_verbose))
           {
             os_printk ("(global-assign %d ", index);
@@ -1000,7 +1000,7 @@ static void interp_triple_encode (vm_t vm, bytecode24_t bc)
       {
         u32_t index = NEXT_DATA () + 256;
         Object var = POP_OBJ ();
-#ifdef LAMBDACHIP_DEBUG
+#ifdef ANIMULA_DEBUG
         os_printk ("(global-assign %d ", index);
         object_printer (&var);
         os_printk (")\n");
@@ -1266,7 +1266,7 @@ void vm_init_globals (vm_t vm, lef_t lef)
   os_memcpy (vm->globals, vm->stack, size);
   vm->code = code; // restore code segment
 
-  /* #ifdef LAMBDACHIP_DEBUG */
+  /* #ifdef ANIMULA_DEBUG */
   /*   os_printk ("Globals %d: sp: %d\n", vm->sp / sizeof (Object), vm->sp); */
   /*   for (u32_t i = 0; i < vm->sp / sizeof (Object); i++) */
   /*     { */
@@ -1393,7 +1393,7 @@ static void dispatch (vm_t vm, bytecode8_t bc)
 
 void vm_load_compiled_file (const char *filename)
 {
-  os_printk ("Lambdachip hasn't supported file loading yet!\n");
+  os_printk ("Animula hasn't supported file loading yet!\n");
 }
 
 void vm_run (vm_t vm)

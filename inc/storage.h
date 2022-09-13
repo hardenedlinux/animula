@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_STORAGE_H__
-#define __LAMBDACHIP_STORAGE_H__
+#ifndef __ANIMULA_STORAGE_H__
+#define __ANIMULA_STORAGE_H__
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -22,21 +22,21 @@
 #include "os.h"
 #include "types.h"
 
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
 // FIXME: use GLOBAL_REF
 extern char _flash_used[];
-#  define LAMBDACHIP_FLASH_AVAILABLE_OFFSET (u32_t) _flash_used
+#  define ANIMULA_FLASH_AVAILABLE_OFFSET (u32_t) _flash_used
 #else
-#  define LAMBDACHIP_FLASH_AVAILABLE_OFFSET 0
+#  define ANIMULA_FLASH_AVAILABLE_OFFSET 0
 #endif
 
-#define LAMBDACHIP_FLASH_TMP_BUF_SIZE 256
+#define ANIMULA_FLASH_TMP_BUF_SIZE 256
 
 static inline u32_t uart_get_u32 (void)
 {
   u8_t ret[4] = {0};
 
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   ret[0] = os_getchar ();
   ret[1] = os_getchar ();
   ret[2] = os_getchar ();
@@ -54,7 +54,7 @@ static inline u16_t uart_get_u16 (void)
 {
   u8_t ret[2] = {0};
 
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   ret[0] = os_getchar ();
   ret[1] = os_getchar ();
 #else
@@ -64,7 +64,7 @@ static inline u16_t uart_get_u16 (void)
   return *((u16_t *)&ret);
 }
 
-#if defined LAMBDACHIP_LINUX
+#if defined ANIMULA_LINUX
 #  include <fcntl.h>
 #  include <sys/stat.h>
 #  include <sys/types.h>
@@ -90,4 +90,4 @@ int os_open_input_file (const char *filename);
 int os_read (int fd, void *buf, size_t count);
 void os_read_u32 (int fd, void *buf);
 void os_read_u16 (int fd, void *buf);
-#endif // End of __LAMBDACHIP_STORAGE_H__
+#endif // End of __ANIMULA_STORAGE_H__

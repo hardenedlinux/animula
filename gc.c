@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -18,7 +18,7 @@
 #include "gc.h"
 #include "list.h"
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
 #  include <sys/time.h>
 
 #endif
@@ -871,28 +871,28 @@ bool gc (const gc_info_t gci)
    */
   // usleep (10000);
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   const long long TICKS_PER_SECOND = 1000000L;
   struct timeval tv;
   struct timezone tz;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t cycles_spent;
   uint64_t nanoseconds_spent;
 #endif
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t0 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t t0 = k_cycle_get_32 ();
 #endif
 
   build_active_root (gci);
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t1 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t t1 = k_cycle_get_32 ();
 #endif
 
@@ -907,10 +907,10 @@ bool gc (const gc_info_t gci)
                  false);
   collect (&count, &obj_free_pool, false, false);
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t2 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t t2 = k_cycle_get_32 ();
 #endif
 
@@ -937,31 +937,31 @@ bool gc (const gc_info_t gci)
 
   sweep (false);
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t3 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t t3 = k_cycle_get_32 ();
 #endif
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t4 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t t4 = k_cycle_get_32 ();
 #endif
   clean_active_root ();
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t5 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   uint32_t t5 = k_cycle_get_32 ();
 #endif
 
-#ifdef LAMBDACHIP_LINUX
+#ifdef ANIMULA_LINUX
   VM_DEBUG ("%lld, %lld, %lld, %lld, %lld\n", t1 - t0, t2 - t0, t3 - t0,
             t4 - t0, t5 - t0);
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   VM_DEBUG ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0,
             t5 - t0);
 #endif

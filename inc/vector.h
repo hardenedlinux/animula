@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_VECTOR_H__
-#define __LAMBDACHIP_VECTOR_H__
+#ifndef __ANIMULA_VECTOR_H__
+#define __ANIMULA_VECTOR_H__
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -20,4 +20,4 @@
 #include "object.h"
 #include "types.h"
 
-#endif // End of __LAMBDACHIP_VECTOR_H__
+#endif // End of __ANIMULA_VECTOR_H__

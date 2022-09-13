@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -17,7 +17,7 @@
 
 #include "storage.h"
 
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
 #  include <fcntl.h>
 #  include <fs/fs.h>
 #  include <kernel.h>
@@ -77,7 +77,7 @@ static inline int zephyr_flash_read (char *buf, size_t offset, size_t size)
 
 void os_flash_init (void)
 {
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
   zephyr_flash_init ();
 #endif
 }
@@ -86,7 +86,7 @@ int os_flash_erase (size_t offset, size_t size)
 {
   int ret = 0;
 
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
   ret = zephyr_flash_erase (offset, size);
 #endif
 
@@ -100,7 +100,7 @@ int os_flash_write (const char *buf, size_t offset, size_t size)
 {
   int ret = 0;
 
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
   ret = zephyr_flash_write (buf, offset, size);
 #endif
 
@@ -114,7 +114,7 @@ int os_flash_read (char *buf, size_t offset, size_t size)
 {
   int ret = 0;
 
-#if defined LAMBDACHIP_ZEPHYR
+#if defined ANIMULA_ZEPHYR
   ret = zephyr_flash_read (buf, offset, size);
 #endif
 
@@ -128,9 +128,9 @@ int os_open_input_file (const char *filename)
 {
   int fd = -1;
 
-#if defined(LAMBDACHIP_LINUX)
+#if defined(ANIMULA_LINUX)
   if ((fd = linux_open (filename, O_RDONLY)) < 0)
-#elif defined(LAMBDACHIP_ZEPHYR)
+#elif defined(ANIMULA_ZEPHYR)
   if ((fd = zephyr_open (filename, FS_O_READ)) < 0)
 #else
   os_printk ("The current platform %s doesn't support open()!\n",
@@ -149,9 +149,9 @@ int os_open_input_file (const char *filename)
 int os_read (int fd, void *buf, size_t count)
 {
   int ret = -1;
-#if defined LAMBDACHIP_LINUX
+#if defined ANIMULA_LINUX
   ret = linux_read (fd, buf, count);
-#elif defined LAMBDACHIP_ZEPHYR
+#elif defined ANIMULA_ZEPHYR
   ret = zephyr_read (fd, buf, count);
 #else
   os_printk ("The current platform %s doesn't support read()!\n",
@@ -169,7 +169,7 @@ int os_read (int fd, void *buf, size_t count)
 
 void os_read_u32 (int fd, void *buf)
 {
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   os_read (fd, buf, 1);
   os_read (fd, buf + 1, 1);
   os_read (fd, buf + 2, 1);
@@ -184,7 +184,7 @@ void os_read_u32 (int fd, void *buf)
 
 void os_read_u16 (int fd, void *buf)
 {
-#if defined LAMBDACHIP_BIG_ENDIAN
+#if defined ANIMULA_BIG_ENDIAN
   os_read (fd, buf, 1);
   os_read (fd, buf + 1, 1);
 #else

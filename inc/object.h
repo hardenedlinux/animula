@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_OBJECT_H__
-#define __LAMBDACHIP_OBJECT_H__
+#ifndef __ANIMULA_OBJECT_H__
+#define __ANIMULA_OBJECT_H__
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -193,12 +193,12 @@ static inline bool is_unspecified (object_t obj)
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)
 
 closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry);
-list_node_t lambdachip_new_list_node (void);
-list_t lambdachip_new_list (void);
-vector_t lambdachip_new_vector (void);
-pair_t lambdachip_new_pair (void);
-bytevector_t lambdachip_new_bytevector (void);
-mut_bytevector_t lambdachip_new_mut_bytevector (void);
-object_t lambdachip_new_object (otype_t type);
+list_node_t animula_new_list_node (void);
+list_t animula_new_list (void);
+vector_t animula_new_vector (void);
+pair_t animula_new_pair (void);
+bytevector_t animula_new_bytevector (void);
+mut_bytevector_t animula_new_mut_bytevector (void);
+object_t animula_new_object (otype_t type);
 
-#endif // End of __LAMBDACHIP_OBJECT_H__
+#endif // End of __ANIMULA_OBJECT_H__

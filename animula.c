@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -15,17 +15,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "lambdachip.h"
+#include "animula.h"
 #include "vos/drivers/gpio.h"
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 // #include "file_operation.h"
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
 
-vm_t lambdachip_init (void)
+vm_t animula_init (void)
 {
   vm_t vm = (vm_t)os_malloc (sizeof (struct LambdaVM));
 
-#ifndef LAMBDACHIP_LINUX
+#ifndef ANIMULA_LINUX
   os_flash_init ();
 #endif
 
@@ -38,7 +38,7 @@ vm_t lambdachip_init (void)
   return vm;
 }
 
-void lambdachip_clean (vm_t vm)
+void animula_clean (vm_t vm)
 {
   vm_clean (vm);
   primitives_clean ();
@@ -46,12 +46,12 @@ void lambdachip_clean (vm_t vm)
   gc_clean ();
 }
 
-vm_t lambdachip_start (lef_loader_t lef_loader)
+vm_t animula_start (lef_loader_t lef_loader)
 {
-  vm_t vm = lambdachip_init ();
+  vm_t vm = animula_init ();
 
-  // TODO: Print lambdachip version information
-  VM_DEBUG ("Welcome to Lambdachip! %s\n", get_platform_info ());
+  // TODO: Print animula version information
+  VM_DEBUG ("Welcome to Animula! %s\n", get_platform_info ());
   VM_DEBUG ("Author: Mu Lei known as Nala Ginrut <mulei@gnu.org>\n");
   VM_DEBUG ("Type `help' to get help\n");
 

@@ -1,13 +1,13 @@
-#ifndef __LAMBDACHIP_BSP_TYPES_H
-#define __LAMBDACHIP_BSP_TYPES_H
+#ifndef __ANIMULA_BSP_TYPES_H
+#define __ANIMULA_BSP_TYPES_H
 /*  Copyright (C) 2020
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -18,7 +18,7 @@
  */
 
 /* This file contains all types depends on platform. you must modify it
-   every time you port LAMBDACHIP to a new platform or rewrite BSP.
+   every time you port ANIMULA to a new platform or rewrite BSP.
 */
 
 // NOTES: these definition below is compatible with GCC;
@@ -26,14 +26,14 @@
 
 #ifndef __ASSEMBLER__
 
-#  ifndef LAMBDACHIP_ZEPHYR
+#  ifndef ANIMULA_ZEPHYR
 // Represents true-or-false values
 typedef enum BOOL
 {
   true = 1,
   false = 0
 } __bool;
-#  endif /* not LAMBDACHIP_ZEPHYR */
+#  endif /* not ANIMULA_ZEPHYR */
 
 // Explicitly-sized versions of integer types
 typedef signed char __s8_t;
@@ -55,37 +55,37 @@ typedef __u32_t __longword;
 // and physaddr_t to represent physical addresses.
 #  ifndef ADDRESS_64
 
-#    ifndef LAMBDACHIP_LINUX
+#    ifndef ANIMULA_LINUX
 typedef __u32_t __physaddr_t;
-#    else  /* not LAMBDACHIP_LINUX */
+#    else  /* not ANIMULA_LINUX */
 typedef __s32_t __intptr_t;
 typedef __u32_t __uintptr_t;
-#    endif /* not LAMBDACHIP_LINUX */
+#    endif /* not ANIMULA_LINUX */
 
 #  else /* not ADDRESS_64 */
 
-#    ifndef LAMBDACHIP_LINUX
+#    ifndef ANIMULA_LINUX
 typedef __u64_t __physaddr_t;
 #    else
 typedef __s64_t __intptr_t;
 typedef __u64_t __uintptr_t;
-#    endif /* not LAMBDACHIP_LINUX */
+#    endif /* not ANIMULA_LINUX */
 
-#    ifndef LAMBDACHIP_ZEPHYR
+#    ifndef ANIMULA_ZEPHYR
 // off_t is used for file offsets and lengths.
 typedef __s64_t __off_t;
-#    endif /* not LAMBDACHIP_ZEPHYR */
+#    endif /* not ANIMULA_ZEPHYR */
 
 #  endif // End of ADDRESS_64;
 
 // bit width irrelevant
-#  ifndef LAMBDACHIP_LINUX
+#  ifndef ANIMULA_LINUX
 // size_t is used for memory object sizes.
 typedef __u32_t __size_t;
 // ssize_t is a signed version of ssize_t, used in case there might be an
 // error return.
 typedef __s32_t __ssize_t;
-#  endif /* not LAMBDACHIP_LINUX */
+#  endif /* not ANIMULA_LINUX */
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
 
@@ -141,4 +141,4 @@ typedef void (*entry_t) (void);
 
 #endif // !__ASSEMBLER__
 
-#endif // End of __LAMBDACHIP_BSP_TYPES_H;
+#endif // End of __ANIMULA_BSP_TYPES_H;

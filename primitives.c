@@ -1,11 +1,11 @@
 /*  Copyright (C) 2020-2021
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *  Lambdachip is free software: you can redistribute it and/or modify
+ *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
 
- *  Lambdachip is distributed in the hope that it will be useful,
+ *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -17,10 +17,10 @@
 
 #include "primitives.h"
 #include "type_cast.h"
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 #  include <drivers/gpio.h>
 #  include <vos/drivers/gpio.h>
-#endif /* LAMBDACHIP_ZEPHYR */
+#endif /* ANIMULA_ZEPHYR */
 #include "lib.h"
 
 extern object_t _floor (vm_t vm, object_t ret, object_t xx, object_t yy);
@@ -1010,7 +1010,7 @@ static object_t _os_usleep (vm_t vm, object_t ret, object_t us)
   return ret;
 }
 
-#ifdef LAMBDACHIP_ZEPHYR
+#ifdef ANIMULA_ZEPHYR
 
 extern GLOBAL_DEF (super_device, super_dev_led0);
 extern GLOBAL_DEF (super_device, super_dev_led1);
@@ -1618,9 +1618,9 @@ static object_t _os_vm_reset (vm_t vm, object_t ret)
 }
 #  undef APP_ADDRESS
 
-/* LAMBDACHIP_ZEPHYR *************************************** LAMBDACHIP_LINUX */
+/* ANIMULA_ZEPHYR *************************************** ANIMULA_LINUX */
 
-#elif defined LAMBDACHIP_LINUX
+#elif defined ANIMULA_LINUX
 static object_t _os_get_board_id (vm_t vm)
 {
   // static char[] board_id = "GNU/Linux";
@@ -1938,12 +1938,12 @@ static object_t _i2c_write_bytevector (vm_t vm, object_t ret, object_t dev,
 
 static object_t _os_vm_reset (vm_t vm, object_t ret)
 {
-  os_printk ("vm-reset!() is not supported on lambdachip-linux");
+  os_printk ("vm-reset!() is not supported on animula-linux");
   *ret = GLOBAL_REF (none_const);
   return ret;
 }
 
-#endif /* LAMBDACHIP_LINUX */
+#endif /* ANIMULA_LINUX */
 
 static Object prim_procedure_p (object_t obj)
 {
@@ -2195,7 +2195,7 @@ void primitives_init (void)
 
 char *prim_name (u16_t pn)
 {
-#if defined LAMBDACHIP_DEBUG
+#if defined ANIMULA_DEBUG
   if (pn >= PRIM_MAX)
     {
       PANIC ("Invalid prim number: %d\nprim_name halt\n", pn);
