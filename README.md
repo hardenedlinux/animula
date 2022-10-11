@@ -1,4 +1,6 @@
-* The Animula VM core
+The Animula VM core
+===================
+
 The code can not be built directly, you have to use building project for specific platform.
 
 You may want to read this annoucment:
