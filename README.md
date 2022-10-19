@@ -7,3 +7,5 @@ You may want to read this annoucment:
 [LambdaChip renamed to Animula](https://www.nalaginrut.com/archives/2022/10/09/lambdachip%20renamed%20to%20animula)
 
 lambdachip.com is obsoleted, we'll move all the docs here gradually.
+
+Please visit [Wiki](https://gitlab.com/hardenedlinux/animula/-/wikis/home) for more information.
