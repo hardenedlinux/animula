@@ -8,4 +8,6 @@ You may want to read this annoucment:
 
 lambdachip.com is obsoleted, we'll move all the docs here gradually.
 
+The official reference compiler implementation of Animula is [Laco](https://gitlab.com/hardenedlinux/laco). Laco aims to be a highly optimized compiler infrasturcture for compact embedded system.
+
 Please visit [Wiki](https://gitlab.com/hardenedlinux/animula/-/wikis/home) for more information.
