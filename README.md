@@ -1,3 +1,7 @@
+<center>
+<img src="logo/animula.png" alt="Animula logo"/>
+</center>
+
 The Animula VM core
 ===================
 
