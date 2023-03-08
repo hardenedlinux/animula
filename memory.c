@@ -29,7 +29,7 @@
  *         b. compile time stack
  *         c. __static_stack
  *      Its contents are confirmed in the compile time, and stored in
- *      the animula executable format (LEF). It'll be mapped to
+ *      the lightweight executable format (LEF). It'll be mapped to
  *      __static_stack when LEF is loaded by VM.
  */
 u8_t *__static_stack = NULL;
