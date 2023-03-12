@@ -74,6 +74,7 @@ laco foo.scm -o foo.lef
 
 If you have API token of OpenAI, you may take advantage of powerful AI to give you advices to debug the code.
 ```bash
+sudo apt install -y curl jq
 export LACO_OPENAI_KEY=your_openai_key
 ```
 If Laco encounter compiling error, and you've set LACO_OPENAI_KEY, then Laco will call ChatGPT to review the code. Just try it, Enjoy!
