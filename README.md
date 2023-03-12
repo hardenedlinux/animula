@@ -42,7 +42,29 @@ The code can not be built directly, you have to use building project for specifi
 
 Animula VM supports LEF (lightweight executable format) which is optimized for embedded system. You need to compile your source code to LEF with Laco compiler, and run the LEF with Animula VM.
 
-## Compile with Laco
+## Compile the laco
+
+### Dependencies
+
+Please make sure you've installed Guile-3.0+:
+
+```bash
+sudo apt install -y guile-3.0
+```
+### Build Laco compiler
+
+```bash
+# download laco source code
+./configure
+make -j5 # try more cores to speedup, it's not a tiny project
+sudo make install
+```
+Or you don't have to install it, and you may use it locally:
+
+```bash
+./pre-inst-env scripts/laco
+```
+## Compile code with Laco
 
 ```bash
 laco foo.scm -o foo.lef
