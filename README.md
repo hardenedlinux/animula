@@ -26,6 +26,8 @@ It's possible to support multiple funciontal languages on Animula. Here're the e
 - Python 3.10 (WIP)
 - Lua 5.2 (WIP)
 
+Contributions are welcome!
+
 # Documentation
 
 Please visit [Wiki](https://gitlab.com/hardenedlinux/animula/-/wikis/home) for more information.
