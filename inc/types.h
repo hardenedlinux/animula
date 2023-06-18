@@ -20,6 +20,11 @@
 #include "os.h"
 #include "qlist.h"
 
+#define PERMANENT_OBJ 3
+#define GEN_2_OBJ     2
+#define GEN_1_OBJ     1
+#define FREE_OBJ      0
+
 #if defined ANIMULA_ZEPHYR
 #  ifndef CONFIG_HEAP_MEM_POOL_SIZE
 #    error "You must define CONFIG_HEAP_MEM_POOL_SIZE for Zephyr!"

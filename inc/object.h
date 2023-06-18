@@ -17,6 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "debug.h"
 #include "gc.h"
 #include "os.h"
 #include "qlist.h"
@@ -92,14 +93,70 @@ static inline bool is_unspecified (object_t obj)
   return (null_obj == obj->attr.type);
 }
 
-// FIXME:shall the os_malloc be replaced by GC_MALLOC?
+#define NEW_OBJ(t)                              \
+  ({                                            \
+    object_t obj = NULL;                        \
+    do                                          \
+      {                                         \
+        if (0 == object_list_node_available ()) \
+          {                                     \
+            GC ();                              \
+            continue;                           \
+          }                                     \
+        obj = animula_new_object (t);           \
+        if (obj)                                \
+          break;                                \
+        GC ();                                  \
+      }                                         \
+    while (1);                                  \
+    obj;                                        \
+  })
+
+#define NEW_INNER_OBJ(t)                        \
+  ({                                            \
+    t##_t x = NULL;                             \
+    do                                          \
+      {                                         \
+        if (0 == object_list_node_available ()) \
+          {                                     \
+            GC ();                              \
+            continue;                           \
+          }                                     \
+        x = animula_new_##t ();                 \
+        if (x)                                  \
+          {                                     \
+            gc_inner_obj_book (t, x);           \
+            break;                              \
+          }                                     \
+        GC ();                                  \
+      }                                         \
+    while (1);                                  \
+    x;                                          \
+  })
+
+#define NEW_LIST_NODE()                \
+  ({                                   \
+    list_node_t ol = NULL;             \
+    do                                 \
+      {                                \
+        ol = animula_new_list_node (); \
+        if (ol)                        \
+          {                            \
+            break;                     \
+          }                            \
+        GC ();                         \
+      }                                \
+    while (1);                         \
+    ol;                                \
+  })
+
 #define CREATE_NEW_OBJ(t, te, to)         \
   do                                      \
     {                                     \
       t o = (t)gc_pool_malloc (te);       \
       if (!o)                             \
         {                                 \
-          o = (t)os_malloc (sizeof (to)); \
+          o = (t)GC_MALLOC (sizeof (to)); \
         }                                 \
       return o;                           \
     }                                     \

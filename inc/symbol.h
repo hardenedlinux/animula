@@ -17,6 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "memory.h"
 #include "object.h"
 #include "os.h"
 #include "rbtree.h"

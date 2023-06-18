@@ -15,13 +15,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gc.h"
-#include "list.h"
+#ifdef USE_OBG_GC
 
-#ifdef ANIMULA_LINUX
-#  include <sys/time.h>
+#  include "list.h"
+#  include "obg_gc.h"
 
-#endif
+#  ifdef ANIMULA_LINUX
+#    include <sys/time.h>
+
+#  endif
 
 static int get_gc_from_node (otype_t type, void *value);
 /* The GC in LambdaChip is "object-based generational GC".
@@ -871,30 +873,30 @@ bool gc (const gc_info_t gci)
    */
   // usleep (10000);
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   const long long TICKS_PER_SECOND = 1000000L;
   struct timeval tv;
   struct timezone tz;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t cycles_spent;
   uint64_t nanoseconds_spent;
-#endif
+#  endif
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t0 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t t0 = k_cycle_get_32 ();
-#endif
+#  endif
 
   build_active_root (gci);
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t1 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t t1 = k_cycle_get_32 ();
-#endif
+#  endif
 
   size_t count = 0;
 
@@ -907,12 +909,12 @@ bool gc (const gc_info_t gci)
                  false);
   collect (&count, &obj_free_pool, false, false);
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t2 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t t2 = k_cycle_get_32 ();
-#endif
+#  endif
 
   if (0 == count && gci->hurt)
     {
@@ -937,34 +939,34 @@ bool gc (const gc_info_t gci)
 
   sweep (false);
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t3 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t t3 = k_cycle_get_32 ();
-#endif
+#  endif
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t4 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t t4 = k_cycle_get_32 ();
-#endif
+#  endif
   clean_active_root ();
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   gettimeofday (&tv, &tz);
   long long t5 = tv.tv_sec * TICKS_PER_SECOND + tv.tv_usec;
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   uint32_t t5 = k_cycle_get_32 ();
-#endif
+#  endif
 
-#ifdef ANIMULA_LINUX
+#  ifdef ANIMULA_LINUX
   VM_DEBUG ("%lld, %lld, %lld, %lld, %lld\n", t1 - t0, t2 - t0, t3 - t0,
             t4 - t0, t5 - t0);
-#elif defined(ANIMULA_ZEPHYR)
+#  elif defined(ANIMULA_ZEPHYR)
   VM_DEBUG ("%d, %d, %d, %d, %d\n", t1 - t0, t2 - t0, t3 - t0, t4 - t0,
             t5 - t0);
-#endif
+#  endif
 
   return true;
 }
@@ -1156,7 +1158,7 @@ void gc_try_to_recycle (void)
 
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
 {
-#if defined GC_RECYCLE_CURRENT_FRAME == 1
+#  if defined GC_RECYCLE_CURRENT_FRAME == 1
   size_t size = sizeof (Object);
   size_t cnt = (sp - local) / size;
 
@@ -1213,7 +1215,7 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
           }
         }
     }
-#endif
+#  endif
 }
 
 void gc_init (void)
@@ -1252,3 +1254,4 @@ static void free_object_from_pool (ListHead *head, object_t o)
       }
   }
 }
+#endif

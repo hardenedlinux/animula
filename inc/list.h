@@ -17,6 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "debug.h"
 #include "object.h"
 #include "qlist.h"
 #include "types.h"

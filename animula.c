@@ -34,7 +34,7 @@ vm_t animula_init (void)
   // NOTE: The allocated vm object will never be freed.
   vm_init (vm);
   stdio_init ();
-  gc_init ();
+  ANIMULA_GC_INIT ();
   return vm;
 }
 
@@ -43,7 +43,7 @@ void animula_clean (vm_t vm)
   vm_clean (vm);
   primitives_clean ();
   stdio_clean ();
-  gc_clean ();
+  GC_CLEAN ();
 }
 
 vm_t animula_start (lef_loader_t lef_loader)

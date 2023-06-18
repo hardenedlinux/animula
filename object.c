@@ -43,7 +43,7 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
   VM_DEBUG ("create new closure!\n");
 
   closure_t closure
-    = (closure_t)os_malloc (sizeof (Closure) + sizeof (Object) * frame_size);
+    = (closure_t)GC_MALLOC (sizeof (Closure) + sizeof (Object) * frame_size);
 
   if (!closure)
     {
@@ -61,7 +61,7 @@ closure_t make_closure (u8_t arity, u8_t frame_size, reg_t entry)
 
 list_node_t animula_new_list_node (void)
 {
-  return (list_node_t)os_malloc (sizeof (ListNode));
+  return (list_node_t)GC_MALLOC (sizeof (ListNode));
 }
 
 u32_t list_cnt = 0;
@@ -103,11 +103,15 @@ object_t animula_new_object (otype_t type)
   object_t object = NULL;
   void *value = NULL;
 
+#ifdef OBG_GC
   object = (object_t)gc_pool_malloc (0);
+#else
+  object = NULL;
+#endif
 
   if (!object)
     {
-      object = (object_t)os_malloc (sizeof (Object));
+      object = (object_t)GC_MALLOC (sizeof (Object));
       new_alloc = true;
 
       // Alloc failed, return NULL to trigger GC
@@ -171,7 +175,9 @@ object_t animula_new_object (otype_t type)
       // The inner object wasn't successfully allocated, return NULL for GC
       if (new_alloc)
         {
+#ifdef USE_OBG_GC
           os_free (object);
+#endif
         }
       else
         {
@@ -183,13 +189,18 @@ object_t animula_new_object (otype_t type)
   object->attr.type = type;
   object->attr.gc = GEN_1_OBJ;
 
+#ifdef OBG_GC
   if (new_alloc)
     gc_obj_book (object);
+#endif
 
   if (has_inner_obj) // value is checked before
     {
       object->value = value;
+
+#ifdef OBG_GC
       gc_inner_obj_book (type, (void *)value);
+#endif
     }
   else
     {

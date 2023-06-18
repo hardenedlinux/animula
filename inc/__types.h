@@ -105,7 +105,7 @@ typedef __mutex_t _mutex_t;
 #  define container_of(elem_addr, struct_type, member) \
     ((struct_type *)((stdptr_t) (elem_addr)-offsetof (struct_type, member)))
 
-#  define offsetof(type, member) (off_t) (&((type *)0)->member)
+//#  define offsetof(type, member) (off_t) (&((type *)0)->member)
 
 #endif // !__ASSEMBLER__
 
