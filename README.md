@@ -16,7 +16,7 @@ lambdachip.com is obsoleted, we'll move all the docs here gradually.
 
 # The Compiler
 
-The official reference compiler implementation of Animula is [Laco](https://gitlab.com/hardenedlinux/laco). Laco aims to be a highly optimized compiler infrasturcture for compact embedded system.
+The official reference compiler implementation of Animula is [Laco](https://github.com/hardenedlinux/laco). Laco aims to be a highly optimized compiler infrasturcture for compact embedded system.
 
 ## Programming Languages
 
@@ -83,7 +83,7 @@ If Laco encounter compiling error, and you've set LACO_OPENAI_KEY, then Laco wil
 
 **For users behind firewall, you may need to set https_proxy with you VPN.**
 
-For more information of Laco compiler, please checkout [Laco compiler introduction](https://gitlab.com/hardenedlinux/animula/-/wikis/Laco-compiler-introduction)
+For more information of Laco compiler, please checkout [Animula documents](https://github.com/hardenedlinux/animula-docs)
 
 ## For Linux
 
