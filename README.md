@@ -30,13 +30,13 @@ Contributions are welcome!
 
 # Documentation
 
-Please visit [Wiki](https://gitlab.com/hardenedlinux/animula/-/wikis/home) for more information.
+Please visit [Animula documents](https://github.com/hardenedlinux/animula-docs) for more information.
 
 # Download
 
-Download for Linux: [animula-linux](https://gitlab.com/hardenedlinux/animula-linux/-/tags)
+Download for Linux: [animula-linux](https://github.com/hardenedlinux/animula-linux/-/tags)
 
-Download for ZephyrRTOS: [animula-zephyr](https://gitlab.com/hardenedlinux/animula-zephyr/-/tags)
+Download for ZephyrRTOS: [animula-zephyr](https://github.com/hardenedlinux/animula-zephyr/-/tags)
 
 # Build and run
 
@@ -130,7 +130,7 @@ If the compilation works successfully, you may not see anything output when it i
 Copy the **program.lef** to **TF card** and then insert the TF card to Alonzo board.
 
 <center>
-<img src="https://gitlab.com/lambdachip/lambdachip-site/-/raw/master/pub//img/8G-tf-card.jpg" title="TF card" alt="TF card" width="450"/>
+<img src="https://github.com/hardenedlinux/animula-docs/img/img/8G-tf-card.jpg" title="TF card" alt="TF card" width="450"/>
 </center>
 
 Animula virtual machine will scan the *TF card* and find the file named **program.lef**. When it's found then run it automatically. If you use other names then it doesn't work at all.
