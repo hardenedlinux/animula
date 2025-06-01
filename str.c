@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020-2021
+/*  Copyright (C) 2020-2025
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -77,9 +77,9 @@ object_t _list_to_string (vm_t vm, object_t ret, object_t lst)
   int cnt = 0;
 
   SLIST_FOREACH (node, head, next)
-  {
-    buf[cnt++] = (char)node->obj->value;
-  }
+    {
+      buf[cnt++] = (char)node->obj->value;
+    }
 
   buf[cnt] = '\0';
   char *str = (char *)GC_MALLOC (cnt);
@@ -94,8 +94,8 @@ Object prim_string_p (object_t obj)
 {
   int type = obj->attr.type;
   return (((string == type) || (mut_string == type))
-            ? GLOBAL_REF (true_const)
-            : GLOBAL_REF (false_const));
+	  ? GLOBAL_REF (true_const)
+	  : GLOBAL_REF (false_const));
 }
 
 Object prim_char_p (object_t obj)
@@ -146,7 +146,7 @@ object_t _string (vm_t vm, object_t ret, object_t length, object_t char0)
 object_t _string_length (vm_t vm, object_t ret, object_t obj)
 {
   VALIDATE_STRING (obj);
-  imm_int_t len = strnlen ((char *)obj->value, MAX_STR_LEN);
+  imm_int_t len = os_strnlen ((char *)obj->value, MAX_STR_LEN);
 
   ret->value = imm_int;
   ret->value = (void *)len;
@@ -160,7 +160,7 @@ object_t _string_ref (vm_t vm, object_t ret, object_t obj, object_t index)
   VALIDATE (index, imm_int);
 
   imm_int_t idx = (imm_int_t)index->value;
-  imm_int_t len = strnlen ((char *)obj->value, MAX_STR_LEN);
+  imm_int_t len = os_strnlen ((char *)obj->value, MAX_STR_LEN);
 
   if (idx < 0 || idx > len) // len is always less than MAX_STR_LEN
     {
@@ -225,7 +225,7 @@ object_t _substring (vm_t vm, object_t ret, object_t str0, object_t start,
   VALIDATE (start, imm_int);
   VALIDATE (end, imm_int);
 
-  imm_int_t len = strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len = os_strnlen ((char *)str0->value, MAX_STR_LEN);
 
   imm_int_t s = (imm_int_t)start->value;
   imm_int_t e = (imm_int_t)end->value;
@@ -259,8 +259,8 @@ object_t _string_append (vm_t vm, object_t ret, object_t str0, object_t str1)
   // VALIDATE (start, imm_int);
   // VALIDATE (end, imm_int);
 
-  imm_int_t len0 = strnlen ((char *)str0->value, MAX_STR_LEN);
-  imm_int_t len1 = strnlen ((char *)str1->value, MAX_STR_LEN);
+  imm_int_t len0 = os_strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len1 = os_strnlen ((char *)str1->value, MAX_STR_LEN);
 
   // FIXME: Memory leaks here, there's no good way to free memory at this stage.
   char *p = (char *)GC_MALLOC (len0 + len1 + 1);
@@ -295,8 +295,8 @@ object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
   VALIDATE (start, imm_int);
   VALIDATE (end, imm_int);
 
-  imm_int_t len0 = strnlen ((char *)str0->value, MAX_STR_LEN);
-  imm_int_t len1 = strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len0 = os_strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len1 = os_strnlen ((char *)str0->value, MAX_STR_LEN);
 
   imm_int_t a = (imm_int_t)at->value;
   imm_int_t s = (imm_int_t)start->value;
@@ -343,7 +343,7 @@ object_t _string_fill (vm_t vm, object_t ret, object_t str0, object_t fill,
   VALIDATE (start, imm_int);
   VALIDATE (end, imm_int);
 
-  imm_int_t len = strnlen ((char *)str0->value, MAX_STR_LEN);
+  imm_int_t len = os_strnlen ((char *)str0->value, MAX_STR_LEN);
 
   char c = (char)fill->value;
   imm_int_t s = (imm_int_t)start->value;
