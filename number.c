@@ -162,16 +162,14 @@ object_t _ceiling (vm_t vm, object_t ret, object_t xx)
 object_t _truncate (vm_t vm, object_t ret, object_t xx)
 {
   VALIDATE_NUMBER (xx);
-  Object x_ = *xx;
-  object_t x = &x_;
   Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
-  if (_int_gt (x, &zero)) // x > 0
+  if (_int_gt (xx, &zero)) // x > 0
     {
-      return _floor (vm, ret, x);
+      return _floor (vm, ret, xx);
     }
   else // x <= 0
     {
-      return _ceiling (vm, ret, x);
+      return _ceiling (vm, ret, xx);
     }
 }
 
