@@ -23,7 +23,7 @@
 #endif /* ANIMULA_ZEPHYR */
 #include "lib.h"
 
-extern object_t _floor (vm_t vm, object_t ret, object_t xx, object_t yy);
+extern object_t _floor (vm_t vm, object_t ret, imm_object_t x);
 extern object_t _floor_div (vm_t vm, object_t ret, object_t xx, object_t yy);
 extern object_t _ceiling (vm_t vm, object_t ret, object_t xx);
 extern object_t _truncate (vm_t vm, object_t ret, object_t xx);
@@ -111,8 +111,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
       s32_t sign;
       if ((rational_neg == x->attr.type) || (rational_pos == x->attr.type))
         {
-          xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
-          xd = ((imm_int_t) (x->value) & 0xFFFF);
+          xn = ((imm_int_t)(x->value) >> 16) & 0xFFFF;
+          xd = ((imm_int_t)(x->value) & 0xFFFF);
           x_sign = (rational_pos == x->attr.type) ? 1 : -1;
         }
       else if (imm_int == x->attr.type)
@@ -129,8 +129,8 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
 
       if ((rational_neg == y->attr.type) || (rational_pos == y->attr.type))
         {
-          yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
-          yd = ((imm_int_t) (y->value) & 0xFFFF);
+          yn = ((imm_int_t)(y->value) >> 16) & 0xFFFF;
+          yd = ((imm_int_t)(y->value) & 0xFFFF);
           y_sign = (rational_pos == y->attr.type) ? 1 : -1;
         }
       else if (imm_int == y->attr.type)
@@ -203,7 +203,7 @@ static inline object_t _int_add (vm_t vm, object_t ret, object_t xx,
 
   PANIC ("code shall not run until here");
 
-_int_add_float_add_float:
+ _int_add_float_add_float:
   // side effect
   cast_int_or_fractal_to_float (x);
   // side effect
@@ -236,7 +236,7 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
     }
   else if (real == y->attr.type)
     {
-      opposite.v = (uintptr_t) (y->value);
+      opposite.v = (uintptr_t)(y->value);
       opposite.f = -opposite.f;
       y->value = (void *)(opposite.v);
     }
@@ -250,17 +250,17 @@ static inline object_t _int_sub (vm_t vm, object_t ret, object_t xx,
     }
   else if (imm_int == y->attr.type)
     {
-      if ((imm_int_t) (y->value) == MIN_INT32) // -1*2^31
+      if ((imm_int_t)(y->value) == MIN_INT32) // -1*2^31
         {
           // side effect
           cast_int_or_fractal_to_float (y);
-          opposite.v = (uintptr_t) (y->value);
+          opposite.v = (uintptr_t)(y->value);
           opposite.f = -opposite.f;
           y->value = (void *)(opposite.v);
         }
       else
         {
-          y->value = (void *)(((imm_int_t) (y->value)) * -1);
+          y->value = (void *)(((imm_int_t)(y->value)) * -1);
         }
     }
   else
@@ -296,19 +296,19 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
       b.v = 0;
       if (real == x->attr.type)
         {
-          a.v = (uintptr_t) (x->value);
+          a.v = (uintptr_t)(x->value);
         }
       else if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
           int sign = (rational_pos == x->attr.type) ? 1 : -1;
           // FIXME: may lose precision
-          a.f = sign * (((imm_int_t) (x->value) >> 16) & 0xFFFF)
-                / (float)((imm_int_t) (x->value) & 0xFFFF);
+          a.f = sign * (((imm_int_t)(x->value) >> 16) & 0xFFFF)
+	    / (float)((imm_int_t)(x->value) & 0xFFFF);
         }
       else if (imm_int == x->attr.type)
         {
           // FIXME: may lose precision
-          a.f = (float)(imm_int_t) (x->value);
+          a.f = (float)(imm_int_t)(x->value);
         }
       else
         {
@@ -318,18 +318,18 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
 
       if (real == y->attr.type)
         {
-          b.v = (uintptr_t) (y->value);
+          b.v = (uintptr_t)(y->value);
         }
       else if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
           int sign = (rational_pos == y->attr.type) ? 1 : -1;
-          b.f = sign * (float)(((imm_int_t) (y->value) >> 16) & 0xFFFF)
-                / (float)((imm_int_t) (y->value) & 0xFFFF);
+          b.f = sign * (float)(((imm_int_t)(y->value) >> 16) & 0xFFFF)
+	    / (float)((imm_int_t)(y->value) & 0xFFFF);
         }
       else if ((imm_int == y->attr.type))
         {
           // FIXME: may lose precision
-          b.f = (float)(imm_int_t) (y->value);
+          b.f = (float)(imm_int_t)(y->value);
         }
       else
         {
@@ -350,8 +350,8 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
 
       if (rational_neg == x->attr.type || rational_pos == x->attr.type)
         {
-          xn = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
-          xd = ((imm_int_t) (x->value) & 0xFFFF);
+          xn = ((imm_int_t)(x->value) >> 16) & 0xFFFF;
+          xd = ((imm_int_t)(x->value) & 0xFFFF);
           x_sign = (rational_pos == x->attr.type) ? 1 : -1;
         }
       else if (imm_int == x->attr.type)
@@ -368,8 +368,8 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
 
       if (rational_neg == y->attr.type || rational_pos == y->attr.type)
         {
-          yn = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
-          yd = ((imm_int_t) (y->value) & 0xFFFF);
+          yn = ((imm_int_t)(y->value) >> 16) & 0xFFFF;
+          yd = ((imm_int_t)(y->value) & 0xFFFF);
           y_sign = (rational_pos == y->attr.type) ? 1 : -1;
         }
       else if (imm_int == y->attr.type)
@@ -438,7 +438,7 @@ static inline object_t _int_mul (vm_t vm, object_t ret, object_t xx,
 
   return ret;
 
-_int_mul_float_mul_float:
+ _int_mul_float_mul_float:
   cast_int_or_fractal_to_float (x);
   cast_int_or_fractal_to_float (y);
   fx.v = (uintptr_t)x->value;
@@ -487,13 +487,13 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       // x is rational number
       if ((rational_pos == x->attr.type) || (rational_neg == x->attr.type))
         {
-          nx = (((imm_int_t) (x->value)) >> 16) & 0xFFFF;
-          dx = ((imm_int_t) (x->value)) & 0xFFFF;
+          nx = (((imm_int_t)(x->value)) >> 16) & 0xFFFF;
+          dx = ((imm_int_t)(x->value)) & 0xFFFF;
           sign_x = (rational_pos == x->attr.type) ? 1 : -1;
         }
       else if (imm_int == x->attr.type)
         {
-          nx = (imm_int_t) (x->value);
+          nx = (imm_int_t)(x->value);
           dx = 1;
           sign_x = (nx >= 0) ? 1 : -1;
           if (MIN_INT32 == nx)
@@ -511,13 +511,13 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
       // y is rational number
       if ((rational_pos == y->attr.type) || (rational_neg == y->attr.type))
         {
-          ny = (((imm_int_t) (y->value)) >> 16) & 0xFFFF;
-          dy = ((imm_int_t) (y->value)) & 0xFFFF;
+          ny = (((imm_int_t)(y->value)) >> 16) & 0xFFFF;
+          dy = ((imm_int_t)(y->value)) & 0xFFFF;
           sign_y = (rational_pos == y->attr.type) ? 1 : -1;
         }
       else if (imm_int == y->attr.type)
         {
-          ny = (imm_int_t) (y->value);
+          ny = (imm_int_t)(y->value);
           dy = 1;
           sign_y = (ny >= 0) ? 1 : -1;
           if (MIN_INT32 == ny)
@@ -559,8 +559,8 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
   // int / int
   else if (imm_int == x->attr.type && imm_int == y->attr.type)
     {
-      imm_int_t n = (imm_int_t) (x->value);
-      imm_int_t d = (imm_int_t) (y->value);
+      imm_int_t n = (imm_int_t)(x->value);
+      imm_int_t d = (imm_int_t)(y->value);
       imm_int_t sign = (n >= 0) ? 1 : -1;
       sign = sign * ((d >= 0) ? 1 : -1);
       // when (MIN_INT32 == n && -1 == d) division will cause an error
@@ -608,7 +608,7 @@ static inline object_t _int_div (vm_t vm, object_t ret, object_t xx,
 
   return ret;
 
-_int_div_float_div_float:
+ _int_div_float_div_float:
   cast_int_or_fractal_to_float (x);
   cast_int_or_fractal_to_float (y);
   fx.v = (uintptr_t)x->value;
@@ -642,13 +642,8 @@ void _object_print (object_t obj)
   object_printer (obj);
 }
 
-bool _int_eq (object_t xx, object_t yy)
+bool _int_eq (imm_object_t x, imm_object_t y)
 {
-  Object x_ = *xx;
-  Object y_ = *yy;
-  object_t x = &x_;
-  object_t y = &y_;
-
   if (complex_inexact == x->attr.type || complex_inexact == y->attr.type)
     {
       PANIC ("Complex_inexact is not supported yet!\n");
@@ -782,11 +777,11 @@ bool _int_gt (object_t x, object_t y)
       s64_t y_d = 0;
       s64_t y_sign = 0;
 
-      x_n = ((imm_int_t) (x->value) >> 16) & 0xFFFF;
-      x_d = ((imm_int_t) (x->value) & 0xFFFF);
+      x_n = ((imm_int_t)(x->value) >> 16) & 0xFFFF;
+      x_d = ((imm_int_t)(x->value) & 0xFFFF);
       x_sign = (rational_pos == x->attr.type) ? 1 : -1;
-      y_n = ((imm_int_t) (y->value) >> 16) & 0xFFFF;
-      y_d = ((imm_int_t) (y->value) & 0xFFFF);
+      y_n = ((imm_int_t)(y->value) >> 16) & 0xFFFF;
+      y_d = ((imm_int_t)(y->value) & 0xFFFF);
       y_sign = (rational_pos == y->attr.type) ? 1 : -1;
 
       x_n = x_sign * x_n * y_d;
@@ -971,12 +966,12 @@ static bool _equal (object_t a, object_t b)
             list_node_t n2 = SLIST_FIRST (h2);
 
             SLIST_FOREACH (n1, h1, next)
-            {
-              ret = _equal (n1->obj, n2->obj);
-              if (!ret)
-                break;
-              n2 = SLIST_NEXT (n2, next);
-            }
+	      {
+		ret = _equal (n1->obj, n2->obj);
+		if (!ret)
+		  break;
+		n2 = SLIST_NEXT (n2, next);
+	      }
           }
         break;
       }
@@ -1295,9 +1290,9 @@ static super_device *translate_supper_dev_from_symbol (object_t sym)
     }
 
   goto OK;
-PANIC:
+ PANIC:
   PANIC ("BUG: Invalid symbol name %s!\n", str_buf);
-OK:
+ OK:
   return ret;
 }
 
@@ -1499,15 +1494,15 @@ static object_t _os_i2c_write_list (vm_t vm, object_t ret, object_t dev,
       return ret;
     }
 
-  list_t obj_lst = (list_t) (lst->value);
+  list_t obj_lst = (list_t)(lst->value);
   ListHead head = obj_lst->list;
   list_node_t iter = {0};
   imm_int_t index = 0;
   SLIST_FOREACH (iter, &head, next)
-  {
-    tx_buf[index] = (imm_int_t)iter->obj->value;
-    index++;
-  }
+    {
+      tx_buf[index] = (imm_int_t)iter->obj->value;
+      index++;
+    }
 
   int status = i2c_write (p->dev, tx_buf, len_list, (imm_int_t)i2c_addr->value);
 
@@ -1528,8 +1523,8 @@ static object_t _i2c_write_bytevector (vm_t vm, object_t ret, object_t dev,
   VALIDATE (bv, bytevector);
   super_device *p = translate_supper_dev_from_symbol (dev);
 
-  const u16_t len = ((bytevector_t) (bv->value))->size;
-  const u8_t *buf = ((bytevector_t) (bv->value))->vec;
+  const u16_t len = ((bytevector_t)(bv->value))->size;
+  const u8_t *buf = ((bytevector_t)(bv->value))->vec;
 
   int status = i2c_write (p->dev, buf, len, (imm_int_t)i2c_addr->value);
 
@@ -1726,7 +1721,7 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
   ListHead *send_buffer_head = LIST_OBJECT_HEAD (send_buffer);
   list_node_t send_buffer_node = SLIST_FIRST (send_buffer_head);
 
-  u8_t *send_buffer_array = (u8_t *)GC_MALLOC ((imm_int_t) (len_ptr->value));
+  u8_t *send_buffer_array = (u8_t *)GC_MALLOC ((imm_int_t)(len_ptr->value));
   if (!send_buffer_array)
     {
       *ret = GLOBAL_REF (false_const);
@@ -1735,17 +1730,17 @@ static object_t _os_spi_transceive (vm_t vm, object_t ret, object_t dev,
 
   u32_t idx = 0;
   SLIST_FOREACH (send_buffer_node, send_buffer_head, next)
-  {
-    // VALIDATE (send_buffer_node->obj, imm_int);
-    imm_int_t v = (uint8_t)send_buffer_node->obj;
-    if (!(v < 256 && v >= 0))
-      {
-        *ret = GLOBAL_REF (false_const);
-        return ret;
-      }
-    send_buffer_array[idx] = (u8_t)v;
-    idx++;
-  }
+    {
+      // VALIDATE (send_buffer_node->obj, imm_int);
+      imm_int_t v = (uint8_t)send_buffer_node->obj;
+      if (!(v < 256 && v >= 0))
+	{
+	  *ret = GLOBAL_REF (false_const);
+	  return ret;
+	}
+      send_buffer_array[idx] = (u8_t)v;
+      idx++;
+    }
 
   int status = 0;
   if (status != 0)
@@ -1924,8 +1919,8 @@ static object_t _i2c_write_bytevector (vm_t vm, object_t ret, object_t dev,
   VALIDATE (i2c_addr, imm_int);
   VALIDATE (bv, bytevector);
 
-  const u16_t len = ((bytevector_t) (bv->value))->size;
-  const u8_t *buf = ((bytevector_t) (bv->value))->vec;
+  const u16_t len = ((bytevector_t)(bv->value))->size;
+  const u8_t *buf = ((bytevector_t)(bv->value))->vec;
 
   os_printk ("i2c_reg_write_bytevector (%s, 0x%02X, ", (const char *)dev->value,
              (imm_int_t)i2c_addr->value);

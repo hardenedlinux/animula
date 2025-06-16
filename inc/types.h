@@ -51,51 +51,51 @@ typedef u16_t reg_t;
 #endif
 
 enum obj_encoding
-{
-  FALSE = 0,
-  TRUE,
-  GENERAL_OBJECT,
-  CHAR,
-  NULL_LIST,
-  NONE,
-  SYMBOL
-};
+  {
+    FALSE = 0,
+    TRUE,
+    GENERAL_OBJECT,
+    CHAR,
+    NULL_LIST,
+    NONE,
+    SYMBOL
+  };
 
 typedef enum obj_type
-{
-  unbooked = -1,
-  imm_int = 0,
-  arbi_int = 1,
-  keyword = 2,
-  pair = 3,
-  symbol = 4,
-  vector = 5,
-  continuation = 6,
-  list = 7,
-  string = 8,
-  procedure = 9,
-  primitive = 10,
-  closure_on_heap = 11,
-  closure_on_stack = 12,
-  real = 13,
-  rational_pos = 14,
-  rational_neg = 15,
-  complex_exact = 16,
-  complex_inexact = 17,
-  mut_string = 18,
-  mut_list = 19,
-  character = 20,
-  bytevector = 21,
-  mut_bytevector = 22,
+  {
+    unbooked = -1,
+    imm_int = 0,
+    arbi_int = 1,
+    keyword = 2,
+    pair = 3,
+    symbol = 4,
+    vector = 5,
+    continuation = 6,
+    list = 7,
+    string = 8,
+    procedure = 9,
+    primitive = 10,
+    closure_on_heap = 11,
+    closure_on_stack = 12,
+    real = 13,
+    rational_pos = 14,
+    rational_neg = 15,
+    complex_exact = 16,
+    complex_inexact = 17,
+    mut_string = 18,
+    mut_list = 19,
+    character = 20,
+    bytevector = 21,
+    mut_bytevector = 22,
 
-  boolean = 61,
-  null_obj = 62,
-  none = 63,
-} otype_t;
+    boolean = 61,
+    null_obj = 62,
+    none = 63,
+  } otype_t;
 
-#define CHECK_OBJECT_TYPE(o, t)                      \
-  (((t) == (o)->attr.type) ? GLOBAL_REF (true_const) \
-                           : GLOBAL_REF (false_const));
+#define CHECK_OBJECT_TYPE(o, t)				\
+  (((t) == (o)->attr.type) ? GLOBAL_REF (true_const)	\
+   : GLOBAL_REF (false_const));
 
 #if defined ADDRESS_64
 typedef s64_t imm_int_t;
@@ -154,6 +154,13 @@ typedef struct Object
     Procedure proc;
   };
 } __packed Object, *object_t;
+
+#ifndef imm_object_t
+/* NOTE: Current C doesn't suport double const protect to make immutable for
+ * both pointer and the data. So we have to use macro.
+ */
+#  define imm_object_t const struct Object *const
+#endif
 
 typedef struct Closure
 {
@@ -245,7 +252,7 @@ typedef struct GCInfo
   bool hurt;
 } __packed GCInfo, *gc_info_t;
 
-typedef union ieee754_float
+typedef union IEEE754_Float
 {
   float f;
   uintptr_t v;
@@ -292,8 +299,8 @@ typedef u16_t reg_t;
 #define FPS       (3 * sizeof (reg_t) + 1 + sizeof (closure_t))
 #define NEXT_FP() (*((reg_t *)(stack + fp + sizeof (reg_t))))
 
-#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
-#define LIST_OBJECT_SIDX(o) (((list_t) (o)->value)->non_shared)
+#define LIST_OBJECT_HEAD(o) (&(((list_t)(o)->value)->list))
+#define LIST_OBJECT_SIDX(o) (((list_t)(o)->value)->non_shared)
 
 #define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
 
@@ -321,14 +328,14 @@ typedef struct SymTab
 } __packed *symtab_t, symtab;
 
 typedef enum encode_type
-{
-  SMALL,
-  SINGLE,
-  DOUBLE,
-  TRIPLE,
-  QUADRUPLE,
-  SPECIAL
-} encode_t;
+  {
+    SMALL,
+    SINGLE,
+    DOUBLE,
+    TRIPLE,
+    QUADRUPLE,
+    SPECIAL
+  } encode_t;
 
 // FIXME: tweak bit-fields order by bits endian
 
@@ -445,15 +452,15 @@ typedef union ByteCode32
 } __packed bytecode32_t;
 
 typedef enum vm_state
-{
-  VM_STOP = 0,
-  VM_RUN = 1,
-  VM_PAUSE = 2,
-  VM_GC = 3,
-  VM_INIT_GLOBALS = 4,
-  VM_EXCPT = 5,
-  VM_EXCPT_CONT = 6
-} vm_state_t;
+  {
+    VM_STOP = 0,
+    VM_RUN = 1,
+    VM_PAUSE = 2,
+    VM_GC = 3,
+    VM_INIT_GLOBALS = 4,
+    VM_EXCPT = 5,
+    VM_EXCPT_CONT = 6
+  } vm_state_t;
 
 typedef struct LambdaVM
 {

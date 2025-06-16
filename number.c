@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020-2021
+/*  Copyright (C) 2020-2025
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *        "Rafael Lee"                   <rafaellee.img@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
@@ -16,57 +16,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "primitives.h"
-#include "type_cast.h"
-#ifdef ANIMULA_ZEPHYR
-#  include <drivers/gpio.h>
-#  include <vos/drivers/gpio.h>
-#endif /* ANIMULA_ZEPHYR */
-#include "lib.h"
+#include "number.h"
 
-object_t _floor (vm_t vm, object_t ret, object_t xx);
-object_t _floor_div (vm_t vm, object_t ret, object_t xx, object_t yy);
-object_t _ceiling (vm_t vm, object_t ret, object_t xx);
-object_t _truncate (vm_t vm, object_t ret, object_t xx);
-object_t _round (vm_t vm, object_t ret, object_t xx);
-object_t _rationalize (vm_t vm, object_t ret, object_t xx);
-object_t _floor_quotient (vm_t vm, object_t ret, object_t xx, object_t yy);
-object_t _floor_remainder (vm_t vm, object_t ret, object_t xx, object_t yy);
-object_t _truncate_div (vm_t vm, object_t ret, object_t xx, object_t yy);
-object_t _truncate_quotient (vm_t vm, object_t ret, object_t xx, object_t yy);
-object_t _truncate_remainder (vm_t vm, object_t ret, object_t xx, object_t yy);
-object_t _numerator (vm_t vm, object_t ret, object_t xx);
-object_t _denominator (vm_t vm, object_t ret, object_t xx);
-object_t _is_exact_integer (vm_t vm, object_t ret, object_t xx);
-object_t _is_finite (vm_t vm, object_t ret, object_t xx);
-object_t _is_infinite (vm_t vm, object_t ret, object_t xx);
-object_t _is_nan (vm_t vm, object_t ret, object_t xx);
-object_t _is_zero (vm_t vm, object_t ret, object_t xx);
-object_t _is_positive (vm_t vm, object_t ret, object_t xx);
-object_t _is_negative (vm_t vm, object_t ret, object_t xx);
-object_t _is_odd (vm_t vm, object_t ret, object_t xx);
-object_t _is_even (vm_t vm, object_t ret, object_t xx);
-object_t _square (vm_t vm, object_t ret, object_t xx);
-object_t _sqrt (vm_t vm, object_t ret, object_t xx);
-object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx);
-object_t _expt (vm_t vm, object_t ret, object_t xx, object_t yy);
-
-extern Object prim_number_p (object_t obj);
-
-#ifdef ANIMULA_ZEPHYR
-#elif defined ANIMULA_LINUX
-#endif /* ANIMULA_LINUX */
-
-// extrenal declarations
-extern bool _int_gt (object_t x, object_t y);
-extern bool _int_lt (object_t x, object_t y);
-extern bool _int_eq (object_t x, object_t y);
-
-object_t _floor (vm_t vm, object_t ret, object_t xx)
+object_t _floor (vm_t vm, object_t ret, imm_object_t x)
 {
-  VALIDATE_NUMBER (xx);
-  Object x_ = *xx;
-  object_t x = &x_;
+  VALIDATE_NUMBER (x);
 
   // xx is a number
   if (complex_inexact == x->attr.type || complex_exact == x->attr.type)
@@ -86,9 +40,8 @@ object_t _floor (vm_t vm, object_t ret, object_t xx)
     }
   else if (rational_pos == x->attr.type || rational_neg == x->attr.type)
     {
-      cast_int_or_fractal_to_float (x); // side effect, x is modified
       real_t f;
-      f.v = (uintptr_t)x->value;
+      f.v = (uintptr_t)cast_int_or_fractal_to_float (x);
       f.f = floor (f.f);
       ret->value = (void *)(imm_int_t)f.f;
       ret->attr.type = imm_int;

@@ -76,54 +76,47 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
   return;
 }
 
-// TODO: rename to __cast_rational_to_real
-// side effect
-void cast_rational_to_float (object_t v)
+static void __cast_rational_to_float (imm_object_t v)
 {
   if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
     {
       PANIC ("Invalid type, expect %d or %d, but it's %d\n", rational_pos,
              rational_neg, v->attr.type);
     }
-  int sign = (v->attr.type == rational_pos) ? 1 : -1;
+  int sign = (v->attr.type == rational_pos) ? 0 : 0x8000;
   imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
   imm_int_t d = ((imm_int_t)v->value) & 0xFFFF; // v = c/d
-  float a = sign * c;
+  float a |= sign;
   real_t b = {0};
   b.f = a / d;
-  v->attr.type = real;
-  v->value = (void *)b.v;
+
+  return (void *)b.v;
 }
 
 // side effect
-void cast_int_or_fractal_to_float (object_t v)
+void *cast_int_or_fractal_to_float (imm_object_t x)
 {
-  oattr t;
-  t.type = v->attr.type;
-  // if (t.type == complex_inexact)
-  // {}
-  // else if (t.type == complex_exact)
-  // {}
-  if (t.type == real)
+  switch (v->attr.type)
     {
-      return;
-    }
-  else if ((t.type == rational_pos) || (t.type == rational_neg))
-    {
-      cast_rational_to_float (v);
-    }
-  else if (t.type == imm_int)
-    {
-      v->attr.type = real;
-      imm_int_t b = (imm_int_t) (v->value);
-      real_t a = {0};
-      a.f = (float)b;
-      v->value = (void *)a.v;
-      return;
-    }
-  else
-    {
-      PANIC ("Invalid type, expect imm_int, rationa  or real, but it's %d\n",
+    case rational_pos:
+    case rational_neg:
+      {
+        return __cast_rational_to_float (x);
+      }
+    case imm_int:
+      {
+        v->attr.type = real;
+        imm_int_t b = (imm_int_t)(x->value);
+        real_t a = {0};
+        a.f = (float)b;
+        return (void *)a.v;
+      }
+    case real:
+      {
+        return v->value;
+      }
+    default:
+      PANIC ("Invalid type, expect imm_int, rational or real, but it's %d\n",
              v->attr.type);
     }
 }
