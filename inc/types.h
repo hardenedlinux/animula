@@ -155,6 +155,13 @@ typedef struct Object
   };
 } __packed Object, *object_t;
 
+#ifndef immu_object_t
+/* NOTE: Current C doesn't suport double const protect to make immutable for
+ * both pointer and the data. So we have to use macro.
+ */
+#  define immu_object_t const struct Object *const
+#endif
+
 typedef struct Closure
 {
   oattr attr;
@@ -245,7 +252,7 @@ typedef struct GCInfo
   bool hurt;
 } __packed GCInfo, *gc_info_t;
 
-typedef union ieee754_float
+typedef union IEEE754_Float
 {
   float f;
   uintptr_t v;
@@ -263,6 +270,24 @@ typedef union ieee754_float
 #endif /* Little endian.  */
   };
 } real_t;
+
+typedef union Rational
+{
+  struct
+  {
+#if defined ANIMULA_BIG_ENDIAN
+    unsigned int sign : 1; // 0 for positive, 1 for negative
+    unsigned int numerator : 15;
+    unsigned int denominator : 16;
+#else
+    unsigned int denominator : 16;
+    unsigned int numerator : 15;
+    unsigned int sign : 1; // 0 for positive, 1 for negative
+#endif /* Little endian.  */
+  };
+  /* The value is stored as (numerator << 16) | denominator */
+  u32_t value;
+} __packed rational_t, *rational_p;
 
 #ifndef PC_SIZE
 #  define PC_SIZE 2
@@ -292,8 +317,8 @@ typedef u16_t reg_t;
 #define FPS       (3 * sizeof (reg_t) + 1 + sizeof (closure_t))
 #define NEXT_FP() (*((reg_t *)(stack + fp + sizeof (reg_t))))
 
-#define LIST_OBJECT_HEAD(o) (&(((list_t) (o)->value)->list))
-#define LIST_OBJECT_SIDX(o) (((list_t) (o)->value)->non_shared)
+#define LIST_OBJECT_HEAD(o) (&(((list_t)(o)->value)->list))
+#define LIST_OBJECT_SIDX(o) (((list_t)(o)->value)->non_shared)
 
 #define LIST_IS_EMPTY(lst) SLIST_EMPTY (LIST_OBJECT_HEAD (lst))
 

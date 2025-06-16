@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020-2021
+/*  Copyright (C) 2020-2025
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -20,13 +20,18 @@
 #  include "list.h"
 #  include "obg_gc.h"
 
+// Ensure active_root_compare is visible for RB_GENERATE_STATIC
+// It's defined as static inline in obg_gc.h, which is fine
+
+RB_GENERATE_STATIC(ActiveRoot, ActiveRootNode, entry, active_root_compare);
+
 #  ifdef ANIMULA_LINUX
 #    include <sys/time.h>
 
 #  endif
 
 static int get_gc_from_node (otype_t type, void *value);
-/* The GC in LambdaChip is "object-based generational GC".
+/* The GC in Animula is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
 
    The meaning of `gc' field in Object:
@@ -37,10 +42,8 @@ static int get_gc_from_node (otype_t type, void *value);
 
  */
 
-static RB_HEAD (ActiveRoot, ActiveRootNode)
-  ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
-
-RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
+// Simple active root implementation using a linked list
+static struct ActiveRootNode *ActiveRootHead = NULL;
 
 static ListHead pair_free_pool;
 static ListHead vector_free_pool;
@@ -174,13 +177,28 @@ static void object_list_node_clean (void)
 
 static inline void insert (ActiveRootNode *an)
 {
-  RB_INSERT (ActiveRoot, &ActiveRootHead, an);
+  // Insert at the beginning of the list
+  // Use rbe_left as next pointer
+  an->entry.rbe_left = ActiveRootHead;
+  an->entry.rbe_right = NULL;
+  an->entry.rbe_parent = NULL;
+  if (ActiveRootHead) {
+    ActiveRootHead->entry.rbe_parent = an;
+  }
+  ActiveRootHead = an;
 }
 
 static inline bool exist (object_t obj)
 {
-  ActiveRootNode node = {.value = (void *)obj};
-  return (NULL != RB_FIND (ActiveRoot, &ActiveRootHead, &node));
+  // Linear search through the list
+  ActiveRootNode *current = ActiveRootHead;
+  while (current) {
+    if (current->value == (void *)obj) {
+      return true;
+    }
+    current = current->entry.rbe_left;
+  }
+  return false;
 }
 
 static void insert_value (void *value)
@@ -212,8 +230,7 @@ void free_object (object_t obj)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -229,20 +246,20 @@ void free_object (object_t obj)
       }
     case pair:
       {
-        free_object ((object_t) ((pair_t)obj->value)->car);
-        free_object ((object_t) ((pair_t)obj->value)->cdr);
+        free_object ((object_t)((pair_t)obj->value)->car);
+        free_object ((object_t)((pair_t)obj->value)->cdr);
         break;
       }
     case list:
       {
-        list_node_t node = NULL;
-        ListHead *head = LIST_OBJECT_HEAD (obj);
-        u16_t non_shared = LIST_OBJECT_SIDX (obj);
+        list_t l = (list_t)obj->value;
+        ListHead *head = &l->list;
+        u16_t non_shared = l->non_shared;
         u16_t cnt = 0;
 
         if (!SLIST_EMPTY (head))
           {
-            node = SLIST_FIRST (head);
+            list_node_t node = SLIST_FIRST (head);
             while (node)
               {
                 // call free_object recursively since node->obj can be a
@@ -254,10 +271,11 @@ void free_object (object_t obj)
                   }
 
                 free_object (node->obj);
-                SLIST_REMOVE_HEAD (head, next);
+                list_node_t next_node = SLIST_NEXT(node, next);
+                SLIST_REMOVE (head, node, ListNode, next);
                 os_free (node);
                 // instead of free node, put node into OLN for future use
-                node = SLIST_FIRST (head);
+                node = next_node;
                 cnt++;
               }
           }
@@ -274,7 +292,7 @@ void free_object (object_t obj)
       }
     case mut_bytevector:
       {
-        os_free (((mut_bytevector_t) (obj->value))->vec);
+        os_free (((mut_bytevector_t)(obj->value))->vec);
         os_free (obj->value);
         break;
       }
@@ -306,21 +324,21 @@ void free_inner_object (otype_t type, void *value)
     {
     case pair:
       {
-        free_object ((object_t) ((pair_t)value)->car);
-        free_object ((object_t) ((pair_t)value)->cdr);
+        free_object ((object_t)((pair_t)value)->car);
+        free_object ((object_t)((pair_t)value)->cdr);
         ((pair_t)value)->attr.gc = FREE_OBJ;
         break;
       }
     case list:
       {
-        list_node_t node = NULL;
-        ListHead *head = &((list_t)value)->list;
-        u16_t non_shared = ((list_t)value)->non_shared;
+        list_t l = (list_t)value;
+        ListHead *head = &l->list;
+        u16_t non_shared = l->non_shared;
         u16_t cnt = 0;
 
         if (!SLIST_EMPTY (head))
           {
-            node = SLIST_FIRST (head);
+            list_node_t node = SLIST_FIRST (head);
             while (node)
               {
                 // call free_object recursively since node->obj can be a
@@ -330,14 +348,15 @@ void free_inner_object (otype_t type, void *value)
                     break;
                   }
                 free_object (node->obj);
-                SLIST_REMOVE_HEAD (head, next);
+                list_node_t next_node = SLIST_NEXT(node, next);
+                SLIST_REMOVE (head, node, ListNode, next);
                 os_free (node);
                 // instead of free node, put node into OLN for future use
-                node = SLIST_FIRST (head);
+                node = next_node;
                 cnt++;
               }
           }
-        ((list_t)value)->attr.gc = FREE_OBJ;
+        l->attr.gc = FREE_OBJ;
         break;
       }
     case closure_on_heap:
@@ -374,8 +393,7 @@ static void recycle_object (object_t obj)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -395,11 +413,9 @@ static void recycle_object (object_t obj)
       }
     case list:
       {
-        list_node_t node = NULL;
         ListHead *head = LIST_OBJECT_HEAD (obj);
-
-        SLIST_FOREACH (node, head, next)
-        {
+        list_node_t node;
+        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
           recycle_object (node->obj);
         }
         break;
@@ -463,11 +479,9 @@ static void active_root_insert (object_t obj)
       }
     case list:
       {
-        list_node_t node = NULL;
         ListHead *head = &((list_t)obj->value)->list;
-
-        SLIST_FOREACH (node, head, next)
-        {
+        list_node_t node;
+        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
           active_root_insert (node->obj);
         }
 
@@ -516,8 +530,7 @@ static void active_root_inner_insert (otype_t type, void *value)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -543,11 +556,9 @@ static void active_root_inner_insert (otype_t type, void *value)
       }
     case list:
       {
-        list_node_t node = NULL;
         ListHead *head = &((list_t)value)->list;
-
-        SLIST_FOREACH (node, head, next)
-        {
+        list_node_t node;
+        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
           active_root_insert (node->obj);
         }
 
@@ -569,7 +580,7 @@ static void active_root_insert_frame (const u8_t *stack, u32_t local, u8_t cnt)
   /* getchar (); */
   for (u8_t i = 0; i < cnt; i++)
     {
-      object_t obj = (object_t) (stack + local + i * sizeof (Object));
+      object_t obj = (object_t)(stack + local + i * sizeof (Object));
 
       if (!obj)
         PANIC ("active_root_insert_frame: Invalid object address!");
@@ -603,7 +614,7 @@ static void build_active_root (const gc_info_t gci)
         {
           for (int i = 0; i < closure->frame_size; i++)
             {
-              object_t obj = (&((object_t) (stack + closure->local))[i]);
+              object_t obj = (&((object_t)(stack + closure->local))[i]);
               active_root_inner_insert (obj->attr.type, obj->value);
             }
         }
@@ -614,13 +625,11 @@ static void clean_active_root ()
 {
   /* NOTE: Don't waste time to clean one by one. */
   _arn.index = 0;
-  RB_INIT (&ActiveRootHead);
+  ActiveRootHead = NULL;
 }
 
 static void collect (size_t *count, ListHead *head, bool hurt, bool force)
 {
-  list_node_t node = NULL;
-
   /* GC algo:
       1. Skip permanent object.
       2. If it 's in active root, it get aged if it' s gen-1, keep age if it's
@@ -628,8 +637,8 @@ static void collect (size_t *count, ListHead *head, bool hurt, bool force)
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.
    */
-  SLIST_FOREACH (node, head, next)
-  {
+  list_node_t node;
+  for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
     if (force)
       {
         node->obj->attr.gc = FREE_OBJ;
@@ -751,8 +760,6 @@ static void set_gc_to_node (otype_t type, void *value, int gc)
 static void collect_inner (size_t *count, ListHead *head, otype_t type,
                            bool hurt, bool force)
 {
-  list_node_t node = NULL;
-
   /* GC algo:
       1. Skip permanent object.
       2. If it's in active root, it get aged if it's gen-1, keep age if it's
@@ -760,8 +767,8 @@ static void collect_inner (size_t *count, ListHead *head, otype_t type,
       3. If it's not in active root, release it.
       4. Collect all gen-2 object in hurt collect.
    */
-  SLIST_FOREACH (node, head, next)
-  {
+  list_node_t node;
+  for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
     u8_t gc = force ? FREE_OBJ : get_gc_from_node (type, (void *)node->obj);
 
     if (PERMANENT_OBJ == gc)
@@ -801,11 +808,9 @@ static void collect_inner (size_t *count, ListHead *head, otype_t type,
 
 static size_t count_me (ListHead *head)
 {
-  list_node_t node = NULL;
   size_t cnt = 0;
-
-  SLIST_FOREACH (node, head, next)
-  {
+  list_node_t node;
+  for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
     cnt++;
   }
   return cnt;
@@ -813,14 +818,12 @@ static size_t count_me (ListHead *head)
 
 static void release_all_free_objects (ListHead *head, bool force)
 {
-  list_node_t node = NULL;
-  list_node_t nxt = NULL;
-
   if (!SLIST_EMPTY (head))
     {
-      node = SLIST_FIRST (head);
+      list_node_t node = SLIST_FIRST (head);
       while (node)
         {
+          list_node_t next_node = SLIST_NEXT(node, next);
           // call free_object recursively since node->obj can be a
           // composite object
           if ((FREE_OBJ == node->obj->attr.gc) || force)
@@ -831,14 +834,9 @@ static void release_all_free_objects (ListHead *head, bool force)
               os_free (node->obj);
               // instead of free node, put node into OLN for future use
               SLIST_REMOVE (head, node, ListNode, next);
-              nxt = SLIST_NEXT (node, next);
               object_list_node_recycle (node);
-              node = nxt;
             }
-          else
-            {
-              node = SLIST_NEXT (node, next);
-            }
+          node = next_node;
         }
     }
 }
@@ -1071,8 +1069,7 @@ void *gc_pool_malloc (otype_t type)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -1126,10 +1123,8 @@ void *gc_pool_malloc (otype_t type)
 
 void simple_collect (ListHead *head)
 {
-  list_node_t node = NULL;
-
-  SLIST_FOREACH (node, head, next)
-  {
+  list_node_t node;
+  for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
     object_t obj = (object_t)node->obj;
 
     if (PERMANENT_OBJ != obj->attr.gc)
@@ -1164,15 +1159,14 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
 
   for (size_t i = 0; i < cnt; i++)
     {
-      object_t obj = (object_t) (stack + local + i * size);
+      object_t obj = (object_t)(stack + local + i * size);
 
       switch (obj->attr.type)
         {
         case imm_int:
         case character:
         case real:
-        case rational_pos:
-        case rational_neg:
+        case rational:
         case boolean:
         case null_obj:
         case none:
@@ -1242,8 +1236,7 @@ void gc_clean (void)
 static void free_object_from_pool (ListHead *head, object_t o)
 {
   list_node_t node = NULL;
-  SLIST_FOREACH (node, (head), next)
-  {
+  for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
     if (node->obj == (o))
       {
         os_free (node->obj);

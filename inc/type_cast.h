@@ -24,8 +24,8 @@
 
 void cast_imm_int_to_rational (object_t ret);
 void cast_rational_to_imm_int_if_denominator_is_1 (object_t v);
-void cast_rational_to_float (object_t v);
-void cast_int_or_fractal_to_float (object_t v);
+uintptr_t cast_rational_to_float (immu_object_t v);
+
 static inline bool only_32_bit_signed (s64_t a)
 {
   if ((a & 0xFFFFFFFF00000000) == 0

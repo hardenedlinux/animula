@@ -72,9 +72,9 @@ void call_prim (vm_t vm, pn_t pn)
         RESTORE ();
         break;
       }
-    case int_add:
-    case int_sub:
-    case int_mul:
+    case num_add:
+    case num_sub:
+    case num_mul:
     case fract_div:
       {
         func_2_args_with_ret_t fn = (func_2_args_with_ret_t)prim->fn;
@@ -108,11 +108,11 @@ void call_prim (vm_t vm, pn_t pn)
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
         break;
       }
-    case int_eq:
-    case int_lt:
-    case int_gt:
-    case int_le:
-    case int_ge:
+    case num_eq:
+    case num_lt:
+    case num_gt:
+    case num_le:
+    case num_ge:
     case eq:
     case eqv:
     case equal:

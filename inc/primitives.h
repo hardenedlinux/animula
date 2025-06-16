@@ -1,6 +1,6 @@
 #ifndef __ANIMULA_PRIMITIVE_H__
 #define __ANIMULA_PRIMITIVE_H__
-/*  Copyright (C) 2020-2021
+/*  Copyright (C) 2020-2025
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -32,23 +32,48 @@
 #define PRIM_NAME_SIZE 32
 #define BOARD_ID_LEN   25
 
+typedef float (*real_real_op_t) (float, float);
+typedef s32_t (*int_int_op_t) (s32_t, s32_t);
+typedef float (*real_int_op_t) (float, s32_t);
+typedef rational_t (*rat_rat_op_t) (rational_t, rational_t);
+typedef rational_t (*rat_int_op_t) (rational_t, s32_t);
+
+#define NUM_OP_MAX 5
+typedef enum
+{
+  op_add,
+  op_sub,
+  op_mul,
+  op_div,
+  op_mod
+} num_op_t;
+
+typedef enum
+{
+  int_int,
+  real_real,
+  rat_rat,
+  real_int,
+  rat_int
+} num_op_type_t;
+
 // NOTE: assign is not a primitive
 typedef enum prim_num
 {
   ret = 0,
   pop = 1,
-  int_add = 2,
-  int_sub = 3,
-  int_mul = 4,
+  num_add = 2,
+  num_sub = 3,
+  num_mul = 4,
   fract_div = 5,
   object_print = 6,
   apply = 7,
   not = 8,
-  int_eq = 9,
-  int_lt = 10,
-  int_gt = 11,
-  int_le = 12,
-  int_ge = 13,
+  num_eq = 9,
+  num_lt = 10,
+  num_gt = 11,
+  num_le = 12,
+  num_ge = 13,
   restore = 14,
   reserved_1 = 15,
 
@@ -216,7 +241,7 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
    *       so we ignore it temporarily to make gcc happy.
    * See here for more details:
    https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
-   */
+  */
   // #  pragma GCC diagnostic push
   // #  pragma GCC diagnostic ignored "-Wstringop-overread"
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
@@ -228,6 +253,66 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
   prim->fn = fn;
   GLOBAL_REF (prim_table)[pn] = prim;
 }
+
+extern object_t _floor (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _floor_div (vm_t vm, object_t ret, immu_object_t x,
+                            immu_object_t y);
+extern object_t _ceiling (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _truncate (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _round (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _rationalize (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _floor_quotient (vm_t vm, object_t ret, immu_object_t x,
+                                 immu_object_t y);
+extern object_t _floor_remainder (vm_t vm, object_t ret, immu_object_t x,
+                                  immu_object_t y);
+extern object_t _truncate_div (vm_t vm, object_t ret, immu_object_t x,
+                               immu_object_t y);
+extern object_t _truncate_quotient (vm_t vm, object_t ret, immu_object_t x,
+                                    immu_object_t y);
+extern object_t _truncate_remainder (vm_t vm, object_t ret, immu_object_t x,
+                                     immu_object_t y);
+extern object_t _numerator (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _denominator (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_exact_integer (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_finite (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_infinite (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_nan (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_zero (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_positive (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_negative (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_odd (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_even (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _square (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _sqrt (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _exact_integer_sqrt (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _expt (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
+
+// string
+extern object_t _make_string (vm_t vm, object_t ret, immu_object_t length,
+                              object_t char0);
+extern object_t _string (vm_t vm, object_t ret, immu_object_t length,
+                         object_t char0);
+extern object_t _string_length (vm_t vm, object_t ret, immu_object_t obj);
+extern object_t _string_ref (vm_t vm, object_t ret, immu_object_t obj,
+                             object_t index);
+extern object_t _string_set (vm_t vm, object_t ret, immu_object_t obj,
+                             object_t index, immu_object_t char0);
+extern object_t _string_eq (vm_t vm, object_t ret, immu_object_t str0,
+                            object_t str1);
+extern object_t _substring (vm_t vm, object_t ret, immu_object_t str0,
+                            object_t start, immu_object_t end);
+extern object_t _string_append (vm_t vm, object_t ret, immu_object_t str0,
+                                object_t str1);
+extern object_t _string_copy (vm_t vm, object_t ret, immu_object_t str0,
+                              object_t start, immu_object_t end);
+extern object_t _string_copy_side_effect (vm_t vm, object_t ret,
+                                          immu_object_t str0, object_t at,
+                                          immu_object_t str1, object_t start,
+                                          immu_object_t end);
+
+extern object_t _string_fill (vm_t vm, object_t ret, immu_object_t str0,
+                              object_t fill, immu_object_t start,
+                              immu_object_t end);
 
 char *prim_name (u16_t pn);
 void primitives_init (void);
