@@ -180,85 +180,46 @@ object_t _is_nan (vm_t vm, object_t ret, object_t xx)
   return ret;
 }
 
-object_t _is_zero (vm_t vm, object_t ret, object_t xx)
+object_t _is_zero (vm_t vm, object_t ret, immu_object_t x)
 {
-  VALIDATE_NUMBER (xx);
-  Object x_ = *xx;
-  object_t x = &x_;
+  VALIDATE_NUMBER (x);
 
   // xx is a number
-  if (complex_inexact == x->attr.type || complex_exact == x->attr.type)
+  switch (x->attr.type)
     {
-      PANIC ("Complex not implemented yet\n");
-      *ret = GLOBAL_REF (false_const);
-      return ret;
+    case real:
+    case imm_int:
+      {
+        *ret = x->value ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+      }
+    case rational_pos:
+    case rational_neg:
+      {
+        imm_int_t check = (0xFFFF0000 & (imm_int_t)x->value);
+        *ret = check ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+      }
+    case complex_inexact:
+    case complex_exact:
+      {
+        PANIC ("Complex not implemented yet\n");
+      }
+    default:
+      {
+        PANIC ("Type not match, type is %d\n", x->attr.type);
+      }
     }
-  else if (real == x->attr.type)
-    {
-      real_t f;
-      Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
-      f.f = 0.0;
-      zero.value = (void *)f.v;
-      if (_int_eq (&zero, x))
-        {
-          *ret = GLOBAL_REF (true_const);
-          return ret;
-        }
-      else
-        {
-          *ret = GLOBAL_REF (false_const);
-          return ret;
-        }
-    }
-  else if (rational_pos == x->attr.type || rational_neg == x->attr.type)
-    {
-      if (0 == (0xFFFF0000 & (imm_int_t)x->value))
-        {
-          *ret = GLOBAL_REF (true_const);
-          return ret;
-        }
-      else
-        {
-          *ret = GLOBAL_REF (false_const);
-          return ret;
-        }
-    }
-  else if (imm_int == x->attr.type)
-    {
-      Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
-      if (_int_eq (&zero, x))
-        {
-          *ret = GLOBAL_REF (true_const);
-          return ret;
-        }
-      else
-        {
-          *ret = GLOBAL_REF (false_const);
-          return ret;
-        }
-    }
-  else
-    {
-      PANIC ("Type not match, type is %d\n", x->attr.type);
-      *ret = GLOBAL_REF (false_const);
-      return ret;
-    }
+
+  return ret;
 }
 
 static object_t __is_positive (vm_t vm, object_t ret, immu_object_t x)
 {
   Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
 
-  if (_int_gt (x, &zero))
-    {
-      *ret = GLOBAL_REF (true_const);
-      return ret;
-    }
-  else
-    {
-      *ret = GLOBAL_REF (false_const);
-      return ret;
-    }
+  *ret
+    = _int_gt (x, &zero) ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+
+  return ret;
 }
 
 object_t _is_positive (vm_t vm, object_t ret, immu_object_t x)
@@ -275,69 +236,69 @@ object_t _is_negative (vm_t vm, object_t ret, object_t x)
   return !__is_positive (vm, ret, x);
 }
 
-object_t _is_odd (vm_t vm, object_t ret, object_t xx)
+object_t _is_odd (vm_t vm, object_t ret, immu_object_t x)
 {
-  VALIDATE_NUMBER (xx);
-  Object x_ = *xx;
-  object_t x = &x_;
+  VALIDATE_NUMBER (x);
 
-  if (complex_inexact == x->attr.type || complex_exact == x->attr.type)
+  switch (x->attr.type)
     {
-      PANIC ("Complex not implemented yet\n");
-      *ret = GLOBAL_REF (false_const);
-      return ret;
-    }
-  else if (real == x->attr.type)
-    {
-      real_t a;
-      a.v = (uintptr_t)x->value;
-      if (_int_eq (x, _round (vm, ret, x)))
-        {
-          imm_int_t b = (imm_int_t)a.f;
-          if (b & 1) // LSB is 1
-            {
-              *ret = GLOBAL_REF (true_const);
-              return ret;
-            }
-          else
-            {
-              *ret = GLOBAL_REF (false_const);
-              return ret;
-            }
-          ret->attr.type = imm_int;
-          return ret;
-        }
-      else
-        {
-          PANIC ("Not an integer %f\n", a.f);
-          return ret;
-        }
-    }
-  else if (rational_pos == x->attr.type || rational_neg == x->attr.type)
-    {
-      PANIC ("Rational not implemented yet!\n");
-      return ret;
-    }
-  else if (imm_int == x->attr.type)
-    {
-      imm_int_t z = (imm_int_t)x->value;
-      if (z & 1) // LSB is 1
-        {
-          *ret = GLOBAL_REF (true_const);
-          return ret;
-        }
-      else
-        {
-          *ret = GLOBAL_REF (false_const);
-          return ret;
-        }
-      return xx;
-    }
-  else
-    {
-      PANIC ("Type not match, type is %d\n", x->attr.type);
-      *ret = GLOBAL_REF (false_const);
-      return ret;
+    case complex_inexact:
+    case complex_exact:
+      {
+        PANIC ("Complex not implemented yet\n");
+      }
+    case real:
+      {
+        real_t a;
+        a.v = (uintptr_t)x->value;
+        if (_int_eq (x, _round (vm, ret, x)))
+          {
+            imm_int_t b = (imm_int_t)a.f;
+            if (b & 1) // LSB is 1
+              {
+                *ret = GLOBAL_REF (true_const);
+                return ret;
+              }
+            else
+              {
+                *ret = GLOBAL_REF (false_const);
+                return ret;
+              }
+            ret->attr.type = imm_int;
+            return ret;
+          }
+        else
+          {
+            PANIC ("Not an integer %f\n", a.f);
+            return ret;
+          }
+      }
+    case rational_pos:
+    case rational_neg:
+      {
+        PANIC ("Rational not implemented yet!\n");
+        return ret;
+      }
+    case imm_int:
+      {
+        imm_int_t z = (imm_int_t)x->value;
+        if (z & 1) // LSB is 1
+          {
+            *ret = GLOBAL_REF (true_const);
+            return ret;
+          }
+        else
+          {
+            *ret = GLOBAL_REF (false_const);
+            return ret;
+          }
+      }
+    default:
+      {
+        PANIC ("Type not match, type is %d\n", x->attr.type);
+        *ret = GLOBAL_REF (false_const);
+        return ret;
+      }
     }
 }
 
@@ -414,23 +375,19 @@ object_t _is_even (vm_t vm, object_t ret, immu_object_t xx)
 object_t _square (vm_t vm, object_t ret, object_t xx)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
 object_t _sqrt (vm_t vm, object_t ret, object_t xx)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
 object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
 object_t _expt (vm_t vm, object_t ret, object_t xx, object_t yy)
 {
   PANIC ("Not implemented");
-  return ret;
 }

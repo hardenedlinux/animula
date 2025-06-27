@@ -42,11 +42,11 @@
  10. Primitive     |      primitive number                       |
 
  Closure on heap
- 0                                            31
+ *                 0                                            31
  11. Closure       |      closure_t address                      |
 
  Closure on stack
- 0              9      15                     31
+ *                 0              9      15                     31
  12. Closure       |      env     | size  |      entry offset    |
 
  13. Real          |      IEEE 754                               |
@@ -179,25 +179,32 @@ static inline bool is_unspecified (object_t obj)
     }								\
   while (0)
 
-#define CHAR_VALUE_VALID(c) ((0 < c && c <= MAX_UINT8) ? true : false)
+#define CHAR_VALUE_VALID(c) (0 < (c) && (c) <= MAX_UINT8)
 
-#define VALIDATE_STRING(obj)						\
-  do									\
-    {									\
-      if ((string != (obj)->attr.type) && (mut_string != (obj)->attr.type)) \
-        {								\
-          PANIC ("Invalid type, expect string, but it's %d\n",		\
-                 (obj)->attr.type);					\
-        }								\
-    }									\
+#define VALIDATE_STRING(obj)					\
+  do								\
+    {								\
+      switch ((obj)->attr.type)					\
+        {							\
+        case string:						\
+        case mut_string:					\
+          break;						\
+        default:						\
+          PANIC ("Invalid type, expect string, but it's %d\n",	\
+                 (obj)->attr.type);				\
+        }							\
+    }								\
   while (0)
 
 #define VALIDATE_BYTEVECTOR(obj)					\
   do									\
     {									\
-      if ((bytevector != (obj)->attr.type)				\
-          && (mut_bytevector != (obj)->attr.type))			\
+      switch ((obj)->attr.type)						\
         {								\
+        case bytevector:						\
+        case mut_bytevector:						\
+          break;							\
+        default:							\
           PANIC ("Invalid type, expect bytevector, but it's %d\n",	\
                  (obj)->attr.type);					\
         }								\
@@ -244,11 +251,21 @@ static inline bool is_unspecified (object_t obj)
 #define VALIDATE_NUMBER(obj)						\
   do									\
     {									\
-      otype_t t = (obj)->attr.type;					\
-      if (imm_int != t && real != t && rational_pos != t && rational_neg != t \
-          && complex_exact != t && complex_inexact != t)		\
+      switch ((obj)->attr.type)						\
         {								\
-          PANIC ("Invalid type, expect numbers, but it's %d\n", t);	\
+        case imm_int:							\
+        case arbi_int:							\
+        case real:							\
+        case rational_pos:						\
+        case rational_neg:						\
+        case complex_exact:						\
+        case complex_inexact:						\
+          break;							\
+        default:							\
+          {								\
+            PANIC ("Wrong type, expect numbers, but it's type (%d)\n",	\
+                   (obj)->attr.type);					\
+          }								\
         }								\
     }									\
   while (0)
