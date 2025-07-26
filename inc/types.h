@@ -271,6 +271,24 @@ typedef union IEEE754_Float
   };
 } real_t;
 
+typedef union Rational
+{
+  struct
+  {
+#if defined ANIMULA_BIG_ENDIAN
+    unsigned int sign : 1; // 0 for positive, 1 for negative
+    unsigned int numerator : 15;
+    unsigned int denominator : 16;
+#else
+    unsigned int denominator : 16;
+    unsigned int numerator : 15;
+    unsigned int sign : 1; // 0 for positive, 1 for negative
+#endif /* Little endian.  */
+  };
+  /* The value is stored as (numerator << 16) | denominator */
+  u32_t value;
+} __packed rational_t, *rational_p;
+
 #ifndef PC_SIZE
 #  define PC_SIZE 2
 #  if (4 == PC_SIZE)

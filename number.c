@@ -30,8 +30,6 @@ static object_t op_dispatch (vm_t vm, object_t ret, immu_object_t x,
     case complex_exact:
       {
         PANIC ("Complex not implemented yet\n");
-        *ret = GLOBAL_REF (false_const);
-        return ret;
       }
     case real:
       {
@@ -58,8 +56,6 @@ static object_t op_dispatch (vm_t vm, object_t ret, immu_object_t x,
       }
     default:
       PANIC ("Type not match, type is %d\n", x->attr.type);
-      *ret = GLOBAL_REF (false_const);
-      return ret;
     }
 }
 
@@ -76,7 +72,6 @@ object_t _floor_div (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
   VALIDATE_NUMBER (yy);
 
   PANIC ("floor/ has not implemented yet\n");
-  return ret;
 }
 
 object_t _ceiling (vm_t vm, object_t ret, immu_object_t x)
@@ -108,76 +103,68 @@ object_t _round (vm_t vm, object_t ret, immu_object_t x)
   return op_dispatch (vm, ret, x, round);
 }
 
-object_t _rationalize (vm_t vm, object_t ret, object_t xx)
+object_t _rationalize (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _floor_quotient (vm_t vm, object_t ret, object_t xx, object_t yy)
+object_t _floor_quotient (vm_t vm, object_t ret, immu_object_t x,
+                          immu_object_t y)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _floor_remainder (vm_t vm, object_t ret, object_t xx, object_t yy)
+object_t _floor_remainder (vm_t vm, object_t ret, immu_object_t x,
+                           immu_object_t y)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _truncate_div (vm_t vm, object_t ret, object_t xx, object_t yy)
+object_t _truncate_div (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _truncate_quotient (vm_t vm, object_t ret, object_t xx, object_t yy)
+object_t _truncate_quotient (vm_t vm, object_t ret, immu_object_t x,
+                             immu_object_t y)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _truncate_remainder (vm_t vm, object_t ret, object_t xx, object_t yy)
+object_t _truncate_remainder (vm_t vm, object_t ret, immu_object_t x,
+                              immu_object_t y)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _numerator (vm_t vm, object_t ret, object_t xx)
+object_t _numerator (vm_t vm, object_t ret, immu_object_t xx)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _denominator (vm_t vm, object_t ret, object_t xx)
+object_t _denominator (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _is_exact_integer (vm_t vm, object_t ret, object_t xx)
+object_t _is_exact_integer (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _is_finite (vm_t vm, object_t ret, object_t xx)
+object_t _is_finite (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _is_infinite (vm_t vm, object_t ret, object_t xx)
+object_t _is_infinite (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
-object_t _is_nan (vm_t vm, object_t ret, object_t xx)
+object_t _is_nan (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
-  return ret;
 }
 
 object_t _is_zero (vm_t vm, object_t ret, immu_object_t x)
@@ -242,152 +229,66 @@ object_t _is_odd (vm_t vm, object_t ret, immu_object_t x)
 
   switch (x->attr.type)
     {
+    case real:
+      {
+        Object tmp = {0};
+
+        if (!_int_eq (x, _round (vm, &tmp, x)))
+          {
+            // not an integer
+            ret = GLOBAL_REF (false_const);
+          }
+        else
+          {
+            int lsb = b & 1;
+            *ret = lsb ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+          }
+        break;
+      }
+    case imm_int:
+      {
+        int lsb = b & 1;
+        *ret = lsb ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+        break;
+      }
     case complex_inexact:
     case complex_exact:
       {
         PANIC ("Complex not implemented yet\n");
       }
-    case real:
-      {
-        real_t a;
-        a.v = (uintptr_t)x->value;
-        if (_int_eq (x, _round (vm, ret, x)))
-          {
-            imm_int_t b = (imm_int_t)a.f;
-            if (b & 1) // LSB is 1
-              {
-                *ret = GLOBAL_REF (true_const);
-                return ret;
-              }
-            else
-              {
-                *ret = GLOBAL_REF (false_const);
-                return ret;
-              }
-            ret->attr.type = imm_int;
-            return ret;
-          }
-        else
-          {
-            PANIC ("Not an integer %f\n", a.f);
-            return ret;
-          }
-      }
     case rational_pos:
     case rational_neg:
       {
         PANIC ("Rational not implemented yet!\n");
-        return ret;
-      }
-    case imm_int:
-      {
-        imm_int_t z = (imm_int_t)x->value;
-        if (z & 1) // LSB is 1
-          {
-            *ret = GLOBAL_REF (true_const);
-            return ret;
-          }
-        else
-          {
-            *ret = GLOBAL_REF (false_const);
-            return ret;
-          }
       }
     default:
       {
         PANIC ("Type not match, type is %d\n", x->attr.type);
-        *ret = GLOBAL_REF (false_const);
-        return ret;
       }
     }
 }
 
-object_t _is_even (vm_t vm, object_t ret, immu_object_t xx)
+object_t _is_even (vm_t vm, object_t ret, immu_object_t x)
 {
-  VALIDATE_NUMBER (x);
-
-  switch (x->attr.type)
-    {
-    case complex_inexact:
-    case complex_exact:
-      {
-        PANIC ("Complex not implemented yet\n");
-        *ret = GLOBAL_REF (false_const);
-        return ret;
-      }
-    case real:
-      {
-        real_t a;
-        a.v = (uintptr_t)x->value;
-
-        if (_int_eq (x, _round (vm, ret, x)))
-          {
-            imm_int_t b = (imm_int_t)a.f;
-            if (b & 1) // LSB is 1
-              {
-                *ret = GLOBAL_REF (false_const);
-                return ret;
-              }
-            else
-              {
-                *ret = GLOBAL_REF (true_const);
-                return ret;
-              }
-            ret->attr.type = imm_int;
-            return ret;
-          }
-        else
-          {
-            PANIC ("Not an integer %f\n", a.f);
-            return ret;
-          }
-      }
-    case rational_pos:
-    case rational_neg:
-      {
-        PANIC ("Rational not implemented yet!\n");
-        *ret = GLOBAL_REF (false_const);
-        return ret;
-      }
-    case imm_int:
-      {
-        imm_int_t z = (imm_int_t)x->value;
-        if (z & 1) // LSB is 1
-          {
-            *ret = GLOBAL_REF (false_const);
-            return ret;
-          }
-        else
-          {
-            *ret = GLOBAL_REF (true_const);
-            return ret;
-          }
-      }
-    default:
-      {
-        PANIC ("Type not match, type is %d\n", x->attr.type);
-        *ret = GLOBAL_REF (false_const);
-        return ret;
-      }
-    }
+  return !_is_odd (vm, ret, x);
 }
 
-object_t _square (vm_t vm, object_t ret, object_t xx)
+object_t _square (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
 }
 
-object_t _sqrt (vm_t vm, object_t ret, object_t xx)
+object_t _sqrt (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
 }
 
-object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx)
+object_t _exact_integer_sqrt (vm_t vm, object_t ret, immu_object_t x)
 {
   PANIC ("Not implemented");
 }
 
-object_t _expt (vm_t vm, object_t ret, object_t xx, object_t yy)
+object_t _expt (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
   PANIC ("Not implemented");
 }
