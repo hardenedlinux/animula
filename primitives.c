@@ -137,10 +137,11 @@ static object_t _with_real_op (vm_t vm, object_t ret, imm_object_t x,
         ret->attr.type = real;
         real_real_op_t op = (real_real_op_t)get_num_op (opn);
 
-        a.v = (uintptr_t)x->value;
-        b.v = (uintptr_t)cast_int_or_fractal_to_float (y);
-        b.f = op (a.f, b.f);
-        ret->value = (void *)b.v;
+        // convert rational to real
+        rational_t rat = (rational_t)y->value;
+        a.v = (uintptr_t)__cast_rational_to_float (rat);
+        b.f = (float)y->value;
+        ret->value = (void *)op (a.f, b.f);
         return ret;
       }
     case imm_int:
@@ -2340,10 +2341,10 @@ void primitives_init (void)
    */
   def_prim (0, "ret", 0, NULL);
   def_prim (1, "pop", 0, NULL);
-  def_prim (2, "add", 2, (void *)_int_add);
-  def_prim (3, "sub", 2, (void *)_int_sub);
-  def_prim (4, "mul", 2, (void *)_int_mul);
-  def_prim (5, "div", 2, (void *)_int_div);
+  def_prim (2, "add", 2, (void *)_num_add);
+  def_prim (3, "sub", 2, (void *)_num_sub);
+  def_prim (4, "mul", 2, (void *)_num_mul);
+  def_prim (5, "div", 2, (void *)_num_div);
   def_prim (6, "object_print", 1, (void *)_object_print);
   def_prim (7, "apply", 2, NULL);
   def_prim (8, "not", 1, (void *)_not);

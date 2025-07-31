@@ -76,13 +76,8 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
   return;
 }
 
-static void __cast_rational_to_float (imm_object_t v)
+static void __cast_rational_to_float (rational_t v)
 {
-  if ((v->attr.type != rational_neg) && (v->attr.type != rational_pos))
-    {
-      PANIC ("Invalid type, expect %d or %d, but it's %d\n", rational_pos,
-             rational_neg, v->attr.type);
-    }
   int sign = (v->attr.type == rational_pos) ? 0 : 0x8000;
   imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
   imm_int_t d = ((imm_int_t)v->value) & 0xFFFF; // v = c/d
