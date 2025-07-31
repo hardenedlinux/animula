@@ -1,6 +1,6 @@
 #ifndef __ANIMULA_PRIMITIVE_H__
 #define __ANIMULA_PRIMITIVE_H__
-/*  Copyright (C) 2020-2021
+/*  Copyright (C) 2020-2025
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -32,23 +32,46 @@
 #define PRIM_NAME_SIZE 32
 #define BOARD_ID_LEN   25
 
+typedef float (*real_real_op_t) (float, float);
+typedef s32_t (*int_int_op_t) (s32_t, s32_t);
+typedef rational_t (*rat_rat_op_t) (rational_t, rational_t);
+typedef rational_t (*rat_int_op_t) (rational_t, s32_t);
+
+#define NUM_OP_MAX 5
+typedef enum
+{
+  add,
+  sub,
+  mul,
+  div,
+  mod
+} num_op_t;
+
+typedef enum
+{
+  int_int,
+  rat_rat,
+  rat_int,
+  real_real
+} num_op_type_t;
+
 // NOTE: assign is not a primitive
 typedef enum prim_num
 {
   ret = 0,
   pop = 1,
-  int_add = 2,
-  int_sub = 3,
-  int_mul = 4,
+  num_add = 2,
+  num_sub = 3,
+  num_mul = 4,
   fract_div = 5,
   object_print = 6,
   apply = 7,
   not = 8,
-  int_eq = 9,
-  int_lt = 10,
-  int_gt = 11,
-  int_le = 12,
-  int_ge = 13,
+  num_eq = 9,
+  num_lt = 10,
+  num_gt = 11,
+  num_le = 12,
+  num_ge = 13,
   restore = 14,
   reserved_1 = 15,
 
