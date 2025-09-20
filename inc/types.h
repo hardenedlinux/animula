@@ -51,15 +51,15 @@ typedef u16_t reg_t;
 #endif
 
 enum obj_encoding
-  {
-    FALSE = 0,
-    TRUE,
-    GENERAL_OBJECT,
-    CHAR,
-    NULL_LIST,
-    NONE,
-    SYMBOL
-  };
+{
+  FALSE = 0,
+  TRUE,
+  GENERAL_OBJECT,
+  CHAR,
+  NULL_LIST,
+  NONE,
+  SYMBOL
+};
 
 typedef enum obj_type
   {
@@ -78,15 +78,14 @@ typedef enum obj_type
     closure_on_heap = 11,
     closure_on_stack = 12,
     real = 13,
-    rational_pos = 14,
-    rational_neg = 15,
-    complex_exact = 16,
-    complex_inexact = 17,
-    mut_string = 18,
-    mut_list = 19,
-    character = 20,
-    bytevector = 21,
-    mut_bytevector = 22,
+    rational = 14,
+    complex_exact = 15,
+    complex_inexact = 16,
+    mut_string = 17,
+    mut_list = 18,
+    character = 19,
+    bytevector = 20,
+    mut_bytevector = 21,
 
     boolean = 61,
     null_obj = 62,
@@ -346,14 +345,14 @@ typedef struct SymTab
 } __packed *symtab_t, symtab;
 
 typedef enum encode_type
-  {
-    SMALL,
-    SINGLE,
-    DOUBLE,
-    TRIPLE,
-    QUADRUPLE,
-    SPECIAL
-  } encode_t;
+{
+  SMALL,
+  SINGLE,
+  DOUBLE,
+  TRIPLE,
+  QUADRUPLE,
+  SPECIAL
+} encode_t;
 
 // FIXME: tweak bit-fields order by bits endian
 
@@ -470,15 +469,15 @@ typedef union ByteCode32
 } __packed bytecode32_t;
 
 typedef enum vm_state
-  {
-    VM_STOP = 0,
-    VM_RUN = 1,
-    VM_PAUSE = 2,
-    VM_GC = 3,
-    VM_INIT_GLOBALS = 4,
-    VM_EXCPT = 5,
-    VM_EXCPT_CONT = 6
-  } vm_state_t;
+{
+  VM_STOP = 0,
+  VM_RUN = 1,
+  VM_PAUSE = 2,
+  VM_GC = 3,
+  VM_INIT_GLOBALS = 4,
+  VM_EXCPT = 5,
+  VM_EXCPT_CONT = 6
+} vm_state_t;
 
 typedef struct LambdaVM
 {

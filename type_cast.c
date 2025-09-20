@@ -76,7 +76,7 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
   return;
 }
 
-static void __cast_rational_to_float (rational_t v)
+static uintptr_t __cast_rational_to_float (rational_t v)
 {
   int sign = (v->attr.type == rational_pos) ? 0 : 0x8000;
   imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
@@ -88,7 +88,6 @@ static void __cast_rational_to_float (rational_t v)
   return (void *)b.v;
 }
 
-// side effect
 void *cast_int_or_fractal_to_float (imm_object_t x)
 {
   switch (v->attr.type)

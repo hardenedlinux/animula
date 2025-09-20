@@ -34,34 +34,36 @@
 
 typedef float (*real_real_op_t) (float, float);
 typedef s32_t (*int_int_op_t) (s32_t, s32_t);
+typedef float (*real_int_op_t) (float, s32_t);
 typedef rational_t (*rat_rat_op_t) (rational_t, rational_t);
 typedef rational_t (*rat_int_op_t) (rational_t, s32_t);
 
 #define NUM_OP_MAX 5
 typedef enum
-{
-  add,
-  sub,
-  mul,
-  div,
-  mod
-} num_op_t;
+  {
+    add,
+    sub,
+    mul,
+    div,
+    mod
+  } num_op_t;
 
 typedef enum
-{
-  int_int,
-  rat_rat,
-  rat_int,
-  real_real
-} num_op_type_t;
+  {
+    int_int,
+    real_real,
+    rat_rat,
+    real_int,
+    rat_int
+  } num_op_type_t;
 
 // NOTE: assign is not a primitive
 typedef enum prim_num
-{
-  ret = 0,
-  pop = 1,
-  num_add = 2,
-  num_sub = 3,
+  {
+    ret = 0,
+    pop = 1,
+    num_add = 2,
+    num_sub = 3,
   num_mul = 4,
   fract_div = 5,
   object_print = 6,
@@ -251,6 +253,58 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
   prim->fn = fn;
   GLOBAL_REF (prim_table)[pn] = prim;
 }
+
+extern object_t _floor (vm_t vm, object_t ret, imm_object_t x);
+extern object_t _floor_div (vm_t vm, object_t ret, object_t xx, object_t yy);
+extern object_t _ceiling (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate (vm_t vm, object_t ret, object_t xx);
+extern object_t _round (vm_t vm, object_t ret, object_t xx);
+extern object_t _rationalize (vm_t vm, object_t ret, object_t xx);
+extern object_t _floor_quotient (vm_t vm, object_t ret, object_t xx);
+extern object_t _floor_remainder (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate_div (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate_quotient (vm_t vm, object_t ret, object_t xx);
+extern object_t _truncate_remainder (vm_t vm, object_t ret, object_t xx);
+extern object_t _numerator (vm_t vm, object_t ret, object_t xx);
+extern object_t _denominator (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_exact_integer (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_finite (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_infinite (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_nan (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_zero (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_positive (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_negative (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_odd (vm_t vm, object_t ret, object_t xx);
+extern object_t _is_even (vm_t vm, object_t ret, object_t xx);
+extern object_t _square (vm_t vm, object_t ret, object_t xx);
+extern object_t _sqrt (vm_t vm, object_t ret, object_t xx);
+extern object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx);
+extern object_t _expt (vm_t vm, object_t ret, object_t xx);
+
+// string
+extern object_t _make_string (vm_t vm, object_t ret, object_t length,
+                              object_t char0);
+extern object_t _string (vm_t vm, object_t ret, object_t length,
+                         object_t char0);
+extern object_t _string_length (vm_t vm, object_t ret, object_t obj);
+extern object_t _string_ref (vm_t vm, object_t ret, object_t obj,
+                             object_t index);
+extern object_t _string_set (vm_t vm, object_t ret, object_t obj,
+                             object_t index, object_t char0);
+extern object_t _string_eq (vm_t vm, object_t ret, object_t str0,
+                            object_t str1);
+extern object_t _substring (vm_t vm, object_t ret, object_t str0,
+                            object_t start, object_t end);
+extern object_t _string_append (vm_t vm, object_t ret, object_t str0,
+                                object_t str1);
+extern object_t _string_copy (vm_t vm, object_t ret, object_t str0,
+                              object_t start, object_t end);
+extern object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
+                                          object_t at, object_t str1,
+                                          object_t start, object_t end);
+
+extern object_t _string_fill (vm_t vm, object_t ret, object_t str0,
+                              object_t fill, object_t start, object_t end);
 
 char *prim_name (u16_t pn);
 void primitives_init (void);
