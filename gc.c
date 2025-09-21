@@ -1,4 +1,4 @@
-/*  Copyright (C) 2020-2021
+/*  Copyright (C) 2020-2025
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -26,7 +26,7 @@
 #  endif
 
 static int get_gc_from_node (otype_t type, void *value);
-/* The GC in LambdaChip is "object-based generational GC".
+/* The GC in Animula is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
 
    The meaning of `gc' field in Object:
@@ -37,8 +37,8 @@ static int get_gc_from_node (otype_t type, void *value);
 
  */
 
-static RB_HEAD (ActiveRoot, ActiveRootNode)
-  ActiveRootHead = RB_INITIALIZER (&ActiveRootHead);
+static RB_HEAD (ActiveRoot, ActiveRootNode) ActiveRootHead
+  = RB_INITIALIZER (&ActiveRootHead);
 
 RB_GENERATE_STATIC (ActiveRoot, ActiveRootNode, entry, active_root_compare);
 
@@ -212,8 +212,7 @@ void free_object (object_t obj)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -229,8 +228,8 @@ void free_object (object_t obj)
       }
     case pair:
       {
-        free_object ((object_t) ((pair_t)obj->value)->car);
-        free_object ((object_t) ((pair_t)obj->value)->cdr);
+        free_object ((object_t)((pair_t)obj->value)->car);
+        free_object ((object_t)((pair_t)obj->value)->cdr);
         break;
       }
     case list:
@@ -274,7 +273,7 @@ void free_object (object_t obj)
       }
     case mut_bytevector:
       {
-        os_free (((mut_bytevector_t) (obj->value))->vec);
+        os_free (((mut_bytevector_t)(obj->value))->vec);
         os_free (obj->value);
         break;
       }
@@ -306,8 +305,8 @@ void free_inner_object (otype_t type, void *value)
     {
     case pair:
       {
-        free_object ((object_t) ((pair_t)value)->car);
-        free_object ((object_t) ((pair_t)value)->cdr);
+        free_object ((object_t)((pair_t)value)->car);
+        free_object ((object_t)((pair_t)value)->cdr);
         ((pair_t)value)->attr.gc = FREE_OBJ;
         break;
       }
@@ -374,8 +373,7 @@ static void recycle_object (object_t obj)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -516,8 +514,7 @@ static void active_root_inner_insert (otype_t type, void *value)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -569,7 +566,7 @@ static void active_root_insert_frame (const u8_t *stack, u32_t local, u8_t cnt)
   /* getchar (); */
   for (u8_t i = 0; i < cnt; i++)
     {
-      object_t obj = (object_t) (stack + local + i * sizeof (Object));
+      object_t obj = (object_t)(stack + local + i * sizeof (Object));
 
       if (!obj)
         PANIC ("active_root_insert_frame: Invalid object address!");
@@ -603,7 +600,7 @@ static void build_active_root (const gc_info_t gci)
         {
           for (int i = 0; i < closure->frame_size; i++)
             {
-              object_t obj = (&((object_t) (stack + closure->local))[i]);
+              object_t obj = (&((object_t)(stack + closure->local))[i]);
               active_root_inner_insert (obj->attr.type, obj->value);
             }
         }
@@ -1071,8 +1068,7 @@ void *gc_pool_malloc (otype_t type)
     case imm_int:
     case character:
     case real:
-    case rational_pos:
-    case rational_neg:
+    case rational:
     case boolean:
     case null_obj:
     case none:
@@ -1164,15 +1160,14 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
 
   for (size_t i = 0; i < cnt; i++)
     {
-      object_t obj = (object_t) (stack + local + i * size);
+      object_t obj = (object_t)(stack + local + i * size);
 
       switch (obj->attr.type)
         {
         case imm_int:
         case character:
         case real:
-        case rational_pos:
-        case rational_neg:
+        case rational:
         case boolean:
         case null_obj:
         case none:

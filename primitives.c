@@ -47,11 +47,11 @@ static void *num_div_op_table[] = {[int_int] = (void *)int_int_div,
                                    [rat_rat] = (void *)rational_div,
                                    [real_int] = (void *)real_int_div,
                                    [rat_int] = (void *)rat_int_div};
-static void **num_op_table[] = {[add] = (void **)num_add_op_table,
-                                [sub] = (void **)num_sub_op_table,
-                                [mul] = (void **)num_mul_op_table,
-                                [div] = (void **)num_div_op_table,
-                                [mod] = (void **)num_mod_op_table};
+static void **num_op_table[] = {[op_add] = (void **)num_add_op_table,
+                                [op_sub] = (void **)num_sub_op_table,
+                                [op_mul] = (void **)num_mul_op_table,
+                                [op_div] = (void **)num_div_op_table,
+                                [op_mod] = (void **)num_mod_op_table};
 
 static inline void *get_num_op (num_op_t op, num_op_type_t ot)
 {
@@ -113,7 +113,7 @@ static object_t _with_real_op (vm_t vm, object_t ret, imm_object_t x,
 
         // convert rational to real
         rational_t rat = (rational_t)y->value;
-        a.v = (uintptr_t)__cast_rational_to_float (rat);
+        a.v = (uintptr_t)cast_rational_to_float (rat);
         b.f = (float)y->value;
         ret->value = (void *)op (a.f, b.f);
         return ret;
@@ -315,22 +315,22 @@ static object_t _num_op (vm_t vm, object_t ret, immu_object_t x,
 
 object _num_add (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
-  return _num_op (vm, ret, x, y, add);
+  return _num_op (vm, ret, x, y, op_add);
 }
 
 object _num_sub (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
-  return _int_sub (vm, ret, x, y, sub);
+  return _int_sub (vm, ret, x, y, op_sub);
 }
 
 object _num_mul (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
-  return _int_mul (vm, ret, x, y, mul);
+  return _int_mul (vm, ret, x, y, op_mul);
 }
 
 object _num_div (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
-  return _int_mul (vm, ret, x, y, div);
+  return _int_mul (vm, ret, x, y, op_div);
 }
 
 imm_int_t _int_modulo (imm_int_t x, imm_int_t y)
@@ -366,11 +366,10 @@ bool eq_with_int (imm_object_t x, imm_object_t y)
         // FIXME: x->value maybe out of float range
         return a.f == (float)x->value;
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         real_t a = {0};
-        a.v = (intptr_t)__cast_rational_to_float (y);
+        a.v = (intptr_t)cast_rational_to_float (y);
         // FIXME: x->value maybe out of float range
         return (a.f == (float)x->value);
       }
@@ -388,8 +387,7 @@ bool eq_with_rag (imm_object_t x, imm_object_t y)
       {
         return eq_with_int (y, x);
       }
-    case rational_neg:
-    case rational_pos:
+    case rational:
       {
         return x->value == y->value;
       }
@@ -397,7 +395,7 @@ bool eq_with_rag (imm_object_t x, imm_object_t y)
       {
         real_t a = {0};
         real_t b = {0};
-        a.v = (uintptr_t)__cast_rational_to_float (x);
+        a.v = (uintptr_t)cast_rational_to_float (x);
         b.v = (uintptr_t)y->value;
         return a.f == b.f;
       }
@@ -414,8 +412,7 @@ bool eq_with_real (imm_object_t x, imm_object_t y)
       {
         return eq_with_int (y, x);
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         return eq_with_rag (y, x);
       }
@@ -443,8 +440,7 @@ bool _int_eq (imm_object_t x, imm_object_t y)
       {
         return eq_with_int (x, y);
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         return eq_with_rag (x, y);
       }
@@ -473,13 +469,12 @@ bool gt_with_int (imm_object_t x, imm_object_t y)
       {
         return x->value > y->value;
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         real_t a = {0};
         real_t b = {0};
         a.v = (uintptr_t)x->value;
-        b.v = (uintptr_t)__cast_rational_to_float (y);
+        b.v = (uintptr_t)cast_rational_to_float (y);
         return a.f > b.f;
       }
     case real:
@@ -506,8 +501,7 @@ bool gt_with_rag (imm_object_t x, imm_object_t y)
       {
         return gt_with_int (y, x);
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         rational_t a = (rational_t)x->value;
         rational_t b = (rational_t)y->value;
@@ -519,7 +513,7 @@ bool gt_with_rag (imm_object_t x, imm_object_t y)
       {
         real_t a = {0};
         real_t b = {0};
-        a.v = (uintptr_t)__cast_rational_to_float (x);
+        a.v = (uintptr_t)cast_rational_to_float (x);
         b.v = (uintptr_t)y->value;
         return a.f > b.f;
       }
@@ -539,8 +533,7 @@ bool gt_with_real (imm_object_t x, imm_object_t y)
       {
         return gt_with_int (y, x);
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         return gt_with_rag (y, x);
       }
@@ -571,8 +564,7 @@ bool _int_gt (object_t x, object_t y)
       {
         return gt_with_int (x, y);
       }
-    case rational_pos:
-    case rational_neg:
+    case rational:
       {
         return gt_with_rag (x, y);
       }
@@ -585,23 +577,23 @@ bool _int_gt (object_t x, object_t y)
       PANIC ("Complex_inexact is not supported yet!\n");
     }
 
-static bool _eq (object_t a, object_t b)
-{
-  otype_t t1 = a->attr.type;
-  otype_t t2 = b->attr.type;
+  static bool _eq (object_t a, object_t b)
+  {
+    otype_t t1 = a->attr.type;
+    otype_t t2 = b->attr.type;
 
-  if (t1 != t2)
-    {
-      return false;
-    }
-  else if (list == t1 && (LIST_IS_EMPTY (a) && LIST_IS_EMPTY (b)))
-    {
-      return true;
-    }
-  else if (procedure == t1)
-    {
-      return (a->proc.entry == b->proc.entry);
-    }
+    if (t1 != t2)
+      {
+        return false;
+      }
+    else if (list == t1 && (LIST_IS_EMPTY (a) && LIST_IS_EMPTY (b)))
+      {
+        return true;
+      }
+    else if (procedure == t1)
+      {
+        return (a->proc.entry == b->proc.entry);
+      }
 
     return (a->value == b->value);
   }
@@ -619,8 +611,7 @@ static bool _eq (object_t a, object_t b)
       {
         /* case record: */
         /* case bytevector: */
-      case rational_pos:
-      case rational_neg:
+      case rational:
       case imm_int:
         {
           ret = _int_eq (a, b);
@@ -1725,8 +1716,7 @@ static bool _eq (object_t a, object_t b)
       {
       case imm_int:
       case real:
-      case rational_pos:
-      case rational_neg:
+      case rational:
       case complex_exact:
       case complex_inexact:
         {
@@ -1779,8 +1769,7 @@ static bool _eq (object_t a, object_t b)
   {
     switch (obj->attr.type)
       {
-      case rational_pos:
-      case rational_neg:
+      case rational:
         {
           return GLOBAL_REF (true_const);
         }

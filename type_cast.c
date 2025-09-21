@@ -18,7 +18,7 @@
 #include "object.h"
 #include "os.h"
 
-void cast_imm_int_to_rational (object_t v)
+void cast_imm_int_to_rational (imm_object_t v)
 {
   oattr t;
   t.type = v->attr.type;
@@ -48,7 +48,7 @@ void cast_imm_int_to_rational (object_t v)
   return;
 }
 
-void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
+void cast_rational_to_imm_int_if_denominator_is_1 (imm_object_t v)
 {
   imm_int_t d = 0;
   imm_int_t n = 0;
@@ -76,8 +76,9 @@ void cast_rational_to_imm_int_if_denominator_is_1 (object_t v)
   return;
 }
 
-static uintptr_t __cast_rational_to_float (rational_t v)
+uintptr_t cast_rational_to_float (imm_object_t x)
 {
+  rational_t v = (rational_t)x->value;
   int sign = (v->attr.type == rational_pos) ? 0 : 0x8000;
   imm_int_t c = (((imm_int_t)v->value) >> 16) & 0xFFFF;
   imm_int_t d = ((imm_int_t)v->value) & 0xFFFF; // v = c/d
@@ -86,33 +87,6 @@ static uintptr_t __cast_rational_to_float (rational_t v)
   b.f = a / d;
 
   return (void *)b.v;
-}
-
-void *cast_int_or_fractal_to_float (imm_object_t x)
-{
-  switch (v->attr.type)
-    {
-    case rational_pos:
-    case rational_neg:
-      {
-        return __cast_rational_to_float (x);
-      }
-    case imm_int:
-      {
-        v->attr.type = real;
-        imm_int_t b = (imm_int_t)(x->value);
-        real_t a = {0};
-        a.f = (float)b;
-        return (void *)a.v;
-      }
-    case real:
-      {
-        return v->value;
-      }
-    default:
-      PANIC ("Invalid type, expect imm_int, rational or real, but it's %d\n",
-             v->attr.type);
-    }
 }
 
 void bit_order_checking (void)

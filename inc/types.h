@@ -62,39 +62,39 @@ enum obj_encoding
 };
 
 typedef enum obj_type
-  {
-    unbooked = -1,
-    imm_int = 0,
-    arbi_int = 1,
-    keyword = 2,
-    pair = 3,
-    symbol = 4,
-    vector = 5,
-    continuation = 6,
-    list = 7,
-    string = 8,
-    procedure = 9,
-    primitive = 10,
-    closure_on_heap = 11,
-    closure_on_stack = 12,
-    real = 13,
-    rational = 14,
-    complex_exact = 15,
-    complex_inexact = 16,
-    mut_string = 17,
-    mut_list = 18,
-    character = 19,
-    bytevector = 20,
-    mut_bytevector = 21,
+{
+  unbooked = -1,
+  imm_int = 0,
+  arbi_int = 1,
+  keyword = 2,
+  pair = 3,
+  symbol = 4,
+  vector = 5,
+  continuation = 6,
+  list = 7,
+  string = 8,
+  procedure = 9,
+  primitive = 10,
+  closure_on_heap = 11,
+  closure_on_stack = 12,
+  real = 13,
+  rational = 14,
+  complex_exact = 15,
+  complex_inexact = 16,
+  mut_string = 17,
+  mut_list = 18,
+  character = 19,
+  bytevector = 20,
+  mut_bytevector = 21,
 
-    boolean = 61,
-    null_obj = 62,
-    none = 63,
-  } otype_t;
+  boolean = 61,
+  null_obj = 62,
+  none = 63,
+} otype_t;
 
-#define CHECK_OBJECT_TYPE(o, t)				\
-  (((t) == (o)->attr.type) ? GLOBAL_REF (true_const)	\
-   : GLOBAL_REF (false_const));
+#define CHECK_OBJECT_TYPE(o, t)                      \
+  (((t) == (o)->attr.type) ? GLOBAL_REF (true_const) \
+                           : GLOBAL_REF (false_const));
 
 #if defined ADDRESS_64
 typedef s64_t imm_int_t;
@@ -154,11 +154,11 @@ typedef struct Object
   };
 } __packed Object, *object_t;
 
-#ifndef imm_object_t
+#ifndef immu_object_t
 /* NOTE: Current C doesn't suport double const protect to make immutable for
  * both pointer and the data. So we have to use macro.
  */
-#  define imm_object_t const struct Object *const
+#  define immu_object_t const struct Object *const
 #endif
 
 typedef struct Closure

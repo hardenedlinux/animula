@@ -40,30 +40,30 @@ typedef rational_t (*rat_int_op_t) (rational_t, s32_t);
 
 #define NUM_OP_MAX 5
 typedef enum
-  {
-    add,
-    sub,
-    mul,
-    div,
-    mod
-  } num_op_t;
+{
+  op_add,
+  op_sub,
+  op_mul,
+  op_div,
+  op_mod
+} num_op_t;
 
 typedef enum
-  {
-    int_int,
-    real_real,
-    rat_rat,
-    real_int,
-    rat_int
-  } num_op_type_t;
+{
+  int_int,
+  real_real,
+  rat_rat,
+  real_int,
+  rat_int
+} num_op_type_t;
 
 // NOTE: assign is not a primitive
 typedef enum prim_num
-  {
-    ret = 0,
-    pop = 1,
-    num_add = 2,
-    num_sub = 3,
+{
+  ret = 0,
+  pop = 1,
+  num_add = 2,
+  num_sub = 3,
   num_mul = 4,
   fract_div = 5,
   object_print = 6,
@@ -241,7 +241,7 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
    *       so we ignore it temporarily to make gcc happy.
    * See here for more details:
    https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
-   */
+  */
   // #  pragma GCC diagnostic push
   // #  pragma GCC diagnostic ignored "-Wstringop-overread"
   size_t len = os_strnlen (name, PRIM_NAME_SIZE);
@@ -254,57 +254,65 @@ static inline void def_prim (u16_t pn, const char *name, u8_t arity, void *fn)
   GLOBAL_REF (prim_table)[pn] = prim;
 }
 
-extern object_t _floor (vm_t vm, object_t ret, imm_object_t x);
-extern object_t _floor_div (vm_t vm, object_t ret, object_t xx, object_t yy);
-extern object_t _ceiling (vm_t vm, object_t ret, object_t xx);
-extern object_t _truncate (vm_t vm, object_t ret, object_t xx);
-extern object_t _round (vm_t vm, object_t ret, object_t xx);
-extern object_t _rationalize (vm_t vm, object_t ret, object_t xx);
-extern object_t _floor_quotient (vm_t vm, object_t ret, object_t xx);
-extern object_t _floor_remainder (vm_t vm, object_t ret, object_t xx);
-extern object_t _truncate_div (vm_t vm, object_t ret, object_t xx);
-extern object_t _truncate_quotient (vm_t vm, object_t ret, object_t xx);
-extern object_t _truncate_remainder (vm_t vm, object_t ret, object_t xx);
-extern object_t _numerator (vm_t vm, object_t ret, object_t xx);
-extern object_t _denominator (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_exact_integer (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_finite (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_infinite (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_nan (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_zero (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_positive (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_negative (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_odd (vm_t vm, object_t ret, object_t xx);
-extern object_t _is_even (vm_t vm, object_t ret, object_t xx);
-extern object_t _square (vm_t vm, object_t ret, object_t xx);
-extern object_t _sqrt (vm_t vm, object_t ret, object_t xx);
-extern object_t _exact_integer_sqrt (vm_t vm, object_t ret, object_t xx);
-extern object_t _expt (vm_t vm, object_t ret, object_t xx);
+extern object_t _floor (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _floor_div (vm_t vm, object_t ret, immu_object_t x,
+                            immu_object_t y);
+extern object_t _ceiling (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _truncate (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _round (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _rationalize (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _floor_quotient (vm_t vm, object_t ret, immu_object_t x,
+                                 immu_object_t y);
+extern object_t _floor_remainder (vm_t vm, object_t ret, immu_object_t x,
+                                  immu_object_t y);
+extern object_t _truncate_div (vm_t vm, object_t ret, immu_object_t x,
+                               immu_object_t y);
+extern object_t _truncate_quotient (vm_t vm, object_t ret, immu_object_t x,
+                                    immu_object_t y);
+extern object_t _truncate_remainder (vm_t vm, object_t ret, immu_object_t x,
+                                     immu_object_t y);
+extern object_t _numerator (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _denominator (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_exact_integer (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_finite (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_infinite (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_nan (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_zero (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_positive (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_negative (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_odd (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _is_even (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _square (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _sqrt (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _exact_integer_sqrt (vm_t vm, object_t ret, immu_object_t x);
+extern object_t _expt (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
 
 // string
-extern object_t _make_string (vm_t vm, object_t ret, object_t length,
+extern object_t _make_string (vm_t vm, object_t ret, immu_object_t length,
                               object_t char0);
-extern object_t _string (vm_t vm, object_t ret, object_t length,
+extern object_t _string (vm_t vm, object_t ret, immu_object_t length,
                          object_t char0);
-extern object_t _string_length (vm_t vm, object_t ret, object_t obj);
-extern object_t _string_ref (vm_t vm, object_t ret, object_t obj,
+extern object_t _string_length (vm_t vm, object_t ret, immu_object_t obj);
+extern object_t _string_ref (vm_t vm, object_t ret, immu_object_t obj,
                              object_t index);
-extern object_t _string_set (vm_t vm, object_t ret, object_t obj,
-                             object_t index, object_t char0);
-extern object_t _string_eq (vm_t vm, object_t ret, object_t str0,
+extern object_t _string_set (vm_t vm, object_t ret, immu_object_t obj,
+                             object_t index, immu_object_t char0);
+extern object_t _string_eq (vm_t vm, object_t ret, immu_object_t str0,
                             object_t str1);
-extern object_t _substring (vm_t vm, object_t ret, object_t str0,
-                            object_t start, object_t end);
-extern object_t _string_append (vm_t vm, object_t ret, object_t str0,
+extern object_t _substring (vm_t vm, object_t ret, immu_object_t str0,
+                            object_t start, immu_object_t end);
+extern object_t _string_append (vm_t vm, object_t ret, immu_object_t str0,
                                 object_t str1);
-extern object_t _string_copy (vm_t vm, object_t ret, object_t str0,
-                              object_t start, object_t end);
-extern object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
-                                          object_t at, object_t str1,
-                                          object_t start, object_t end);
+extern object_t _string_copy (vm_t vm, object_t ret, immu_object_t str0,
+                              object_t start, immu_object_t end);
+extern object_t _string_copy_side_effect (vm_t vm, object_t ret,
+                                          immu_object_t str0, object_t at,
+                                          immu_object_t str1, object_t start,
+                                          immu_object_t end);
 
-extern object_t _string_fill (vm_t vm, object_t ret, object_t str0,
-                              object_t fill, object_t start, object_t end);
+extern object_t _string_fill (vm_t vm, object_t ret, immu_object_t str0,
+                              object_t fill, immu_object_t start,
+                              immu_object_t end);
 
 char *prim_name (u16_t pn);
 void primitives_init (void);

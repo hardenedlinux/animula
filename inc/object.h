@@ -230,15 +230,15 @@ static inline bool is_unspecified (object_t obj)
       if (x < MIN_REAL_NUMERATOR || x > MAX_REAL_NUMERATOR)               \
         {                                                                 \
           os_printk ("%s:%d, %s: NUMERATOR not in range: %d\n", __FILE__, \
-                     __LINE__, __FUNCTION__, x);			\
-          panic ("");							\
-        }								\
-    }									\
+                     __LINE__, __FUNCTION__, x);                          \
+          panic ("");                                                     \
+        }                                                                 \
+    }                                                                     \
   while (0)
 
-#define VALIDATE_DENOMINATOR(x)						\
-  do									\
-    {									\
+#define VALIDATE_DENOMINATOR(x)                                             \
+  do                                                                        \
+    {                                                                       \
       if (x < MIN_REAL_DENOMINATOR || x > MAX_REAL_DENOMINATOR || x == 0) \
         {								\
           os_printk ("%s:%d, %s: DENOMINATOR not in range: %d\n", __FILE__, \
@@ -250,26 +250,25 @@ static inline bool is_unspecified (object_t obj)
 
 #define VALIDATE_IMM_INT(obj) VALIDATE ((obj), imm_int)
 
-#define VALIDATE_NUMBER(obj)                                           \
-  do                                                                   \
-    {                                                                  \
-      switch ((obj)->attr.type)                                        \
-        {                                                              \
-        case imm_int:                                                  \
-        case arbi_int:                                                 \
-        case real:                                                     \
-        case rational_pos:                                             \
-        case rational_neg:                                             \
-        case complex_exact:                                            \
-        case complex_inexact:                                          \
-          break;                                                       \
-        default:                                                       \
-          {                                                            \
-            PANIC ("Wrong type, expect numbers, but it's type (%d)\n", \
-                   (obj)->attr.type);                                  \
-          }                                                            \
-        }                                                              \
-    }                                                                  \
+#define VALIDATE_NUMBER(obj)						\
+  do									\
+    {									\
+      switch ((obj)->attr.type)						\
+        {								\
+        case imm_int:							\
+        case arbi_int:							\
+        case real:							\
+        case rational:							\
+        case complex_exact:						\
+        case complex_inexact:						\
+          break;							\
+        default:							\
+          {								\
+            PANIC ("Wrong type, expect numbers, but it's type (%d)\n",	\
+                   (obj)->attr.type);					\
+          }								\
+        }								\
+    }									\
   while (0)
 
 #define OBJ_IS_ON_STACK(o) ((o)->attr.gc)

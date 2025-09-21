@@ -111,8 +111,8 @@ Open your favorite editor or IDE, and create a new file named **program.scm**. J
 (gpio-toggle! 'dev_led0)
 (usleep 200000)
 (if (= x 0)
-#t
-(main (- x 1))))
+    #t
+    (main (- x 1))))
 (main 10)
 ```
 The code is self-explain, you may try to modify it to verify your ideas. Don't worry, the Alonzo board will never be bricked.
