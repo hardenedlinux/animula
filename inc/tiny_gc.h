@@ -1,5 +1,6 @@
-#ifndef TINY_GC_H
-#define TINY_GC_H
+#ifdef USE_TINY_GC
+#  ifndef TINY_GC_H
+#    define TINY_GC_H
 /*
  * @(#) gc.h -- TinyGC (Tiny Garbage Collector) header.
  * Copyright (C) 2006-2010 Ivan Maidanski <ivmai@mail.ru> All rights reserved.
@@ -38,7 +39,7 @@
  * exception statement from your version.
  */
 
-#define GC_TINYGC_VER 260 /* TinyGC v2.6 */
+#    define GC_TINYGC_VER 260 /* TinyGC v2.6 */
 
 /* TinyGC API is a subset of Boehm-Demers-Weiser Conservative GC API v7.2 */
 
@@ -313,35 +314,37 @@ typedef unsigned GC_word;
 #  define GC_INIT_CONF_MAXIMUM_HEAP_SIZE \
     GC_set_max_heap_size (GC_MAXIMUM_HEAP_SIZE)
 #else
-#  define GC_INIT_CONF_MAXIMUM_HEAP_SIZE /* empty */
-#endif
+#      define GC_INIT_CONF_MAXIMUM_HEAP_SIZE /* empty */
+#    endif
 
-#ifdef GC_INITIAL_HEAP_SIZE
-#  define GC_INIT_CONF_INITIAL_HEAP_SIZE                                     \
-    {                                                                        \
-      size_t GC_heap_size;                                                   \
-      (void)((GC_heap_size = GC_get_heap_size ())                            \
-                 < (size_t) (GC_INITIAL_HEAP_SIZE)                           \
-               ? GC_expand_hp ((size_t) (GC_INITIAL_HEAP_SIZE)-GC_heap_size) \
-               : 0);                                                         \
-    }
-#else
-#  define GC_INIT_CONF_INITIAL_HEAP_SIZE /* empty */
-#endif
+#    ifdef GC_INITIAL_HEAP_SIZE
+#      define GC_INIT_CONF_INITIAL_HEAP_SIZE                      \
+        {                                                         \
+          size_t GC_heap_size;                                    \
+          (void)((GC_heap_size = GC_get_heap_size ())             \
+                     < (size_t)(GC_INITIAL_HEAP_SIZE)             \
+                   ? GC_expand_hp ((size_t)(GC_INITIAL_HEAP_SIZE) \
+                                   - GC_heap_size)                \
+                   : 0);                                          \
+        }
+#    else
+#      define GC_INIT_CONF_INITIAL_HEAP_SIZE /* empty */
+#    endif
 
-#define GC_INIT()                    \
-  {                                  \
-    GC_INIT_CONF_DONT_EXPAND;        \
-    GC_INIT_CONF_MAX_RETRIES;        \
-    GC_INIT_CONF_FREE_SPACE_DIVISOR; \
-    GC_INIT_CONF_MAXIMUM_HEAP_SIZE;  \
-    GC_init ();                      \
-    GC_INIT_CONF_ROOTS;              \
-    GC_INIT_CONF_INITIAL_HEAP_SIZE;  \
-  }
+#    define GC_INIT()                    \
+      {                                  \
+        GC_INIT_CONF_DONT_EXPAND;        \
+        GC_INIT_CONF_MAX_RETRIES;        \
+        GC_INIT_CONF_FREE_SPACE_DIVISOR; \
+        GC_INIT_CONF_MAXIMUM_HEAP_SIZE;  \
+        GC_init ();                      \
+        GC_INIT_CONF_ROOTS;              \
+        GC_INIT_CONF_INITIAL_HEAP_SIZE;  \
+      }
 
-#ifdef __cplusplus
+#    ifdef __cplusplus
 }
-#endif
+#    endif // __cplusplus
 
-#endif
+#  endif // TINY_GC_H
+#endif   // USE_TINY_GC

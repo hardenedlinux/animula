@@ -1,3 +1,4 @@
+#ifdef USE_TINY_GC
 /*
  * @(#) tinygc.c -- TinyGC (Tiny Garbage Collector) source.
  * Copyright (C) 2006-2010 Ivan Maidanski <ivmai@mail.ru> All rights reserved.
@@ -57,33 +58,33 @@
  * MARK_DESCR_OFFSET.
  */
 
-#ifndef _SETJMP_H
-#  include <setjmp.h>
+#  ifndef _SETJMP_H
+#    include <setjmp.h>
 /* int setjmp(jmp_buf); */
-#endif
+#  endif
 
-#ifndef _STDLIB_H
-#  include <stdlib.h>
+#  ifndef _STDLIB_H
+#    include <stdlib.h>
 /* long atol(const char *); */
 /* void exit(int); */
 /* void free(void *); */
 /* char *getenv(const char *); */
 /* void *malloc(size_t); */
-#endif
+#  endif
 
-#ifndef _STRING_H
-#  include <string.h>
+#  ifndef _STRING_H
+#    include <string.h>
 /* void *memset(void *, int, size_t); */
-#endif
+#  endif
 
-#ifndef _LIMITS_H
-#  include <limits.h>
-#endif
+#  ifndef _LIMITS_H
+#    include <limits.h>
+#  endif
 
-#ifdef GC_WIN32_THREADS
+#  ifdef GC_WIN32_THREADS
 
-#  ifndef _WINDOWS_H
-#    include <windows.h>
+#    ifndef _WINDOWS_H
+#      include <windows.h>
 /* BOOL CloseHandle(HANDLE); */
 /* HANDLE CreateEvent(SECURITY_ATTRIBUTES *, BOOL, BOOL, LPCTSTR); */
 /* BOOL DuplicateHandle(HANDLE, HANDLE, HANDLE, HANDLE *, DWORD, BOOL, DWORD);
@@ -98,447 +99,447 @@
 /* void Sleep(DWORD); */
 /* DWORD SuspendThread(HANDLE); */
 /* DWORD WaitForSingleObject(HANDLE, DWORD); */
-#  endif
+#    endif
 
-#  ifndef GC_THREADS
-#    define GC_THREADS 1
-#  endif
+#    ifndef GC_THREADS
+#      define GC_THREADS 1
+#    endif
 
-#else /* GC_WIN32_THREADS */
+#  else /* GC_WIN32_THREADS */
 
-#  ifdef GC_THREADS
+#    ifdef GC_THREADS
 
-#    ifndef _ERRNO_H
-#      include <errno.h>
+#      ifndef _ERRNO_H
+#        include <errno.h>
 /* int errno; */
-#    endif
+#      endif
 
-#    ifndef _SIGNAL_H
-#      include <signal.h>
+#      ifndef _SIGNAL_H
+#        include <signal.h>
 /* void (*signal(int, void (*)(int)))(int); */
-#    endif
+#      endif
 
-#    ifndef _PTHREAD_H
-#      include <pthread.h>
+#      ifndef _PTHREAD_H
+#        include <pthread.h>
 /* int pthread_kill(pthread_t, int); */
 /* int pthread_mutex_init(pthread_mutex_t *, const pthread_mutexattr_t *); */
 /* int pthread_mutex_lock(pthread_mutex_t *); */
 /* int pthread_mutex_unlock(pthread_mutex_t *); */
 /* pthread_t pthread_self(void); */
-#    endif
+#      endif
 
-#    ifndef _SCHED_H
-#      include <sched.h>
+#      ifndef _SCHED_H
+#        include <sched.h>
 /* int sched_yield(void); */
-#    endif
+#      endif
 
-#    ifdef pthread_usleep_np
+#      ifdef pthread_usleep_np
 /* #include <pthread.h> */
 /* unsigned pthread_usleep_np(unsigned); */
-#    else
-#      ifndef _UNISTD_H
-#        include <unistd.h>
+#      else
+#        ifndef _UNISTD_H
+#          include <unistd.h>
 /* int usleep(useconds_t); */
+#        endif
+#        define pthread_usleep_np usleep
 #      endif
-#      define pthread_usleep_np usleep
-#    endif
 
-#  endif /* GC_THREADS */
+#    endif /* GC_THREADS */
 
-#endif /* ! GC_WIN32_THREADS */
+#  endif /* ! GC_WIN32_THREADS */
 
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
 
-#  ifndef _STDIO_H
-#    include <stdio.h>
+#    ifndef _STDIO_H
+#      include <stdio.h>
 /* int fprintf(FILE *, const char *, ...); */
 /* FILE * const stderr; */
 /* FILE * const stdout; */
-#  endif
-
-#  ifdef GC_USE_WIN32_SYSTEMTIME
-
-#    ifndef _WINDOWS_H
-#      include <windows.h>
-/* void GetSystemTime(SYSTEMTIME *); */
 #    endif
 
-#    define GC_CURTIME_T SYSTEMTIME
-#    define GC_CURTIME_GETMS(pcurt)                                          \
-      (GetSystemTime (pcurt),                                                \
-       ((((unsigned long)(pcurt)->wDay * 24 + (unsigned long)(pcurt)->wHour) \
-           * 60                                                              \
-         + (unsigned long)(pcurt)->wMinute)                                  \
-          * 60                                                               \
-        + (unsigned long)(pcurt)->wSecond)                                   \
-           * 1000                                                            \
-         + (unsigned long)(pcurt)->wMilliseconds)
+#    ifdef GC_USE_WIN32_SYSTEMTIME
 
-#  else /* GC_USE_WIN32_SYSTEMTIME */
+#      ifndef _WINDOWS_H
+#        include <windows.h>
+/* void GetSystemTime(SYSTEMTIME *); */
+#      endif
 
-#    ifdef GC_USE_GETTIMEOFDAY
+#      define GC_CURTIME_T SYSTEMTIME
+#      define GC_CURTIME_GETMS(pcurt)                                          \
+        (GetSystemTime (pcurt),                                                \
+         ((((unsigned long)(pcurt)->wDay * 24 + (unsigned long)(pcurt)->wHour) \
+             * 60                                                              \
+           + (unsigned long)(pcurt)->wMinute)                                  \
+            * 60                                                               \
+          + (unsigned long)(pcurt)->wSecond)                                   \
+             * 1000                                                            \
+           + (unsigned long)(pcurt)->wMilliseconds)
 
-#      ifndef _SYS_TIME_H
-#        include <sys/time.h>
+#    else /* GC_USE_WIN32_SYSTEMTIME */
+
+#      ifdef GC_USE_GETTIMEOFDAY
+
+#        ifndef _SYS_TIME_H
+#          include <sys/time.h>
 /* int gettimeofday(struct timeval *, void *); */
-#      endif
+#        endif
 
-#      define GC_CURTIME_T struct timeval
+#        define GC_CURTIME_T struct timeval
 
-#      ifdef _SVID_GETTOD
-#        define GC_CURTIME_GETMS(pcurt)          \
-          (gettimeofday ((void *)(pcurt)),       \
-           (unsigned long)(pcurt)->tv_sec * 1000 \
-             + (unsigned long)(pcurt)->tv_usec / 1000)
-#      else
-#        define GC_CURTIME_GETMS(pcurt)          \
-          (gettimeofday ((void *)(pcurt), NULL), \
-           (unsigned long)(pcurt)->tv_sec * 1000 \
-             + (unsigned long)(pcurt)->tv_usec / 1000)
-#      endif
+#        ifdef _SVID_GETTOD
+#          define GC_CURTIME_GETMS(pcurt)          \
+            (gettimeofday ((void *)(pcurt)),       \
+             (unsigned long)(pcurt)->tv_sec * 1000 \
+               + (unsigned long)(pcurt)->tv_usec / 1000)
+#        else
+#          define GC_CURTIME_GETMS(pcurt)          \
+            (gettimeofday ((void *)(pcurt), NULL), \
+             (unsigned long)(pcurt)->tv_sec * 1000 \
+               + (unsigned long)(pcurt)->tv_usec / 1000)
+#        endif
 
-#    else /* GC_USE_GETTIMEOFDAY */
+#      else /* GC_USE_GETTIMEOFDAY */
 
-#      ifndef _TIME_H
-#        include <time.h>
-#      endif
+#        ifndef _TIME_H
+#          include <time.h>
+#        endif
 
-#      ifndef _SYS_TIMEB_H
-#        include <sys/timeb.h>
+#        ifndef _SYS_TIMEB_H
+#          include <sys/timeb.h>
 /* void ftime(struct timeb *); */
-#      endif
+#        endif
 
-#      define GC_CURTIME_T struct timeb
-#      define GC_CURTIME_GETMS(pcurt)                       \
-        (ftime (pcurt), (unsigned long)(pcurt)->time * 1000 \
-                          + (unsigned long)(pcurt)->millitm)
+#        define GC_CURTIME_T struct timeb
+#        define GC_CURTIME_GETMS(pcurt)                       \
+          (ftime (pcurt), (unsigned long)(pcurt)->time * 1000 \
+                            + (unsigned long)(pcurt)->millitm)
 
-#    endif /* ! GC_USE_GETTIMEOFDAY */
+#      endif /* ! GC_USE_GETTIMEOFDAY */
 
-#  endif /* ! GC_USE_WIN32_SYSTEMTIME */
+#    endif /* ! GC_USE_WIN32_SYSTEMTIME */
 
-#  define GC_SIZE_TO_ULKB(size) ((unsigned long)((size) >> 10))
+#    define GC_SIZE_TO_ULKB(size) ((unsigned long)((size) >> 10))
 
-#  ifndef GC_NEW_LINE
-#    define GC_NEW_LINE "\n"
+#    ifndef GC_NEW_LINE
+#      define GC_NEW_LINE "\n"
+#    endif
+
+#  endif /* GC_PRINT_MSGS */
+
+#  ifndef GC_API
+#    ifdef GC_DLL
+#      define GC_API __declspec (dllexport)
+#    endif
 #  endif
 
-#endif /* GC_PRINT_MSGS */
+#  include "tiny_gc.h"
 
-#ifndef GC_API
-#  ifdef GC_DLL
-#    define GC_API __declspec(dllexport)
+#  include "gc_gcj.h"
+
+#  include "gc_mark.h"
+
+#  include "javaxfc.h"
+
+#  ifndef NULL
+#    define NULL (void *)0
 #  endif
-#endif
 
-#include "tiny_gc.h"
+#  ifndef CHAR_BIT
+#    define CHAR_BIT 8
+#  endif
 
-#include "gc_gcj.h"
+#  ifndef CONST
+#    define CONST const
+#  endif
 
-#include "gc_mark.h"
+#  ifndef GC_FATAL_ABORT
+#    define GC_FATAL_ABORT exit (-1) /* abort(), DebugBreak() */
+#  endif
 
-#include "javaxfc.h"
+#  ifndef GC_DATASTATIC
+#    define GC_DATASTATIC static
+#  endif
 
-#ifndef NULL
-#  define NULL (void *)0
-#endif
+#  ifndef GC_STATIC
+#    define GC_STATIC static
+#  endif
 
-#ifndef CHAR_BIT
-#  define CHAR_BIT 8
-#endif
+#  ifndef GC_INLINE_STATIC
+#    ifdef INLINE
+#      define GC_INLINE_STATIC GC_STATIC INLINE
+#    else
+#      define GC_INLINE_STATIC GC_STATIC __inline
+#    endif
+#  endif
 
-#ifndef CONST
-#  define CONST const
-#endif
+#  ifndef GC_FASTCALL
+#    define GC_FASTCALL __attribute__ ((fastcall))
+#  endif
 
-#ifndef GC_FATAL_ABORT
-#  define GC_FATAL_ABORT exit (-1) /* abort(), DebugBreak() */
-#endif
+#  ifndef GC_CORE_API
+#    define GC_CORE_API extern
+#  endif
 
-#ifndef GC_DATASTATIC
-#  define GC_DATASTATIC static
-#endif
+#  ifndef GC_CORE_CALL
+#    define GC_CORE_CALL GC_CALL
+#  endif
 
-#ifndef GC_STATIC
-#  define GC_STATIC static
-#endif
-
-#ifndef GC_INLINE_STATIC
-#  ifdef INLINE
-#    define GC_INLINE_STATIC GC_STATIC INLINE
+#  ifdef GC_PUSHREGS_BEGIN
+#    ifndef GC_PUSHREGS_END
+#      define GC_PUSHREGS_END (void)0
+#    endif
 #  else
-#    define GC_INLINE_STATIC GC_STATIC __inline
+#    define GC_PUSHREGS_BEGIN \
+      jmp_buf buf;            \
+      (void)setjmp (buf)
+#    ifndef GC_PUSHREGS_END
+#      define GC_PUSHREGS_END GC_noop1 ((GC_word)(&buf))
+#    endif
 #  endif
-#endif
 
-#ifndef GC_FASTCALL
-#  define GC_FASTCALL __attribute__ ((fastcall))
-#endif
+#  define GC_MEM_BZERO(ptr, size) (void)memset (ptr, '\0', (size_t)(size))
 
-#ifndef GC_CORE_API
-#  define GC_CORE_API extern
-#endif
+#  ifdef GC_THREADS
 
-#ifndef GC_CORE_CALL
-#  define GC_CORE_CALL GC_CALL
-#endif
+#    ifdef GC_WIN32_THREADS
 
-#ifdef GC_PUSHREGS_BEGIN
-#  ifndef GC_PUSHREGS_END
-#    define GC_PUSHREGS_END (void)0
-#  endif
-#else
-#  define GC_PUSHREGS_BEGIN \
-    jmp_buf buf;            \
-    (void)setjmp (buf)
-#  ifndef GC_PUSHREGS_END
-#    define GC_PUSHREGS_END GC_noop1 ((GC_word) (&buf))
-#  endif
-#endif
-
-#define GC_MEM_BZERO(ptr, size) (void)memset (ptr, '\0', (size_t) (size))
-
-#ifdef GC_THREADS
-
-#  ifdef GC_WIN32_THREADS
-
-#    ifndef GC_WIN32_CONTEXT_SP_NAME
-#      ifdef _M_AMD64
-#        define GC_WIN32_CONTEXT_SP_NAME Rsp
-#      else
-#        ifdef _M_X64
+#      ifndef GC_WIN32_CONTEXT_SP_NAME
+#        ifdef _M_AMD64
 #          define GC_WIN32_CONTEXT_SP_NAME Rsp
 #        else
-#          ifdef __x86_64
+#          ifdef _M_X64
 #            define GC_WIN32_CONTEXT_SP_NAME Rsp
-#          endif
-#        endif
-#      endif
-#    endif
-
-#    ifndef GC_WIN32_CONTEXT_SP_NAME
-#      ifdef _M_ALPHA
-#        define GC_WIN32_CONTEXT_SP_NAME IntSp
-#      else
-#        ifdef _ALPHA_
-#          define GC_WIN32_CONTEXT_SP_NAME IntSp
-#        else
-#          ifdef _M_MRX000
-#            define GC_WIN32_CONTEXT_SP_NAME IntSp
 #          else
-#            ifdef _MIPS_
-#              define GC_WIN32_CONTEXT_SP_NAME IntSp
+#            ifdef __x86_64
+#              define GC_WIN32_CONTEXT_SP_NAME Rsp
 #            endif
 #          endif
 #        endif
 #      endif
-#    endif
 
-#    ifndef GC_WIN32_CONTEXT_SP_NAME
-#      ifdef _M_ARM
-#        define GC_WIN32_CONTEXT_SP_NAME Sp
-#      else
-#        ifdef _ARM_
+#      ifndef GC_WIN32_CONTEXT_SP_NAME
+#        ifdef _M_ALPHA
+#          define GC_WIN32_CONTEXT_SP_NAME IntSp
+#        else
+#          ifdef _ALPHA_
+#            define GC_WIN32_CONTEXT_SP_NAME IntSp
+#          else
+#            ifdef _M_MRX000
+#              define GC_WIN32_CONTEXT_SP_NAME IntSp
+#            else
+#              ifdef _MIPS_
+#                define GC_WIN32_CONTEXT_SP_NAME IntSp
+#              endif
+#            endif
+#          endif
+#        endif
+#      endif
+
+#      ifndef GC_WIN32_CONTEXT_SP_NAME
+#        ifdef _M_ARM
 #          define GC_WIN32_CONTEXT_SP_NAME Sp
 #        else
-#          ifdef _M_PPC
-#            define GC_WIN32_CONTEXT_SP_NAME Gpr1
+#          ifdef _ARM_
+#            define GC_WIN32_CONTEXT_SP_NAME Sp
 #          else
-#            ifdef _PPC_
+#            ifdef _M_PPC
 #              define GC_WIN32_CONTEXT_SP_NAME Gpr1
 #            else
-#              ifdef _M_SH
-#                define GC_WIN32_CONTEXT_SP_NAME R15
+#              ifdef _PPC_
+#                define GC_WIN32_CONTEXT_SP_NAME Gpr1
 #              else
-#                ifdef SHx
+#                ifdef _M_SH
 #                  define GC_WIN32_CONTEXT_SP_NAME R15
+#                else
+#                  ifdef SHx
+#                    define GC_WIN32_CONTEXT_SP_NAME R15
+#                  endif
 #                endif
 #              endif
 #            endif
 #          endif
 #        endif
 #      endif
-#    endif
 
-#    ifndef GC_WIN32_CONTEXT_SP_NAME
-#      define GC_WIN32_CONTEXT_SP_NAME Esp /* x86 */
-#    endif
-
-#    ifndef GC_THREAD_YIELD
-#      define GC_THREAD_YIELD Sleep (10) /* "long" yield */
-#    endif
-
-#    define GC_THREAD_ID_T DWORD
-
-#    ifdef GC_WIN32_WCE
-#      define GC_THREAD_HANDLE(stkroot) \
-        ((HANDLE) (GC_word) (stkroot)->thread_id)
-#    else
-#      define GC_THREAD_HANDLE(stkroot) ((stkroot)->thread_handle)
-#    endif
-
-#  else /* GC_WIN32_THREADS */
-
-#    ifndef GC_SIG_SUSPEND
-#      ifdef SIGPWR
-#        define GC_SIG_SUSPEND SIGPWR
-#      else
-#        ifdef SIGUSR1
-#          define GC_SIG_SUSPEND SIGUSR1
-#        else
-#          define GC_SIG_SUSPEND SIGILL
-#        endif
+#      ifndef GC_WIN32_CONTEXT_SP_NAME
+#        define GC_WIN32_CONTEXT_SP_NAME Esp /* x86 */
 #      endif
-#    endif
 
-#    ifndef GC_CLIBDECL
-#      ifdef __CLIB
-#        define GC_CLIBDECL __CLIB
+#      ifndef GC_THREAD_YIELD
+#        define GC_THREAD_YIELD Sleep (10) /* "long" yield */
+#      endif
+
+#      define GC_THREAD_ID_T DWORD
+
+#      ifdef GC_WIN32_WCE
+#        define GC_THREAD_HANDLE(stkroot) \
+          ((HANDLE)(GC_word)(stkroot)->thread_id)
 #      else
-#        ifdef _USERENTRY
-#          define GC_CLIBDECL _USERENTRY
+#        define GC_THREAD_HANDLE(stkroot) ((stkroot)->thread_handle)
+#      endif
+
+#    else /* GC_WIN32_THREADS */
+
+#      ifndef GC_SIG_SUSPEND
+#        ifdef SIGPWR
+#          define GC_SIG_SUSPEND SIGPWR
 #        else
-#          ifdef _RTL_FUNC
-#            define GC_CLIBDECL _RTL_FUNC
+#          ifdef SIGUSR1
+#            define GC_SIG_SUSPEND SIGUSR1
 #          else
-#            define GC_CLIBDECL __cdecl
+#            define GC_SIG_SUSPEND SIGILL
 #          endif
 #        endif
 #      endif
-#    endif
 
-#    ifdef GC_ASYNC_PUSHREGS_BEGIN
-#      ifndef GC_ASYNC_PUSHREGS_END
-#        define GC_ASYNC_PUSHREGS_END (void)0
+#      ifndef GC_CLIBDECL
+#        ifdef __CLIB
+#          define GC_CLIBDECL __CLIB
+#        else
+#          ifdef _USERENTRY
+#            define GC_CLIBDECL _USERENTRY
+#          else
+#            ifdef _RTL_FUNC
+#              define GC_CLIBDECL _RTL_FUNC
+#            else
+#              define GC_CLIBDECL __cdecl
+#            endif
+#          endif
+#        endif
 #      endif
-#    else
-#      define GC_ASYNC_PUSHREGS_BEGIN GC_PUSHREGS_BEGIN
-#      ifndef GC_ASYNC_PUSHREGS_END
-#        define GC_ASYNC_PUSHREGS_END GC_PUSHREGS_END
-#      endif
-#    endif
 
-#    ifndef GC_THREAD_MUTEX_DEFATTR
-#      ifdef pthread_mutexattr_default
-#        define GC_THREAD_MUTEX_DEFATTR pthread_mutexattr_default
+#      ifdef GC_ASYNC_PUSHREGS_BEGIN
+#        ifndef GC_ASYNC_PUSHREGS_END
+#          define GC_ASYNC_PUSHREGS_END (void)0
+#        endif
 #      else
-#        define GC_THREAD_MUTEX_DEFATTR NULL
+#        define GC_ASYNC_PUSHREGS_BEGIN GC_PUSHREGS_BEGIN
+#        ifndef GC_ASYNC_PUSHREGS_END
+#          define GC_ASYNC_PUSHREGS_END GC_PUSHREGS_END
+#        endif
 #      endif
-#    endif
 
-#    ifndef GC_THREAD_YIELD
-#      define GC_THREAD_YIELD (void)sched_yield ()
-#    endif
+#      ifndef GC_THREAD_MUTEX_DEFATTR
+#        ifdef pthread_mutexattr_default
+#          define GC_THREAD_MUTEX_DEFATTR pthread_mutexattr_default
+#        else
+#          define GC_THREAD_MUTEX_DEFATTR NULL
+#        endif
+#      endif
 
-#    ifndef GC_YIELD_MAX_ATTEMPT
-#      define GC_YIELD_MAX_ATTEMPT 2
-#    endif
+#      ifndef GC_THREAD_YIELD
+#        define GC_THREAD_YIELD (void)sched_yield ()
+#      endif
 
-#    define GC_ERRNO_SET(value) (void)(errno = (value))
+#      ifndef GC_YIELD_MAX_ATTEMPT
+#        define GC_YIELD_MAX_ATTEMPT 2
+#      endif
 
-#    define GC_THREAD_ID_T pthread_t
+#      define GC_ERRNO_SET(value) (void)(errno = (value))
 
-#  endif /* ! GC_WIN32_THREADS */
+#      define GC_THREAD_ID_T pthread_t
 
-#endif /* GC_THREADS */
+#    endif /* ! GC_WIN32_THREADS */
 
-#ifndef MARK_DESCR_OFFSET
-#  define MARK_DESCR_OFFSET sizeof (GC_word)
-#endif
+#  endif /* GC_THREADS */
 
-#ifndef GC_LOG2_OFFIGNORE
-#  define GC_LOG2_OFFIGNORE 8 /* must be at least 3 */
-#endif
+#  ifndef MARK_DESCR_OFFSET
+#    define MARK_DESCR_OFFSET sizeof (GC_word)
+#  endif
 
-#ifndef GC_FREE_SPACE_DIVISOR
-#  define GC_FREE_SPACE_DIVISOR 3
-#endif
+#  ifndef GC_LOG2_OFFIGNORE
+#    define GC_LOG2_OFFIGNORE 8 /* must be at least 3 */
+#  endif
 
-#ifndef GC_MAX_RETRIES
-#  define GC_MAX_RETRIES 2
-#endif
+#  ifndef GC_FREE_SPACE_DIVISOR
+#    define GC_FREE_SPACE_DIVISOR 3
+#  endif
 
-#ifndef GC_LAZYREFILL_COUNT
-#  define GC_LAZYREFILL_COUNT 10 /* must be at least 3 */
-#endif
+#  ifndef GC_MAX_RETRIES
+#    define GC_MAX_RETRIES 2
+#  endif
 
-#ifndef GC_LAZYREFILL_BIGCNT
-#  define GC_LAZYREFILL_BIGCNT 1024
-#endif
+#  ifndef GC_LAZYREFILL_COUNT
+#    define GC_LAZYREFILL_COUNT 10 /* must be at least 3 */
+#  endif
 
-#ifdef GC_OMIT_REGISTER_KEYWORD
-#  define GC_REGISTER_KEYWORD /* empty */
-#else
-#  define GC_REGISTER_KEYWORD register
-#endif
+#  ifndef GC_LAZYREFILL_BIGCNT
+#    define GC_LAZYREFILL_BIGCNT 1024
+#  endif
 
-#define GC_DEFAULT_LOG2_OBJSIZE 8
-#define GC_DEFAULT_LOG2_SIZE    3
+#  ifdef GC_OMIT_REGISTER_KEYWORD
+#    define GC_REGISTER_KEYWORD /* empty */
+#  else
+#    define GC_REGISTER_KEYWORD register
+#  endif
 
-#define GC_MEM_SIZELIMIT \
-  ((GC_word) ((~(size_t)0) >> 1) - ((GC_word)1 << (sizeof (int) << 1)))
+#  define GC_DEFAULT_LOG2_OBJSIZE 8
+#  define GC_DEFAULT_LOG2_SIZE    3
 
-#define GC_ATOMIC_MASK (((~(GC_word)0) >> 1) + 1)
+#  define GC_MEM_SIZELIMIT \
+    ((GC_word)((~(size_t)0) >> 1) - ((GC_word)1 << (sizeof (int) << 1)))
 
-#ifdef GC_GCJ_SUPPORT
-#  define GC_HASDSLEN_MASK (((GC_word)GC_ATOMIC_MASK) >> 1)
-#else
-#  define GC_HASDSLEN_MASK 0
-#endif
+#  define GC_ATOMIC_MASK (((~(GC_word)0) >> 1) + 1)
 
-#define GC_NEVER_COLLECT (int)((((unsigned)-1) >> 1) + 1)
+#  ifdef GC_GCJ_SUPPORT
+#    define GC_HASDSLEN_MASK (((GC_word)GC_ATOMIC_MASK) >> 1)
+#  else
+#    define GC_HASDSLEN_MASK 0
+#  endif
 
-#ifndef GC_NO_DLINKS
-#  define GC_HIDE_POINTER(ptr) (~(GC_word) (ptr))
-#endif
+#  define GC_NEVER_COLLECT (int)((((unsigned)-1) >> 1) + 1)
 
-#define GC_RANDOM_SEED(gcdata)                             \
-  (((gcdata)->total_heapsize ^ (gcdata)->allocd_before_gc) \
-   + ((gcdata)->bytes_allocd ^ (gcdata)->marked_bytes)     \
-   + ((gcdata)->free_bytes ^ (gcdata)->obj_htable.pending_free_size))
-#define GC_HASH_INDEX(word_value, seed, log2_size)  \
-  ((((word_value) ^ (seed)) * (GC_word)0x9E3779B1L) \
-   >> (sizeof (GC_word) * CHAR_BIT - (log2_size)))
-#define GC_HASH_RESIZECOND(count, log2_size) \
-  (((GC_word)3 << ((log2_size)-2)) <= (count))
+#  ifndef GC_NO_DLINKS
+#    define GC_HIDE_POINTER(ptr) (~(GC_word)(ptr))
+#  endif
 
-#define GC_LEAVE(gcdata) GC_leave ()
+#  define GC_RANDOM_SEED(gcdata)                             \
+    (((gcdata)->total_heapsize ^ (gcdata)->allocd_before_gc) \
+     + ((gcdata)->bytes_allocd ^ (gcdata)->marked_bytes)     \
+     + ((gcdata)->free_bytes ^ (gcdata)->obj_htable.pending_free_size))
+#  define GC_HASH_INDEX(word_value, seed, log2_size)  \
+    ((((word_value) ^ (seed)) * (GC_word)0x9E3779B1L) \
+     >> (sizeof (GC_word) * CHAR_BIT - (log2_size)))
+#  define GC_HASH_RESIZECOND(count, log2_size) \
+    (((GC_word)3 << ((log2_size) - 2)) <= (count))
 
-#ifdef GC_CORE_MALLOC
+#  define GC_LEAVE(gcdata) GC_leave ()
+
+#  ifdef GC_CORE_MALLOC
 GC_CORE_API void *GC_CORE_CALL GC_CORE_MALLOC (size_t size);
-#else
-#  define GC_CORE_MALLOC malloc
-#endif
+#  else
+#    define GC_CORE_MALLOC malloc
+#  endif
 
-#ifdef GC_CORE_FREE
+#  ifdef GC_CORE_FREE
 GC_CORE_API void GC_CORE_CALL GC_CORE_FREE (void *ptr);
-#else
-#  define GC_CORE_FREE free
-#endif
+#  else
+#    define GC_CORE_FREE free
+#  endif
 
-#ifdef GC_STACKBOTTOMVAR
-extern char *GC_STACKBOTTOMVAR;
-#endif
-
-#ifdef GC_STACKLENVAR
-extern GC_word GC_STACKLENVAR;
-#endif
-
-#ifndef GC_STACKBOTTOM
 #  ifdef GC_STACKBOTTOMVAR
-#    define GC_STACKBOTTOM GC_STACKBOTTOMVAR
-#  else
-#    define GC_STACKBOTTOM 0
+extern char *GC_STACKBOTTOMVAR;
 #  endif
-#endif
 
-#ifndef GC_STACKLEN
 #  ifdef GC_STACKLENVAR
-#    define GC_STACKLEN GC_STACKLENVAR
-#  else
-#    define GC_STACKLEN 0
+extern GC_word GC_STACKLENVAR;
 #  endif
-#endif
+
+#  ifndef GC_STACKBOTTOM
+#    ifdef GC_STACKBOTTOMVAR
+#      define GC_STACKBOTTOM GC_STACKBOTTOMVAR
+#    else
+#      define GC_STACKBOTTOM 0
+#    endif
+#  endif
+
+#  ifndef GC_STACKLEN
+#    ifdef GC_STACKLENVAR
+#      define GC_STACKLEN GC_STACKLENVAR
+#    else
+#      define GC_STACKLEN 0
+#    endif
+#  endif
 
 struct GC_objlink_s
 {
@@ -561,7 +562,7 @@ struct GC_obj_htable_s
   GC_word pending_free_size;
 };
 
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
 
 struct GC_dlink_s
 {
@@ -579,9 +580,9 @@ struct GC_dlink_htable_s
   GC_word seed;
 };
 
-#endif /* ! GC_NO_DLINKS */
+#  endif /* ! GC_NO_DLINKS */
 
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
 
 struct GC_fnlz_s
 {
@@ -602,9 +603,9 @@ struct GC_fnlz_htable_s
   int has_client_ptrs;
 };
 
-#endif /* ! GC_NO_FNLZ */
+#  endif /* ! GC_NO_FNLZ */
 
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
 
 struct GC_activation_frame_s
 {
@@ -612,7 +613,7 @@ struct GC_activation_frame_s
   CONST struct GC_activation_frame_s *prev;
 };
 
-#endif /* ! GC_NO_INACTIVE */
+#  endif /* ! GC_NO_INACTIVE */
 
 struct GC_dataroot_s
 {
@@ -625,29 +626,29 @@ struct GC_stkroot_s
 {
   GC_word begin_addr;
   GC_word end_addr;
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
   CONST struct GC_activation_frame_s *activation_frame;
-#endif
-#ifdef GC_THREADS
+#  endif
+#  ifdef GC_THREADS
   struct GC_stkroot_s *next;
   GC_THREAD_ID_T thread_id;
-#  ifdef GC_WIN32_THREADS
-#    ifndef GC_WIN32_WCE
+#    ifdef GC_WIN32_THREADS
+#      ifndef GC_WIN32_WCE
   HANDLE thread_handle;
-#    endif
-#  else
+#      endif
+#    else
   volatile int suspend_ack;
+#    endif
 #  endif
-#endif
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
   int inactive;
-#endif
-#ifndef GC_NO_FNLZ
+#  endif
+#  ifndef GC_NO_FNLZ
   int inside_fnlz;
-#endif
+#  endif
 };
 
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
 
 struct GC_stkroot_htable_s
 {
@@ -657,20 +658,20 @@ struct GC_stkroot_htable_s
   GC_word seed;
 };
 
-#endif /* GC_THREADS */
+#  endif /* GC_THREADS */
 
 struct GC_gcdata_s
 {
   struct GC_obj_htable_s obj_htable;
   void *objlinks_block_list;
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
   struct GC_dlink_htable_s dlink_htable;
-#endif
-#ifndef GC_NO_FNLZ
+#  endif
+#  ifndef GC_NO_FNLZ
   struct GC_fnlz_htable_s fnlz_htable;
   GC_word notifier_gc_no;
   GC_word bytes_finalized;
-#endif
+#  endif
   struct GC_stkroot_s *cur_stack;
   struct GC_dataroot_s *dataroots;
   GC_word dataroot_size;
@@ -681,17 +682,17 @@ struct GC_gcdata_s
   GC_word marked_bytes;
   GC_word free_bytes;
   GC_word followscan_size;
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
   struct GC_stkroot_htable_s stkroot_htable;
-#endif
+#  endif
   int recycling;
-#ifdef GC_GCJ_SUPPORT
-#  ifndef GC_GETENV_SKIP
-#    ifndef GC_IGNORE_GCJ_INFO
+#  ifdef GC_GCJ_SUPPORT
+#    ifndef GC_GETENV_SKIP
+#      ifndef GC_IGNORE_GCJ_INFO
   int ignore_gcj_info;
+#      endif
 #    endif
 #  endif
-#endif
 };
 
 volatile GC_word GC_noop_sink;
@@ -705,34 +706,34 @@ GC_DATASTATIC GC_finalizer_notifier_proc GC_finalizer_notifier = 0;
 
 GC_DATASTATIC GC_start_callback_proc GC_start_call_back = 0;
 
-#ifdef ALL_INTERIOR_POINTERS
+#  ifdef ALL_INTERIOR_POINTERS
 GC_DATASTATIC int GC_all_interior_pointers = 1;
-#else
+#  else
 GC_DATASTATIC int GC_all_interior_pointers = 0;
-#endif
+#  endif
 
-#ifdef FINALIZE_ON_DEMAND
+#  ifdef FINALIZE_ON_DEMAND
 GC_DATASTATIC int GC_finalize_on_demand = 1;
-#else
+#  else
 GC_DATASTATIC int GC_finalize_on_demand = 0;
-#endif
+#  endif
 
 GC_DATASTATIC int GC_dont_gc = 0;
 
-#ifdef GC_DONT_EXPAND
+#  ifdef GC_DONT_EXPAND
 GC_DATASTATIC int GC_dont_expand = 1;
-#else
+#  else
 GC_DATASTATIC int GC_dont_expand = 0;
-#endif
+#  endif
 
 GC_STATIC int GC_CALLBACK GC_never_stop_func (void);
 GC_DATASTATIC GC_stop_func GC_default_stop_func = GC_never_stop_func;
 
-#ifndef GC_MISC_EXCLUDE
+#  ifndef GC_MISC_EXCLUDE
 GC_STATIC void GC_CALLBACK GC_default_warn_proc (char *msg, GC_word arg);
 GC_DATASTATIC GC_warn_proc GC_current_warn_proc
   = GC_default_warn_proc; /* ignored */
-#endif
+#  endif
 
 GC_DATASTATIC int GC_stack_grows_up = 0;
 
@@ -742,21 +743,21 @@ GC_DATASTATIC GC_word GC_max_heapsize = ~(GC_word)0;
 
 GC_DATASTATIC CONST struct GC_objlink_s GC_nil_objlink = {NULL, NULL, 0};
 
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
 GC_DATASTATIC CONST struct GC_dlink_s GC_nil_dlink = {NULL, NULL, 0};
-#endif
+#  endif
 
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
 GC_DATASTATIC CONST struct GC_fnlz_s GC_nil_fnlz = {NULL, NULL, NULL, 0};
-#endif
+#  endif
 
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
 GC_DATASTATIC int GC_verbose_gc = 0;
-#endif
+#  endif
 
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
 
-#  ifdef GC_WIN32_THREADS
+#    ifdef GC_WIN32_THREADS
 
 struct GC_mutex_s
 {
@@ -766,7 +767,7 @@ struct GC_mutex_s
 
 GC_DATASTATIC struct GC_mutex_s GC_allocate_ml = {0, 0};
 
-#  else /* GC_WIN32_THREADS */
+#    else /* GC_WIN32_THREADS */
 
 volatile int GC_inside_collect = -1;
 
@@ -774,7 +775,7 @@ GC_DATASTATIC pthread_mutex_t GC_allocate_ml;
 
 GC_STATIC void GC_CLIBDECL GC_suspend_handler (int sig);
 
-#  endif /* ! GC_WIN32_THREADS */
+#    endif /* ! GC_WIN32_THREADS */
 
 GC_STATIC void GC_FASTCALL GC_stkroot_add (struct GC_gcdata_s *gcdata,
                                            GC_THREAD_ID_T thread_id,
@@ -783,11 +784,11 @@ GC_STATIC void GC_FASTCALL
 GC_stkroot_tblresize (struct GC_gcdata_s *gcdata,
                       struct GC_stkroot_s **new_hroots, GC_word new_log2_size);
 
-#else /* GC_THREADS */
+#  else /* GC_THREADS */
 
 GC_DATASTATIC int GC_allocate_ml = 0;
 
-#endif /* ! GC_THREADS */
+#  endif /* ! GC_THREADS */
 
 GC_STATIC void *GC_FASTCALL GC_alloc_hroots (struct GC_gcdata_s *gcdata,
                                              GC_word new_log2_size,
@@ -818,16 +819,16 @@ GC_word GC_approx_sp (void)
 GC_STATIC int GC_FASTCALL GC_roots_autodetect (struct GC_gcdata_s *gcdata)
 {
   int res = GC_roots_add (gcdata, 0, 0);
-#ifdef GC_DATASTART
-#  ifdef GC_DATAEND
+#  ifdef GC_DATASTART
+#    ifdef GC_DATAEND
   res |= GC_roots_add (gcdata, (GC_word)GC_DATASTART, (GC_word)GC_DATAEND);
+#    endif
 #  endif
-#endif
-#ifdef GC_DATASTART2
-#  ifdef GC_DATAEND2
+#  ifdef GC_DATASTART2
+#    ifdef GC_DATAEND2
   res |= GC_roots_add (gcdata, (GC_word)GC_DATASTART2, (GC_word)GC_DATAEND2);
+#    endif
 #  endif
-#endif
   return res;
 }
 
@@ -843,9 +844,9 @@ GC_stack_approx_size (CONST struct GC_gcdata_s *gcdata)
   GC_word totalsize = cur_stack != NULL
                         ? cur_stack->end_addr - cur_stack->begin_addr
                         : sizeof (GC_word);
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
   totalsize = gcdata->stkroot_htable.count * totalsize;
-#endif
+#  endif
   return totalsize;
 }
 
@@ -855,17 +856,17 @@ GC_guess_collect (CONST struct GC_gcdata_s *gcdata, GC_word objsize)
   return (((GC_stack_approx_size (gcdata) + gcdata->followscan_size) << 1)
           + gcdata->dataroot_size
           + ((GC_word)sizeof (GC_word) << gcdata->obj_htable.log2_size) +
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
           ((GC_word)sizeof (GC_word) << gcdata->dlink_htable.log2_size) +
-#endif
+#  endif
           ((gcdata->marked_bytes + gcdata->bytes_allocd
             - gcdata->followscan_size)
            >> 2))
                / GC_free_space_divisor
              <=
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
              gcdata->bytes_finalized +
-#endif
+#  endif
                gcdata->bytes_allocd + objsize
            ? 1
            : 0;
@@ -884,40 +885,40 @@ GC_guess_expand_size (CONST struct GC_gcdata_s *gcdata, GC_word objsize)
 
 GC_STATIC void GC_FASTCALL GC_abort_badptr (CONST void *ptr)
 {
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
   fprintf (stderr, " GC: Illegal pointer specified: 0x%lX." GC_NEW_LINE,
            (unsigned long)((GC_word)ptr));
-#else
+#  else
   GC_noop1 ((GC_word)ptr);
-#endif
+#  endif
   GC_FATAL_ABORT;
 }
 
 GC_INLINE_STATIC int GC_FASTCALL GC_config_set (struct GC_gcdata_s *gcdata)
 {
   int res = 0;
-#ifdef GC_GETENV_SKIP
-#  ifdef GC_PRINT_MSGS
+#  ifdef GC_GETENV_SKIP
+#    ifdef GC_PRINT_MSGS
   GC_verbose_gc = 1;
-#  endif
+#    endif
   GC_noop1 ((GC_word)gcdata);
-#else
+#  else
   char *str;
   GC_word value;
   if ((str = getenv ("GC_ALL_INTERIOR_POINTERS")) != NULL && *str)
     GC_all_interior_pointers = *str != '0' || *(str + 1) ? 1 : 0;
   if ((str = getenv ("GC_DONT_GC")) != NULL && *str)
     GC_dont_gc = GC_NEVER_COLLECT;
-#  ifdef GC_GCJ_SUPPORT
-#    ifndef GC_IGNORE_GCJ_INFO
+#    ifdef GC_GCJ_SUPPORT
+#      ifndef GC_IGNORE_GCJ_INFO
   if ((str = getenv ("GC_IGNORE_GCJ_INFO")) != NULL && *str)
     gcdata->ignore_gcj_info = 1;
+#      endif
 #    endif
-#  endif
-#  ifdef GC_PRINT_MSGS
+#    ifdef GC_PRINT_MSGS
   if ((str = getenv ("GC_PRINT_STATS")) != NULL && *str)
     GC_verbose_gc = 1;
-#  endif
+#    endif
   if (((str = getenv ("GC_FREE_SPACE_DIVISOR")) != NULL && *str
        && ((GC_free_space_divisor = (GC_word)atol (str)) == 0
            || GC_free_space_divisor == ~(GC_word)0))
@@ -929,7 +930,7 @@ GC_INLINE_STATIC int GC_FASTCALL GC_config_set (struct GC_gcdata_s *gcdata)
                   && GC_heap_expand (gcdata, value - gcdata->total_heapsize)
                        < 0))))
     res = -1;
-#endif
+#  endif
   return res;
 }
 
@@ -959,7 +960,7 @@ GC_API void GC_CALL GC_set_max_heap_size (GC_word size)
   GC_max_heapsize = size ? size : ~(GC_word)0;
 }
 
-#ifndef GC_MISC_EXCLUDE
+#  ifndef GC_MISC_EXCLUDE
 
 GC_API void GC_CALL GC_set_free_space_divisor (GC_word value)
 {
@@ -1012,7 +1013,7 @@ GC_API void GC_CALLBACK GC_ignore_warn_proc (char *msg, GC_word arg)
   GC_default_warn_proc (msg, arg);
 }
 
-#endif /* ! GC_MISC_EXCLUDE */
+#  endif /* ! GC_MISC_EXCLUDE */
 
 GC_API void *GC_CALL GC_call_with_stack_base (GC_stack_base_func fn,
                                               void *client_data)
@@ -1039,36 +1040,36 @@ GC_INLINE_STATIC struct GC_gcdata_s *GC_FASTCALL GC_gcdata_alloc (void)
       if ((gcdata->obj_htable.hroots
            = GC_alloc_hroots (gcdata, GC_DEFAULT_LOG2_OBJSIZE, &GC_nil_objlink))
             != NULL
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
           && (gcdata->dlink_htable.hroots
               = GC_alloc_hroots (gcdata, GC_DEFAULT_LOG2_SIZE, &GC_nil_dlink))
                != NULL
-#endif
-#ifndef GC_NO_FNLZ
+#  endif
+#  ifndef GC_NO_FNLZ
           && (gcdata->fnlz_htable.hroots
               = GC_alloc_hroots (gcdata, GC_DEFAULT_LOG2_SIZE, &GC_nil_fnlz))
                != NULL
-#endif
-#ifdef GC_THREADS
+#  endif
+#  ifdef GC_THREADS
           && (gcdata->stkroot_htable.hroots
               = GC_alloc_hroots (gcdata, GC_DEFAULT_LOG2_SIZE, NULL))
                != NULL
-#endif
+#  endif
       )
         {
           gcdata->obj_htable.min_obj_addr = ~(GC_word)0;
           gcdata->obj_htable.max_obj_addr = (GC_word)1 << GC_LOG2_OFFIGNORE;
           gcdata->obj_htable.log2_size = GC_DEFAULT_LOG2_OBJSIZE;
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
           gcdata->dlink_htable.log2_size = GC_DEFAULT_LOG2_SIZE;
-#endif
-#ifndef GC_NO_FNLZ
+#  endif
+#  ifndef GC_NO_FNLZ
           gcdata->fnlz_htable.log2_size = GC_DEFAULT_LOG2_SIZE;
           gcdata->notifier_gc_no = GC_gc_no;
-#endif
-#ifdef GC_THREADS
+#  endif
+#  ifdef GC_THREADS
           gcdata->stkroot_htable.log2_size = GC_DEFAULT_LOG2_SIZE;
-#endif
+#  endif
         }
       else
         gcdata = NULL;
@@ -1094,7 +1095,7 @@ GC_STATIC int GC_FASTCALL GC_heap_expand (struct GC_gcdata_s *gcdata,
         {
           if (max_heapsize - total_heapsize < incsize)
             incsize = max_heapsize - total_heapsize;
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
           if (GC_verbose_gc)
             fprintf (
               stdout,
@@ -1102,7 +1103,7 @@ GC_STATIC int GC_FASTCALL GC_heap_expand (struct GC_gcdata_s *gcdata,
               "%lu KiB]" GC_NEW_LINE,
               GC_SIZE_TO_ULKB (incsize), GC_SIZE_TO_ULKB (gcdata->bytes_allocd),
               GC_SIZE_TO_ULKB (free_bytes), GC_SIZE_TO_ULKB (total_heapsize));
-#endif
+#  endif
           while ((ptr = GC_CORE_MALLOC ((size_t)free_bytes + (size_t)incsize))
                  == NULL)
             if ((incsize = incsize >> 1) == 0)
@@ -1121,7 +1122,7 @@ GC_STATIC int GC_FASTCALL GC_heap_expand (struct GC_gcdata_s *gcdata,
   return res;
 }
 
-#ifndef GC_MISC_EXCLUDE
+#  ifndef GC_MISC_EXCLUDE
 
 GC_STATIC void GC_FASTCALL GC_roots_del_inside (struct GC_gcdata_s *gcdata,
                                                 GC_word begin_addr,
@@ -1202,7 +1203,7 @@ GC_INLINE_STATIC int GC_FASTCALL GC_roots_exclude (struct GC_gcdata_s *gcdata,
   return res;
 }
 
-#endif /* ! GC_MISC_EXCLUDE */
+#  endif /* ! GC_MISC_EXCLUDE */
 
 GC_STATIC int GC_FASTCALL GC_roots_add (struct GC_gcdata_s *gcdata,
                                         GC_word begin_addr, GC_word end_addr)
@@ -1265,7 +1266,7 @@ GC_STATIC int GC_FASTCALL GC_roots_add (struct GC_gcdata_s *gcdata,
   return res;
 }
 
-#ifdef GC_WIN32_THREADS
+#  ifdef GC_WIN32_THREADS
 
 GC_INLINE_STATIC int GC_FASTCALL
 GC_win32_block_on_mutex (struct GC_mutex_s *pmutex)
@@ -1276,51 +1277,51 @@ GC_win32_block_on_mutex (struct GC_mutex_s *pmutex)
   return 0;
 }
 
-#endif /* GC_WIN32_THREADS */
+#  endif /* GC_WIN32_THREADS */
 
 GC_STATIC int GC_FASTCALL GC_enter (struct GC_gcdata_s **pgcdata)
 {
   GC_REGISTER_KEYWORD struct GC_gcdata_s *gcdata;
   GC_REGISTER_KEYWORD struct GC_stkroot_s *cur_stack;
   int res;
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
   struct GC_stkroot_s **new_hroots;
   GC_THREAD_ID_T thread_id;
   GC_word new_log2_size;
   if (
-#  ifdef GC_WIN32_THREADS
+#    ifdef GC_WIN32_THREADS
     (!GC_allocate_ml.event
      && (GC_allocate_ml.event = CreateEvent (NULL, (BOOL)0, (BOOL)0, NULL))
           == 0)
     || (InterlockedExchange (&GC_allocate_ml.state, 1)
         && GC_win32_block_on_mutex (&GC_allocate_ml) < 0)
     || (thread_id = GetCurrentThreadId ()) == (GC_THREAD_ID_T)-1L
-#  else
+#    else
     (GC_inside_collect == -1
      && (pthread_mutex_init (&GC_allocate_ml, GC_THREAD_MUTEX_DEFATTR)
            ? 1
            : (GC_inside_collect = 0)))
     || pthread_mutex_lock (&GC_allocate_ml)
     || (thread_id = pthread_self ()) == (pthread_t) (~(GC_word)0)
-#  endif
+#    endif
   )
     {
       *(GC_THREAD_ID_T volatile *)&thread_id = 0;
-#  ifdef GC_PRINT_MSGS
+#    ifdef GC_PRINT_MSGS
       fprintf (stderr, " GC: Cannot initialize or lock mutex!" GC_NEW_LINE);
-#  endif
+#    endif
       GC_FATAL_ABORT;
     }
-#else
+#  else
   if (++GC_allocate_ml != 1)
     {
-#  ifdef GC_PRINT_MSGS
+#    ifdef GC_PRINT_MSGS
       fprintf (stderr, " GC: Not re-entrant!" GC_NEW_LINE);
-#  endif
+#    endif
       GC_FATAL_ABORT;
     }
   res = GC_UNIMPLEMENTED;
-#endif
+#  endif
   if ((gcdata = GC_gcdata_global) == NULL)
     {
       if ((gcdata = GC_gcdata_alloc ()) == NULL || GC_config_set (gcdata) < 0
@@ -1329,36 +1330,36 @@ GC_STATIC int GC_FASTCALL GC_enter (struct GC_gcdata_s **pgcdata)
               = GC_inner_core_malloc (gcdata, sizeof (struct GC_stkroot_s), 0))
                == NULL)
         {
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
           fprintf (stderr, " GC: Cannot startup - bad config params or no "
                            "memory!" GC_NEW_LINE);
-#endif
+#  endif
           GC_FATAL_ABORT;
         }
       if (GC_approx_sp () > (GC_word)pgcdata)
         GC_stack_grows_up = 1;
       cur_stack = gcdata->cur_stack;
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
       cur_stack->activation_frame = NULL;
       cur_stack->inactive = 0;
-#endif
-#ifndef GC_NO_FNLZ
+#  endif
+#  ifndef GC_NO_FNLZ
       cur_stack->inside_fnlz = 0;
-#endif
+#  endif
       cur_stack->begin_addr
         = (cur_stack->end_addr = GC_stack_detectbase ()) != 0
             ? cur_stack->end_addr
             : ~(GC_word)0;
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
       GC_stkroot_add (gcdata, thread_id, cur_stack);
       res = GC_SUCCESS;
-#endif
+#  endif
       GC_gcdata_global = gcdata;
     }
   else
     {
       cur_stack = gcdata->cur_stack;
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
       res = GC_DUPLICATE;
       if (cur_stack == NULL || cur_stack->thread_id != thread_id)
         {
@@ -1382,19 +1383,19 @@ GC_STATIC int GC_FASTCALL GC_enter (struct GC_gcdata_s **pgcdata)
                      gcdata, sizeof (struct GC_stkroot_s), &res))
                   == NULL)
                 {
-#  ifdef GC_PRINT_MSGS
+#    ifdef GC_PRINT_MSGS
                   fprintf (stderr,
                            " GC: Cannot register new thread!" GC_NEW_LINE);
-#  endif
+#    endif
                   GC_FATAL_ABORT;
                 }
-#  ifndef GC_NO_INACTIVE
+#    ifndef GC_NO_INACTIVE
               cur_stack->activation_frame = NULL;
               cur_stack->inactive = 0;
-#  endif
-#  ifndef GC_NO_FNLZ
+#    endif
+#    ifndef GC_NO_FNLZ
               cur_stack->inside_fnlz = 0;
-#  endif
+#    endif
               cur_stack->begin_addr = ~(GC_word)0;
               cur_stack->end_addr = 0;
               GC_stkroot_add (gcdata, thread_id, cur_stack);
@@ -1402,7 +1403,7 @@ GC_STATIC int GC_FASTCALL GC_enter (struct GC_gcdata_s **pgcdata)
               res = GC_SUCCESS;
             }
         }
-#endif
+#  endif
     }
   if (cur_stack->begin_addr >= (GC_word)pgcdata)
     cur_stack->begin_addr = (GC_word)pgcdata - sizeof (GC_word);
@@ -1414,21 +1415,21 @@ GC_STATIC int GC_FASTCALL GC_enter (struct GC_gcdata_s **pgcdata)
 
 GC_INLINE_STATIC void GC_FASTCALL GC_leave (void)
 {
-#ifdef GC_THREADS
-#  ifdef GC_WIN32_THREADS
+#  ifdef GC_THREADS
+#    ifdef GC_WIN32_THREADS
   if (InterlockedExchange (&GC_allocate_ml.state, 0) < 0
       && !SetEvent (GC_allocate_ml.event))
     GC_FATAL_ABORT;
-#  else
+#    else
   if (pthread_mutex_unlock (&GC_allocate_ml))
     GC_FATAL_ABORT;
-#  endif
-#else
+#    endif
+#  else
   GC_allocate_ml = 0;
-#endif
+#  endif
 }
 
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
 
 GC_INLINE_STATIC int GC_FASTCALL
 GC_set_inactive_sp (struct GC_gcdata_s **pgcdata)
@@ -1468,11 +1469,11 @@ GC_restore_inactive_sp (struct GC_stkroot_s *cur_stack,
   cur_stack->inactive = 1;
 }
 
-#endif /* ! GC_NO_INACTIVE */
+#  endif /* ! GC_NO_INACTIVE */
 
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
 
-#  ifndef GC_WIN32_THREADS
+#    ifndef GC_WIN32_THREADS
 
 GC_STATIC void GC_FASTCALL GC_thread_yield (int attempt)
 {
@@ -1482,23 +1483,23 @@ GC_STATIC void GC_FASTCALL GC_thread_yield (int attempt)
     GC_THREAD_YIELD;
 }
 
-#  endif /* ! GC_WIN32_THREADS */
+#    endif /* ! GC_WIN32_THREADS */
 
-#endif /* GC_THREADS */
+#  endif /* GC_THREADS */
 
 GC_STATIC void GC_FASTCALL GC_mutator_suspend (struct GC_gcdata_s *gcdata)
 {
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
   GC_REGISTER_KEYWORD GC_word addr;
   GC_REGISTER_KEYWORD struct GC_stkroot_s *stkroot;
-#  ifndef GC_WIN32_THREADS
+#    ifndef GC_WIN32_THREADS
   struct GC_stkroot_s **pnext;
-#  endif
+#    endif
   struct GC_stkroot_s *cur_stack;
-#  ifndef GC_WIN32_THREADS
+#    ifndef GC_WIN32_THREADS
   int attempt;
   GC_inside_collect = 1;
-#  endif
+#    endif
   if ((GC_word) ((cur_stack = gcdata->cur_stack) != NULL ? 1 : 0)
       < gcdata->stkroot_htable.count)
     {
@@ -1513,40 +1514,40 @@ GC_STATIC void GC_FASTCALL GC_mutator_suspend (struct GC_gcdata_s *gcdata)
           if ((GC_word) (stkroot = *(struct GC_stkroot_s **)addr)
               == ~(GC_word)0)
             break;
-#  ifdef GC_WIN32_THREADS
+#    ifdef GC_WIN32_THREADS
           do
             {
               if (stkroot != cur_stack
-#    ifndef GC_NO_INACTIVE
+#      ifndef GC_NO_INACTIVE
                   && !stkroot->inactive
-#    endif
+#      endif
               )
                 {
-#    ifdef GC_WIN32_WCE
+#      ifdef GC_WIN32_WCE
                   while (SuspendThread (GC_THREAD_HANDLE (stkroot))
                          == ~(DWORD)0)
                     GC_THREAD_YIELD;
-#    else
+#      else
                   if (SuspendThread (stkroot->thread_handle) == ~(DWORD)0)
                     {
-#      ifdef GC_PRINT_MSGS
+#        ifdef GC_PRINT_MSGS
                       fprintf (stderr,
                                " GC: Cannot suspend thread!" GC_NEW_LINE);
-#      endif
+#        endif
                       GC_FATAL_ABORT;
                     }
-#    endif
+#      endif
                 }
             }
           while ((stkroot = stkroot->next) != NULL);
-#  else
+#    else
           pnext = (struct GC_stkroot_s **)addr;
           do
             {
               if (stkroot != cur_stack
-#    ifndef GC_NO_INACTIVE
+#      ifndef GC_NO_INACTIVE
                   && !stkroot->inactive
-#    endif
+#      endif
               )
                 {
                   stkroot->suspend_ack = 1;
@@ -1554,12 +1555,12 @@ GC_STATIC void GC_FASTCALL GC_mutator_suspend (struct GC_gcdata_s *gcdata)
                   if (pthread_kill (stkroot->thread_id, GC_SIG_SUSPEND))
                     {
                       *pnext = stkroot->next;
-#    ifdef GC_PRINT_MSGS
+#      ifdef GC_PRINT_MSGS
                       fprintf (
                         stderr,
                         " GC: Cannot send signal to thread: 0x%lX." GC_NEW_LINE,
                         (unsigned long)((GC_word)stkroot->thread_id));
-#    endif
+#      endif
                       gcdata->stkroot_htable.count--;
                       GC_CORE_FREE (stkroot);
                       gcdata->free_bytes += sizeof (struct GC_stkroot_s);
@@ -1571,9 +1572,9 @@ GC_STATIC void GC_FASTCALL GC_mutator_suspend (struct GC_gcdata_s *gcdata)
                 pnext = &stkroot->next;
             }
           while ((stkroot = *pnext) != NULL);
-#  endif
+#    endif
         }
-#  ifndef GC_WIN32_THREADS
+#    ifndef GC_WIN32_THREADS
       addr = (GC_word)gcdata->stkroot_htable.hroots - sizeof (GC_word);
       for (;;)
         {
@@ -1593,17 +1594,17 @@ GC_STATIC void GC_FASTCALL GC_mutator_suspend (struct GC_gcdata_s *gcdata)
             }
           while ((stkroot = stkroot->next) != NULL);
         }
-#  endif
+#    endif
     }
-#else
+#  else
   GC_noop1 ((GC_word)gcdata);
-#endif
+#  endif
 }
 
 GC_STATIC void GC_FASTCALL GC_mutator_resume (struct GC_gcdata_s *gcdata)
 {
-#ifdef GC_THREADS
-#  ifdef GC_WIN32_THREADS
+#  ifdef GC_THREADS
+#    ifdef GC_WIN32_THREADS
   GC_REGISTER_KEYWORD GC_word addr;
   GC_REGISTER_KEYWORD struct GC_stkroot_s *stkroot;
   struct GC_stkroot_s *cur_stack;
@@ -1625,29 +1626,29 @@ GC_STATIC void GC_FASTCALL GC_mutator_resume (struct GC_gcdata_s *gcdata)
           do
             {
               if (stkroot != cur_stack &&
-#    ifndef GC_NO_INACTIVE
+#      ifndef GC_NO_INACTIVE
                   !stkroot->inactive &&
-#    endif
+#      endif
                   ((res = ResumeThread (GC_THREAD_HANDLE (stkroot)))
                      == ~(DWORD)0
                    || !res))
                 {
-#    ifdef GC_PRINT_MSGS
+#      ifdef GC_PRINT_MSGS
                   fprintf (stderr, " GC: Cannot resume thread!" GC_NEW_LINE);
-#    endif
+#      endif
                   GC_FATAL_ABORT;
                 }
             }
           while ((stkroot = stkroot->next) != NULL);
         }
     }
-#  else
+#    else
   GC_inside_collect = 0;
   GC_noop1 ((GC_word)gcdata);
-#  endif
-#else
+#    endif
+#  else
   GC_noop1 ((GC_word)gcdata);
-#endif
+#  endif
 }
 
 GC_STATIC void GC_FASTCALL GC_scan_region (struct GC_gcdata_s *gcdata,
@@ -1775,13 +1776,13 @@ GC_INLINE_STATIC void *GC_FASTCALL GC_roots_scan (struct GC_gcdata_s *gcdata,
   return dataroot;
 }
 
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
 
-#  ifdef GC_THREADS
+#    ifdef GC_THREADS
 GC_STATIC
-#  else
+#    else
 GC_INLINE_STATIC
-#  endif
+#    endif
 void GC_FASTCALL GC_stack_scan_frames (
   struct GC_gcdata_s *gcdata, GC_word begin_addr, GC_word end_addr,
   CONST struct GC_activation_frame_s *activation_frame)
@@ -1822,7 +1823,7 @@ void GC_FASTCALL GC_stack_scan_frames (
     end_addr & ~(sizeof (GC_word) - 1), 1);
 }
 
-#endif /* ! GC_NO_INACTIVE */
+#  endif /* ! GC_NO_INACTIVE */
 
 GC_STATIC void GC_FASTCALL GC_stack_scan_cur (struct GC_gcdata_s *gcdata)
 {
@@ -1839,14 +1840,14 @@ GC_STATIC void GC_FASTCALL GC_stack_scan_cur (struct GC_gcdata_s *gcdata)
           begin_addr = end_addr;
           end_addr = cur_stack->end_addr;
         }
-#ifdef GC_NO_INACTIVE
+#  ifdef GC_NO_INACTIVE
       GC_scan_region (
         gcdata, (begin_addr + (sizeof (GC_word) - 1)) & ~(sizeof (GC_word) - 1),
         end_addr & ~(sizeof (GC_word) - 1), 1);
-#else
+#  else
       GC_stack_scan_frames (gcdata, begin_addr, end_addr,
                             cur_stack->activation_frame);
-#endif
+#  endif
     }
   GC_PUSHREGS_END;
 }
@@ -1861,14 +1862,14 @@ GC_STATIC void GC_FASTCALL GC_scan_followable (struct GC_gcdata_s *gcdata,
       gcdata->obj_htable.follow_list = objlink->next;
       objlink->next = gcdata->obj_htable.marked_list;
       begin_addr = (GC_word) (gcdata->obj_htable.marked_list = objlink)->obj;
-#ifdef GC_GCJ_SUPPORT
-#  ifdef GC_IGNORE_GCJ_INFO
+#  ifdef GC_GCJ_SUPPORT
+#    ifdef GC_IGNORE_GCJ_INFO
       GC_scan_region (gcdata, begin_addr,
                       begin_addr
                         + (objlink->atomic_and_size
                            & ~(GC_ATOMIC_MASK | (sizeof (GC_word) - 1))),
                       GC_all_interior_pointers);
-#  else
+#    else
       GC_scan_region (
         gcdata, begin_addr,
         (((objlink->atomic_and_size & GC_HASDSLEN_MASK) != 0
@@ -1877,20 +1878,20 @@ GC_STATIC void GC_FASTCALL GC_scan_followable (struct GC_gcdata_s *gcdata,
          & ~(GC_ATOMIC_MASK | (sizeof (GC_word) - 1)))
           + begin_addr,
         GC_all_interior_pointers);
-#  endif
-#else
+#    endif
+#  else
       GC_scan_region (gcdata, begin_addr,
                       begin_addr
                         + (objlink->atomic_and_size
                            & ~(GC_ATOMIC_MASK | (sizeof (GC_word) - 1))),
                       GC_all_interior_pointers);
-#endif
+#  endif
     }
 }
 
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
 
-#  ifndef GC_WIN32_THREADS
+#    ifndef GC_WIN32_THREADS
 
 GC_STATIC void GC_CLIBDECL GC_suspend_handler (int sig)
 {
@@ -1902,12 +1903,12 @@ GC_STATIC void GC_CLIBDECL GC_suspend_handler (int sig)
   if ((gcdata = GC_gcdata_global) != NULL)
     {
       old_errno = errno;
-#    ifdef SIG_ACK
+#      ifdef SIG_ACK
       if (signal (sig, GC_suspend_handler) != SIG_DFL)
         (void)signal (sig, SIG_ACK);
-#    else
+#      else
       (void)signal (sig, GC_suspend_handler);
-#    endif
+#      endif
       thread_id = pthread_self ();
       stkroot = gcdata->stkroot_htable.hroots[GC_HASH_INDEX (
         (GC_word)thread_id, gcdata->stkroot_htable.seed,
@@ -1915,9 +1916,9 @@ GC_STATIC void GC_CLIBDECL GC_suspend_handler (int sig)
       while (stkroot != NULL && stkroot->thread_id != thread_id)
         stkroot = stkroot->next;
       if (gcdata->cur_stack != stkroot && stkroot != NULL
-#    ifndef GC_NO_INACTIVE
+#      ifndef GC_NO_INACTIVE
           && !stkroot->inactive
-#    endif
+#      endif
       )
         {
           GC_ASYNC_PUSHREGS_BEGIN;
@@ -1937,14 +1938,14 @@ GC_STATIC void GC_CLIBDECL GC_suspend_handler (int sig)
     }
 }
 
-#  endif /* ! GC_WIN32_THREADS */
+#    endif /* ! GC_WIN32_THREADS */
 
 GC_STATIC GC_word GC_FASTCALL GC_stkroot_scan_other (struct GC_gcdata_s *gcdata,
                                                      GC_stop_func stop_func)
 {
-#  ifdef GC_WIN32_THREADS
+#    ifdef GC_WIN32_THREADS
   CONTEXT context;
-#  endif
+#    endif
   GC_REGISTER_KEYWORD GC_word addr;
   struct GC_stkroot_s *stkroot = (void *)(~(GC_word)0);
   struct GC_stkroot_s *cur_stack;
@@ -1968,10 +1969,10 @@ GC_STATIC GC_word GC_FASTCALL GC_stkroot_scan_other (struct GC_gcdata_s *gcdata,
                 {
                   if ((*stop_func) ())
                     break;
-#  ifdef GC_WIN32_THREADS
-#    ifndef GC_NO_INACTIVE
+#    ifdef GC_WIN32_THREADS
+#      ifndef GC_NO_INACTIVE
                   if (!stkroot->inactive)
-#    endif
+#      endif
                     {
                       context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
                       if (GetThreadContext (GC_THREAD_HANDLE (stkroot),
@@ -1988,26 +1989,26 @@ GC_STATIC GC_word GC_FASTCALL GC_stkroot_scan_other (struct GC_gcdata_s *gcdata,
                                               : &stkroot->begin_addr)
                             = context.GC_WIN32_CONTEXT_SP_NAME;
                         }
-#    ifdef GC_PRINT_MSGS
+#      ifdef GC_PRINT_MSGS
                       else
                         fprintf (stderr,
                                  " GC: Cannot get context of thread: "
                                  "0x%lX." GC_NEW_LINE,
                                  (unsigned long)stkroot->thread_id);
-#    endif
+#      endif
                     }
-#  endif
-#  ifdef GC_NO_INACTIVE
+#    endif
+#    ifdef GC_NO_INACTIVE
                   GC_scan_region (gcdata,
                                   (stkroot->begin_addr + (sizeof (GC_word) - 1))
                                     & ~(sizeof (GC_word) - 1),
                                   stkroot->end_addr & ~(sizeof (GC_word) - 1),
                                   1);
-#  else
+#    else
                   GC_stack_scan_frames (gcdata, stkroot->begin_addr,
                                         stkroot->end_addr,
                                         stkroot->activation_frame);
-#  endif
+#    endif
                 }
             }
           while ((stkroot = stkroot->next) != NULL);
@@ -2063,29 +2064,29 @@ GC_STATIC void GC_FASTCALL GC_stkroot_add (struct GC_gcdata_s *gcdata,
     = &gcdata->stkroot_htable
          .hroots[GC_HASH_INDEX ((GC_word)thread_id, gcdata->stkroot_htable.seed,
                                 gcdata->stkroot_htable.log2_size)];
-#  ifdef GC_WIN32_THREADS
-#    ifndef GC_WIN32_WCE
+#    ifdef GC_WIN32_THREADS
+#      ifndef GC_WIN32_WCE
   HANDLE process_handle = GetCurrentProcess ();
   if (!DuplicateHandle (process_handle, GetCurrentThread (), process_handle,
                         &new_stkroot->thread_handle, 0, (BOOL)0,
                         DUPLICATE_SAME_ACCESS))
     {
-#      ifdef GC_PRINT_MSGS
+#        ifdef GC_PRINT_MSGS
       fprintf (stderr, " GC: Cannot duplicate thread handle!" GC_NEW_LINE);
-#      endif
+#        endif
       GC_FATAL_ABORT;
     }
-#    endif
-#  else
+#      endif
+#    else
   new_stkroot->suspend_ack = 0;
-#  endif
+#    endif
   new_stkroot->next = *pnext;
   new_stkroot->thread_id = thread_id;
   *pnext = new_stkroot;
   gcdata->stkroot_htable.count++;
-#  ifndef GC_WIN32_THREADS
+#    ifndef GC_WIN32_THREADS
   (void)signal (GC_SIG_SUSPEND, GC_suspend_handler);
-#  endif
+#    endif
 }
 
 GC_INLINE_STATIC void GC_FASTCALL
@@ -2100,19 +2101,19 @@ GC_stkroot_delete_cur (struct GC_gcdata_s *gcdata)
     pnext = &(*pnext)->next;
   *pnext = cur_stack->next;
   gcdata->stkroot_htable.count--;
-#  ifdef GC_WIN32_THREADS
-#    ifndef GC_WIN32_WCE
+#    ifdef GC_WIN32_THREADS
+#      ifndef GC_WIN32_WCE
   (void)CloseHandle (cur_stack->thread_handle);
+#      endif
 #    endif
-#  endif
   gcdata->cur_stack = NULL;
   GC_CORE_FREE (cur_stack);
   gcdata->free_bytes += sizeof (struct GC_stkroot_s);
 }
 
-#endif /* GC_THREADS */
+#  endif /* GC_THREADS */
 
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
 
 GC_STATIC void GC_FASTCALL GC_dlink_scan_clear (struct GC_gcdata_s *gcdata)
 {
@@ -2299,9 +2300,9 @@ GC_STATIC int GC_FASTCALL GC_dlink_delete (struct GC_gcdata_s *gcdata,
   return 1;
 }
 
-#endif /* ! GC_NO_DLINKS */
+#  endif /* ! GC_NO_DLINKS */
 
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
 
 GC_STATIC int GC_FASTCALL GC_objlink_mark (struct GC_gcdata_s *gcdata,
                                            GC_word addr, int interior_pointers)
@@ -2578,7 +2579,7 @@ GC_STATIC GC_finalization_proc GC_FASTCALL GC_fnlz_del_ready (
   return fn;
 }
 
-#  ifndef JAVA_FINALIZATION_NOT_NEEDED
+#    ifndef JAVA_FINALIZATION_NOT_NEEDED
 
 GC_INLINE_STATIC void GC_FASTCALL GC_fnlz_ready_all (struct GC_gcdata_s *gcdata)
 {
@@ -2607,9 +2608,9 @@ GC_INLINE_STATIC void GC_FASTCALL GC_fnlz_ready_all (struct GC_gcdata_s *gcdata)
   gcdata->fnlz_htable.has_client_ptrs = 0;
 }
 
-#  endif /* ! JAVA_FINALIZATION_NOT_NEEDED */
+#    endif /* ! JAVA_FINALIZATION_NOT_NEEDED */
 
-#endif /* ! GC_NO_FNLZ */
+#  endif /* ! GC_NO_FNLZ */
 
 GC_INLINE_STATIC void GC_FASTCALL GC_objlink_add (struct GC_gcdata_s *gcdata,
                                                   void *obj, GC_word objsize,
@@ -2624,25 +2625,25 @@ GC_INLINE_STATIC void GC_FASTCALL GC_objlink_add (struct GC_gcdata_s *gcdata,
     {
       GC_MEM_BZERO (obj, objsize);
       gcdata->followscan_size += objsize & ~(sizeof (GC_word) - 1);
-#ifdef GC_GCJ_SUPPORT
-#  ifdef GC_IGNORE_GCJ_INFO
+#  ifdef GC_GCJ_SUPPORT
+#    ifdef GC_IGNORE_GCJ_INFO
       if (vtable != ~(GC_word)0)
         *(GC_word *)obj = vtable;
       new_objlink->atomic_and_size = objsize;
-#  else
+#    else
       new_objlink->atomic_and_size
         = vtable != ~(GC_word)0
               && (*(GC_word *)obj = vtable,
-#    ifndef GC_GETENV_SKIP
+#      ifndef GC_GETENV_SKIP
                   !gcdata->ignore_gcj_info &&
-#    endif
+#      endif
                     *(GC_word *)(vtable + MARK_DESCR_OFFSET) != GC_DS_LENGTH)
             ? objsize | GC_HASDSLEN_MASK
             : objsize;
-#  endif
-#else
+#    endif
+#  else
       new_objlink->atomic_and_size = objsize;
-#endif
+#  endif
     }
   else
     new_objlink->atomic_and_size = objsize | GC_ATOMIC_MASK;
@@ -2711,15 +2712,15 @@ GC_STATIC GC_word GC_FASTCALL GC_objlink_remove_all (struct GC_gcdata_s *gcdata)
   return count;
 }
 
-#ifdef GC_NO_FNLZ
-#  ifdef GC_NO_GCBASE
+#  ifdef GC_NO_FNLZ
+#    ifdef GC_NO_GCBASE
 GC_INLINE_STATIC
+#    else
+GC_STATIC
+#    endif
 #  else
 GC_STATIC
 #  endif
-#else
-GC_STATIC
-#endif
 struct GC_objlink_s *GC_FASTCALL GC_objlink_get (struct GC_gcdata_s *gcdata,
                                                  void *displaced_pointer)
 {
@@ -2751,15 +2752,15 @@ struct GC_objlink_s *GC_FASTCALL GC_objlink_get (struct GC_gcdata_s *gcdata,
   return objlink;
 }
 
-#ifdef GC_NO_FNLZ
-#  ifdef GC_NO_GCBASE
+#  ifdef GC_NO_FNLZ
+#    ifdef GC_NO_GCBASE
 GC_INLINE_STATIC
+#    else
+GC_STATIC
+#    endif
 #  else
 GC_STATIC
 #  endif
-#else
-GC_STATIC
-#endif
 struct GC_objlink_s *GC_FASTCALL
 GC_objlink_refill_find (struct GC_gcdata_s *gcdata, void *displaced_pointer)
 {
@@ -2897,17 +2898,17 @@ GC_STATIC GC_word GC_FASTCALL
 GC_objlink_free_pending (struct GC_gcdata_s *gcdata, GC_word min_free_bytes)
 {
   GC_REGISTER_KEYWORD struct GC_objlink_s *objlink;
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
   GC_word max_hidden;
   GC_word min_hidden;
-#endif
+#  endif
   GC_word objsize;
   GC_word totalsize = 0;
   GC_word count = 0;
   while ((objlink = gcdata->obj_htable.free_list) != NULL)
     {
       objsize = objlink->atomic_and_size;
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
       if (gcdata->dlink_htable.count)
         {
           min_hidden = GC_HIDE_POINTER (
@@ -2927,7 +2928,7 @@ GC_objlink_free_pending (struct GC_gcdata_s *gcdata, GC_word min_free_bytes)
                   min_hidden, max_hidden);
             }
         }
-#endif
+#  endif
       gcdata->obj_htable.free_list = objlink->next;
       GC_CORE_FREE (objlink->obj);
       if ((objsize & GC_ATOMIC_MASK) == 0)
@@ -2953,23 +2954,23 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
   GC_word oldcnt;
   GC_word obj_count;
   GC_start_callback_proc start_fn;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   GC_word ready_count = 0;
-#endif
+#  endif
   struct GC_objlink_s **new_hroots;
   int stopped;
-#ifdef GC_PRINT_MSGS
-#  ifndef GC_NO_DLINKS
+#  ifdef GC_PRINT_MSGS
+#    ifndef GC_NO_DLINKS
   GC_word dlinks_count = gcdata->dlink_htable.count;
-#  endif
+#    endif
   GC_CURTIME_T curt;
   unsigned long time_ms = 0;
-#endif
+#  endif
   if (gcdata->dataroots != NULL)
     {
       if ((start_fn = GC_start_call_back) != 0)
         (*start_fn) ();
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
       if (GC_verbose_gc)
         {
           fprintf (stdout,
@@ -2985,7 +2986,7 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
           time_ms = GC_CURTIME_GETMS (&curt);
         }
       obj_count = gcdata->obj_htable.count;
-#endif
+#  endif
       if (!(*stop_func) ())
         {
           stopped = 0;
@@ -2995,26 +2996,26 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
           obj_count = gcdata->obj_htable.count;
           if (!stopped)
             {
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
               oldcnt = GC_fnlz_precollect (gcdata, &ready_count);
-#endif
+#  endif
               if (
-#ifdef GC_NO_FNLZ
+#  ifdef GC_NO_FNLZ
                 obj_count
-#else
+#  else
                 gcdata->obj_htable.count
                 && ((!oldcnt && !gcdata->fnlz_htable.count)
                     || (stopped = (*stop_func) ()) == 0)
-#endif
+#  endif
               )
                 {
                   GC_mutator_suspend (gcdata);
                   GC_stack_scan_cur (gcdata);
                   stopped = 1;
                   if (GC_roots_scan (gcdata, stop_func) == NULL
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
                       && !GC_stkroot_scan_other (gcdata, stop_func)
-#endif
+#  endif
                   )
                     {
                       GC_scan_followable (gcdata, stop_func);
@@ -3022,30 +3023,30 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
                         stopped = 0;
                     }
                   GC_mutator_resume (gcdata);
-#ifdef GC_NO_FNLZ
-#  ifndef GC_NO_DLINKS
+#  ifdef GC_NO_FNLZ
+#    ifndef GC_NO_DLINKS
                   if (!stopped && gcdata->dlink_htable.count)
                     GC_dlink_scan_clear (gcdata);
-#  endif
-#else
+#    endif
+#  else
                   if (!stopped)
                     {
-#  ifndef GC_NO_DLINKS
+#    ifndef GC_NO_DLINKS
                       if (gcdata->dlink_htable.count)
                         GC_dlink_scan_clear (gcdata);
-#  endif
+#    endif
                       if (gcdata->fnlz_htable.count)
                         oldcnt += GC_fnlz_after_collect (gcdata, &ready_count);
                       gcdata->bytes_finalized = oldcnt;
                     }
-#endif
+#  endif
                 }
               if (!stopped)
                 {
                   GC_gc_no++;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
                   GC_scan_followable (gcdata, GC_never_stop_func);
-#endif
+#  endif
                   oldcnt = obj_count;
                   gcdata->marked_bytes += gcdata->bytes_allocd;
                   if (gcdata->obj_htable.count)
@@ -3079,7 +3080,7 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
       if (!gcdata->bytes_allocd)
         {
           gcdata->recycling = 1;
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
           if (GC_verbose_gc)
             {
               fprintf (stdout,
@@ -3091,7 +3092,7 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
                        GC_SIZE_TO_ULKB (gcdata->total_heapsize
                                         - gcdata->marked_bytes
                                         - gcdata->free_bytes));
-#  ifndef GC_NO_DLINKS
+#    ifndef GC_NO_DLINKS
               if (dlinks_count)
                 fprintf (
                   stdout,
@@ -3099,16 +3100,16 @@ GC_STATIC void GC_FASTCALL GC_collect_unreachable (struct GC_gcdata_s *gcdata,
                   "registered]" GC_NEW_LINE,
                   (unsigned long)(dlinks_count - gcdata->dlink_htable.count),
                   (unsigned long)dlinks_count);
-#  endif
-#  ifndef GC_NO_FNLZ
+#    endif
+#    ifndef GC_NO_FNLZ
               if ((oldcnt = gcdata->fnlz_htable.count + ready_count) != 0)
                 fprintf (
                   stdout,
                   "[GC: %lu finalizers ready of %lu registered]" GC_NEW_LINE,
                   (unsigned long)ready_count, (unsigned long)oldcnt);
-#  endif
+#    endif
             }
-#endif
+#  endif
         }
     }
 }
@@ -3156,9 +3157,9 @@ GC_STATIC void *GC_FASTCALL GC_alloc_hroots (struct GC_gcdata_s *gcdata,
        = GC_inner_core_malloc (gcdata, size + sizeof (GC_word), GC_dont_expand))
         != NULL
       || ((
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
             GC_dlink_free_pending (gcdata, ~(GC_word)0) +
-#endif
+#  endif
                 GC_objlink_free_pending (gcdata, ~(GC_word)0)
               != 0
             || GC_dont_expand)
@@ -3182,9 +3183,9 @@ GC_STATIC void *GC_FASTCALL GC_core_malloc_with_gc (struct GC_gcdata_s *gcdata,
                                                     GC_word size, int *pres)
 {
   GC_REGISTER_KEYWORD void *ptr;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   struct GC_stkroot_s *cur_stack;
-#endif
+#  endif
   GC_word count;
   if ((ptr = GC_inner_core_malloc (gcdata, size, GC_dont_expand)) == NULL)
     {
@@ -3198,10 +3199,10 @@ GC_STATIC void *GC_FASTCALL GC_core_malloc_with_gc (struct GC_gcdata_s *gcdata,
             {
               GC_collect_unreachable (gcdata, GC_never_stop_func);
               *pres = -1;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
               if ((cur_stack = gcdata->cur_stack) != NULL)
                 cur_stack->inside_fnlz = 0;
-#endif
+#  endif
             }
         }
       if (ptr == NULL
@@ -3209,7 +3210,7 @@ GC_STATIC void *GC_FASTCALL GC_core_malloc_with_gc (struct GC_gcdata_s *gcdata,
               || (ptr = GC_inner_core_malloc (gcdata, size, GC_dont_expand))
                    == NULL))
         {
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
           if (GC_dlink_free_pending (gcdata, ~(GC_word)0))
             {
               *pres = 1;
@@ -3217,18 +3218,18 @@ GC_STATIC void *GC_FASTCALL GC_core_malloc_with_gc (struct GC_gcdata_s *gcdata,
                 *pres = 0;
             }
           else
-#endif
+#  endif
             {
               if (!count || GC_dont_expand)
                 ptr = GC_inner_core_malloc (gcdata, size, 0);
             }
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
           if (ptr == NULL && GC_verbose_gc)
             fprintf (
               stderr,
               " GC: Out of memory! Cannot allocate %lu bytes." GC_NEW_LINE,
               (unsigned long)size);
-#endif
+#  endif
         }
     }
   return ptr;
@@ -3277,25 +3278,25 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
   struct GC_objlink_s **new_hroots;
   GC_word retry;
   int res;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   struct GC_objlink_s *objlink;
   void *client_data;
   GC_finalization_proc fn;
   GC_finalizer_notifier_proc notifier_fn;
-#endif
+#  endif
   if (objsize)
     {
       retry = ~(GC_word)0;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
       objlink = NULL;
       client_data = NULL;
       fn = 0;
-#endif
-#ifndef DONT_ADD_BYTE_AT_END
+#  endif
+#  ifndef DONT_ADD_BYTE_AT_END
       if (objsize < ((GC_word)1 << GC_LOG2_OFFIGNORE)
           && GC_all_interior_pointers)
         objsize++;
-#endif
+#  endif
       do
         {
           res = 1;
@@ -3304,16 +3305,16 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
           if (retry == ~(GC_word)0)
             {
               if (
-#ifdef GC_NO_FNLZ
+#  ifdef GC_NO_FNLZ
                 GC_HASH_RESIZECOND (gcdata->obj_htable.count,
                                     gcdata->obj_htable.log2_size)
                 &&
-#else
+#  else
                 GC_HASH_RESIZECOND (gcdata->obj_htable.count,
                                     gcdata->obj_htable.log2_size
                                       + (GC_word)gcdata->cur_stack->inside_fnlz)
                 &&
-#endif
+#  endif
                 gcdata->bytes_allocd)
                 {
                   if (GC_dont_gc || gcdata->dataroots == NULL)
@@ -3354,9 +3355,9 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
               else
                 {
                   if (!gcdata->recycling &&
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
                       !gcdata->cur_stack->inside_fnlz &&
-#endif
+#  endif
                       !GC_dont_gc)
                     {
                       if (GC_guess_collect (gcdata, objsize))
@@ -3381,7 +3382,7 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
           if (gcdata->obj_htable.unlinked_list != NULL
               || GC_alloc_objlinks (gcdata, &res))
             obj = GC_core_malloc_with_gc (gcdata, objsize, &res);
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
           notifier_fn = 0;
           if (gcdata->fnlz_htable.ready_fnlz != NULL && GC_finalize_on_demand
               && gcdata->notifier_gc_no != GC_gc_no)
@@ -3389,7 +3390,7 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
               gcdata->notifier_gc_no = GC_gc_no;
               notifier_fn = GC_finalizer_notifier;
             }
-#endif
+#  endif
           if (obj != NULL)
             {
               gcdata->bytes_allocd += objsize;
@@ -3407,7 +3408,7 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
                                          + ((GC_word)1 << GC_LOG2_OFFIGNORE))
                                == 1))
                     (void)GC_objlink_free_pending (gcdata, 0);
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
                   if (notifier_fn == 0 && !GC_dont_gc && !GC_finalize_on_demand
                       && ++gcdata->cur_stack->inside_fnlz == 1)
                     {
@@ -3418,20 +3419,20 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
                       else
                         gcdata->cur_stack->inside_fnlz = 0;
                     }
-#endif
+#  endif
                   if (!res
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
                       && (gcdata->dlink_htable.free_list == NULL
                           || !GC_dlink_free_pending (
                             gcdata, objsize
                                         / (sizeof (struct GC_dlink_s)
                                            - sizeof (GC_word))
                                       + 1))
-#endif
+#  endif
                   )
                     {
                       gcdata->recycling = 0;
-#ifdef GC_PRINT_MSGS
+#  ifdef GC_PRINT_MSGS
                       if (GC_verbose_gc)
                         fprintf (stdout,
                                  "[GC: Recycled, %lu + %lu /A/ KiB in use, %lu "
@@ -3442,23 +3443,23 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
                                                   - gcdata->followscan_size),
                                  GC_SIZE_TO_ULKB (gcdata->free_bytes),
                                  GC_SIZE_TO_ULKB (gcdata->total_heapsize));
-#endif
+#  endif
                     }
                 }
             }
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
           else
             {
               if (notifier_fn == 0 && !GC_finalize_on_demand)
                 fn = GC_fnlz_del_ready (gcdata, &objlink, &client_data);
             }
-#endif
+#  endif
           *pgcdata = NULL;
           GC_LEAVE (gcdata);
-#ifdef GC_NO_FNLZ
+#  ifdef GC_NO_FNLZ
           if (obj != NULL || res <= 0)
             break;
-#else
+#  else
           if (fn != 0)
             {
               (*fn) (objlink->obj, client_data);
@@ -3493,7 +3494,7 @@ GC_STATIC void *GC_FASTCALL GC_general_malloc (struct GC_gcdata_s **pgcdata,
               if (obj != NULL || (notifier_fn == 0 && res <= 0))
                 break;
             }
-#endif
+#  endif
           if (retry == ~(GC_word)0)
             retry = 0;
         }
@@ -3549,30 +3550,30 @@ GC_API void GC_CALL GC_set_stop_func (GC_stop_func fn)
 
 GC_API void *GC_CALL GC_do_blocking (GC_fn_type fn, void *client_data)
 {
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
   struct GC_gcdata_s *gcdata;
   GC_enter (&gcdata);
   if (!GC_set_inactive_sp (&gcdata))
     GC_abort_badptr (NULL);
   GC_LEAVE (gcdata);
-#endif
+#  endif
   client_data = (*fn) (client_data);
-#ifndef GC_NO_INACTIVE
+#  ifndef GC_NO_INACTIVE
   GC_enter (&gcdata);
   gcdata->cur_stack->inactive = 0;
   GC_LEAVE (gcdata);
-#endif
+#  endif
   return client_data;
 }
 
 GC_API void *GC_CALL GC_call_with_gc_active (GC_fn_type fn, void *client_data)
 {
   struct GC_gcdata_s *gcdata;
-#ifdef GC_NO_INACTIVE
+#  ifdef GC_NO_INACTIVE
   GC_enter (&gcdata);
   GC_LEAVE (gcdata);
   return (*fn) (client_data);
-#else
+#  else
   struct GC_activation_frame_s frame;
   GC_enter (&gcdata);
   if (!GC_set_activation_frame (&frame, gcdata->cur_stack))
@@ -3586,10 +3587,10 @@ GC_API void *GC_CALL GC_call_with_gc_active (GC_fn_type fn, void *client_data)
   GC_restore_inactive_sp (gcdata->cur_stack, &frame);
   GC_LEAVE (gcdata);
   return client_data;
-#endif
+#  endif
 }
 
-#ifdef GC_THREADS
+#  ifdef GC_THREADS
 
 GC_API void GC_CALL GC_allow_register_threads (void)
 {
@@ -3623,7 +3624,7 @@ GC_API int GC_CALL GC_unregister_my_thread (void)
   return GC_SUCCESS;
 }
 
-#endif /* GC_THREADS */
+#  endif /* GC_THREADS */
 
 GC_API void *GC_CALL GC_call_with_alloc_lock (GC_fn_type fn, void *client_data)
 {
@@ -3634,7 +3635,7 @@ GC_API void *GC_CALL GC_call_with_alloc_lock (GC_fn_type fn, void *client_data)
   return client_data;
 }
 
-#ifndef GC_MISC_EXCLUDE
+#  ifndef GC_MISC_EXCLUDE
 
 GC_API GC_finalizer_notifier_proc GC_CALL GC_get_finalizer_notifier (void)
 {
@@ -3723,13 +3724,13 @@ GC_API void GC_CALL GC_enable (void)
 GC_API int GC_CALL GC_should_invoke_finalizers (void)
 {
   int res = 0;
-#  ifndef GC_NO_FNLZ
+#    ifndef GC_NO_FNLZ
   struct GC_gcdata_s *gcdata;
   GC_enter (&gcdata);
   if (gcdata->fnlz_htable.ready_fnlz != NULL)
     res = 1;
   GC_LEAVE (gcdata);
-#  endif
+#    endif
   return res;
 }
 
@@ -3801,7 +3802,7 @@ GC_API void GC_CALL GC_exclude_static_roots (void *low_addr,
     }
 }
 
-#endif /* ! GC_MISC_EXCLUDE */
+#  endif /* ! GC_MISC_EXCLUDE */
 
 GC_API void GC_CALL GC_add_roots (void *low_addr, void *high_addr_plus_1)
 {
@@ -3817,12 +3818,12 @@ GC_API size_t GC_CALL GC_get_heap_size (void)
   GC_word size;
   GC_enter (&gcdata);
   size = gcdata->marked_bytes + gcdata->bytes_allocd +
-#ifndef GC_NO_DLINKS
+#  ifndef GC_NO_DLINKS
          gcdata->dlink_htable.count * sizeof (struct GC_dlink_s) +
-#endif
-#ifndef GC_NO_FNLZ
+#  endif
+#  ifndef GC_NO_FNLZ
          gcdata->fnlz_htable.count * sizeof (struct GC_fnlz_s) +
-#endif
+#  endif
          gcdata->obj_htable.pending_free_size + gcdata->free_bytes;
   GC_LEAVE (gcdata);
   return (size_t)size;
@@ -3842,9 +3843,9 @@ GC_API int GC_CALL GC_try_to_collect (GC_stop_func stop_func)
 {
   struct GC_gcdata_s *gcdata;
   int res = 1;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   GC_finalizer_notifier_proc notifier_fn = 0;
-#endif
+#  endif
   if (stop_func == 0)
     GC_abort_badptr (NULL);
   GC_enter (&gcdata);
@@ -3855,21 +3856,21 @@ GC_API int GC_CALL GC_try_to_collect (GC_stop_func stop_func)
       if (!gcdata->bytes_allocd)
         {
           res = 1;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
           gcdata->cur_stack->inside_fnlz = 0;
           if (gcdata->fnlz_htable.ready_fnlz != NULL && GC_finalize_on_demand)
             {
               gcdata->notifier_gc_no = GC_gc_no;
               notifier_fn = GC_finalizer_notifier;
             }
-#endif
+#  endif
         }
     }
   GC_LEAVE (gcdata);
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   if (notifier_fn != 0)
     (*notifier_fn) ();
-#endif
+#  endif
   return res;
 }
 
@@ -3881,14 +3882,14 @@ GC_API void GC_CALL GC_gcollect_and_unmap (void)
 GC_API void GC_CALL GC_gcollect (void)
 {
   struct GC_gcdata_s *gcdata;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   GC_finalizer_notifier_proc notifier_fn = 0;
-#endif
+#  endif
   GC_enter (&gcdata);
   if (!GC_dont_gc && gcdata->bytes_allocd)
     {
       GC_collect_unreachable (gcdata, GC_default_stop_func);
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
       if (!gcdata->bytes_allocd)
         {
           gcdata->cur_stack->inside_fnlz = 0;
@@ -3898,21 +3899,21 @@ GC_API void GC_CALL GC_gcollect (void)
               notifier_fn = GC_finalizer_notifier;
             }
         }
-#endif
+#  endif
     }
   GC_LEAVE (gcdata);
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   if (notifier_fn != 0)
     (*notifier_fn) ();
-#endif
+#  endif
 }
 
 GC_API void *GC_CALL GC_base (void *displaced_pointer)
 {
-#ifdef GC_NO_GCBASE
+#  ifdef GC_NO_GCBASE
   if (displaced_pointer != NULL)
     GC_abort_badptr (displaced_pointer);
-#else
+#  else
   struct GC_gcdata_s *gcdata;
   struct GC_objlink_s *objlink;
   if (displaced_pointer != NULL)
@@ -3926,32 +3927,32 @@ GC_API void *GC_CALL GC_base (void *displaced_pointer)
             : NULL;
       GC_LEAVE (gcdata);
     }
-#endif
+#  endif
   return displaced_pointer;
 }
 
 GC_API int GC_CALL GC_general_register_disappearing_link (void **link,
                                                           void *obj)
 {
-#ifndef GC_NO_REGISTER_DLINK
+#  ifndef GC_NO_REGISTER_DLINK
   struct GC_gcdata_s *gcdata;
   struct GC_objlink_s *objlink;
-#  ifdef GC_NO_DLINKS
+#    ifdef GC_NO_DLINKS
   GC_word objsize;
-#  else
+#    else
   struct GC_dlink_s **new_hroots;
   struct GC_dlink_s *new_dlink;
   GC_word new_log2_size;
+#    endif
 #  endif
-#endif
   int res = 0;
   if (((GC_word)link & (sizeof (GC_word) - 1)) != 0 || link == NULL)
     GC_abort_badptr (link);
-#ifndef GC_NO_REGISTER_DLINK
+#  ifndef GC_NO_REGISTER_DLINK
   GC_enter (&gcdata);
   if (obj != NULL)
     {
-#  ifdef GC_NO_DLINKS
+#    ifdef GC_NO_DLINKS
       if ((objlink = GC_objlink_get (gcdata, (void *)link)) != NULL
           || (objlink = GC_objlink_refill_find (gcdata, (void *)link)) != NULL)
         {
@@ -3960,16 +3961,16 @@ GC_API int GC_CALL GC_general_register_disappearing_link (void **link,
             {
               gcdata->followscan_size
                 += objsize & ~(GC_ATOMIC_MASK | (sizeof (GC_word) - 1));
-#    ifndef GC_GCJ_SUPPORT
+#      ifndef GC_GCJ_SUPPORT
               objlink->atomic_and_size = objsize & ~GC_ATOMIC_MASK;
-#    endif
+#      endif
             }
-#    ifdef GC_GCJ_SUPPORT
+#      ifdef GC_GCJ_SUPPORT
           objlink->atomic_and_size
             = objsize & ~(GC_ATOMIC_MASK | GC_HASDSLEN_MASK);
-#    endif
+#      endif
         }
-#  else
+#    else
       if ((objlink = GC_objlink_get (gcdata, obj)) != NULL
           || (objlink = GC_objlink_refill_find (gcdata, obj)) != NULL)
         {
@@ -3999,36 +4000,36 @@ GC_API int GC_CALL GC_general_register_disappearing_link (void **link,
         }
       else
         obj = NULL;
-#  endif
+#    endif
     }
   GC_LEAVE (gcdata);
-#endif
+#  endif
   if (obj != NULL)
     GC_abort_badptr (obj);
   return res;
 }
 
-#ifndef GC_MISC_EXCLUDE
+#  ifndef GC_MISC_EXCLUDE
 
 GC_API int GC_CALL GC_unregister_disappearing_link (void **link)
 {
-#  ifndef GC_NO_DLINKS
+#    ifndef GC_NO_DLINKS
   struct GC_gcdata_s *gcdata;
   GC_word hidden_link;
-#  endif
+#    endif
   int res = 0;
-#  ifdef GC_NO_DLINKS
+#    ifdef GC_NO_DLINKS
   GC_noop1 ((GC_word)link);
-#  else
+#    else
   GC_enter (&gcdata);
   if (gcdata->dlink_htable.count && (hidden_link = GC_HIDE_POINTER (link)) != 0)
     res = GC_dlink_delete (gcdata, hidden_link, hidden_link, hidden_link);
   GC_LEAVE (gcdata);
-#  endif
+#    endif
   return res;
 }
 
-#endif /* ! GC_MISC_EXCLUDE */
+#  endif /* ! GC_MISC_EXCLUDE */
 
 GC_API void GC_CALL GC_register_finalizer_no_order (void *obj,
                                                     GC_finalization_proc fn,
@@ -4036,14 +4037,14 @@ GC_API void GC_CALL GC_register_finalizer_no_order (void *obj,
                                                     GC_finalization_proc *ofn,
                                                     void **odata)
 {
-#ifdef GC_NO_FNLZ
+#  ifdef GC_NO_FNLZ
   if (obj != NULL && fn != 0)
     GC_noop1 ((GC_word)client_data);
   if (ofn != NULL)
     *ofn = 0;
   if (odata != NULL)
     *odata = NULL;
-#else
+#  else
   struct GC_gcdata_s *gcdata;
   struct GC_objlink_s *objlink;
   struct GC_fnlz_s **new_hroots;
@@ -4120,13 +4121,13 @@ GC_API void GC_CALL GC_register_finalizer_no_order (void *obj,
       gcdata->cur_stack->inside_fnlz = 0;
       GC_LEAVE (gcdata);
     }
-#endif
+#  endif
 }
 
 GC_API int GC_CALL GC_invoke_finalizers (void)
 {
   GC_word count = 0;
-#ifndef GC_NO_FNLZ
+#  ifndef GC_NO_FNLZ
   struct GC_gcdata_s *gcdata;
   struct GC_objlink_s *objlink = NULL;
   void *client_data = NULL;
@@ -4150,11 +4151,11 @@ GC_API int GC_CALL GC_invoke_finalizers (void)
       count++;
       (*fn) (objlink->obj, client_data);
     }
-#endif
+#  endif
   return (int)count;
 }
 
-#ifdef GC_GCJ_SUPPORT
+#  ifdef GC_GCJ_SUPPORT
 
 GC_API void GC_CALL GC_init_gcj_malloc (int mp_index, void *mp)
 {
@@ -4176,13 +4177,13 @@ GC_API void *GC_CALL GC_gcj_malloc (size_t size, void *vtable)
   return GC_general_malloc (&gcdata, (GC_word)size, (GC_word)vtable);
 }
 
-#endif /* GC_GCJ_SUPPORT */
+#  endif /* GC_GCJ_SUPPORT */
 
-#ifndef JAVA_FINALIZATION_NOT_NEEDED
+#  ifndef JAVA_FINALIZATION_NOT_NEEDED
 
 GC_API void GC_CALL GC_finalize_all (void)
 {
-#  ifndef GC_NO_FNLZ
+#    ifndef GC_NO_FNLZ
   struct GC_gcdata_s *gcdata;
   struct GC_objlink_s *objlink = NULL;
   void *client_data = NULL;
@@ -4216,7 +4217,8 @@ GC_API void GC_CALL GC_finalize_all (void)
           count = 0;
         }
     }
-#  endif
+#    endif
 }
 
-#endif /* ! JAVA_FINALIZATION_NOT_NEEDED */
+#  endif /* ! JAVA_FINALIZATION_NOT_NEEDED */
+#endif
