@@ -18,6 +18,151 @@
 
 #include "number.h"
 
+/* ---------------------------------------------------------------------
+ * Rational helpers
+ *
+ * Per types.h, a rational is packed into a single 32bit immediate:
+ *   sign:1 | numerator:15 | denominator:16   (little-endian bitfield order)
+ * The sign is ALSO carried redundantly by the object type tag
+ * (rational_pos == positive, rational_neg == negative); we always trust
+ * the type tag as canonical, since that's what the rest of the runtime
+ * (encoding table in object.h) treats as the source of truth.
+ * ------------------------------------------------------------------- */
+
+static inline rational_t rat_decode (immu_object_t x)
+{
+  rational_t r;
+  r.value = (u32_t)(uintptr_t)x->value;
+  return r;
+}
+
+static inline bool rat_is_negative (immu_object_t x)
+{
+  return x->attr.type == rational_neg;
+}
+
+static inline numerator_t rat_num (immu_object_t x)
+{
+  return (numerator_t)rat_decode (x).numerator;
+}
+
+static inline denominator_t rat_denom (immu_object_t x)
+{
+  return (denominator_t)rat_decode (x).denominator;
+}
+
+/* Build a normalized rational object into ret. num/denom are unsigned
+ * magnitudes; is_neg gives the sign. denom == 0 is a caller error. denom
+ * == 1 degenerates to an exact integer, which we return as imm_int since
+ * that's the canonical exact-integer representation in this encoding. */
+static object_t rat_make (object_t ret, int32_t num, uint32_t denom,
+                           bool is_neg)
+{
+  if (denom == 0)
+    PANIC ("Rational: zero denominator\n");
+
+  if (num == 0)
+    {
+      ret->value = (void *)(intptr_t)0;
+      ret->attr.type = imm_int;
+      ret->attr.gc = FREE_OBJ;
+      return ret;
+    }
+
+  /* reduce by gcd so the packed 15/16 bit fields don't overflow
+   * needlessly and the value stays canonical */
+  uint32_t a = (uint32_t)num, b = denom, t;
+  while (b != 0)
+    {
+      t = a % b;
+      a = b;
+      b = t;
+    }
+  uint32_t g = a ? a : 1;
+  uint32_t rn = (uint32_t)num / g;
+  uint32_t rd = denom / g;
+
+  if (rd == 1)
+    {
+      ret->value = (void *)(intptr_t)(is_neg ? -(imm_int_t)rn
+                                              : (imm_int_t)rn);
+      ret->attr.type = imm_int;
+      ret->attr.gc = FREE_OBJ;
+      return ret;
+    }
+
+  if (rn > 0x7FFF || rd > 0xFFFF)
+    PANIC ("Rational: numerator/denominator overflow after reduction "
+           "(%u/%u) -- needs promotion to bignum rational, not "
+           "supported yet\n",
+           rn, rd);
+
+  rational_t r;
+  r.sign = is_neg ? 1 : 0;
+  r.numerator = rn;
+  r.denominator = rd;
+  ret->value = (void *)(uintptr_t)r.value;
+  ret->attr.type = is_neg ? rational_neg : rational_pos;
+  ret->attr.gc = FREE_OBJ;
+  return ret;
+}
+
+static inline float rat_to_float (immu_object_t x)
+{
+  rational_t r = rat_decode (x);
+  float v = (float)r.numerator / (float)r.denominator;
+  return rat_is_negative (x) ? -v : v;
+}
+
+static inline bool num_is_negative (immu_object_t x)
+{
+  switch (x->attr.type)
+    {
+    case imm_int:
+      return ((imm_int_t)x->value) < 0;
+    case real:
+      {
+        real_t f;
+        f.v = (uintptr_t)x->value;
+        // -0.0 has the sign bit set but is not "negative" as a number
+        bool is_zero_val = (f.exponent == 0 && f.mantissa == 0);
+        return f.negative && !is_zero_val;
+      }
+    case rational_neg:
+      return true;
+    case rational_pos:
+      return false;
+    default:
+      PANIC ("sign not defined for type %d\n", x->attr.type);
+      return false;
+    }
+}
+
+static inline bool num_is_positive (immu_object_t x)
+{
+  switch (x->attr.type)
+    {
+    case imm_int:
+      return ((imm_int_t)x->value) > 0;
+    case real:
+      {
+        real_t f;
+        f.v = (uintptr_t)x->value;
+        bool is_zero_val = (f.exponent == 0 && f.mantissa == 0);
+        return (!f.negative) && !is_zero_val;
+      }
+    case rational_pos:
+      // rat_make() collapses a zero numerator to imm_int 0, so any
+      // surviving rational_pos object is strictly > 0.
+      return true;
+    case rational_neg:
+      return false;
+    default:
+      PANIC ("sign not defined for type %d\n", x->attr.type);
+      return false;
+    }
+}
+
 typedef float (*real_op_t) (float);
 
 static object_t op_dispatch (vm_t vm, object_t ret, immu_object_t x,
@@ -43,11 +188,15 @@ static object_t op_dispatch (vm_t vm, object_t ret, immu_object_t x,
     case rational_pos:
     case rational_neg:
       {
+        /* R7RS: applying a transcendental like sin/cos/sqrt to an exact
+         * rational produces an INEXACT result -- it must stay `real',
+         * never get truncated down to an integer. */
         real_t f;
-        f.v = cast_rational_to_float (x);
+        f.f = rat_to_float (x);
         f.f = real_op (f.f);
-        ret->value = (void *)((imm_int_t)f.f);
-        ret->attr.type = imm_int;
+        ret->value = (void *)(uintptr_t)f.v;
+        ret->attr.type = real;
+        ret->attr.gc = FREE_OBJ;
         break;
       }
     case imm_int:
@@ -62,71 +211,66 @@ static object_t op_dispatch (vm_t vm, object_t ret, immu_object_t x,
   return ret;
 }
 
+/* floor/ceiling of a plain C float without libm's floorf/ceilf (bare-metal
+ * friendly: only relies on ordinary float<->int conversion + comparison,
+ * both plain hardware/soft-float ops, not library calls). */
+static inline float float_floor (float v)
+{
+  imm_int_t t = (imm_int_t)v; // truncates toward zero
+  float tf = (float)t;
+  return (tf > v) ? (tf - 1.0f) : tf;
+}
+
+static inline float float_ceiling (float v)
+{
+  imm_int_t t = (imm_int_t)v;
+  float tf = (float)t;
+  return (tf < v) ? (tf + 1.0f) : tf;
+}
+
 object_t _floor (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
 
-  // For integers, floor is the number itself
-  if (x->attr.type == imm_int) {
-    *ret = *x;
-    return ret;
-  }
-
-  // For real numbers, we need to implement floor manually
-  if (x->attr.type == real) {
-    real_t f;
-    f.v = (uintptr_t)x->value;
-
-    // Extract sign, exponent, and mantissa
-    int sign = f.negative;
-    int exponent = f.exponent - 127; // Bias for single precision
-    uint32_t mantissa = f.mantissa | (1 << 23); // Add implicit leading 1
-
-    if (exponent >= 23) {
-      // Number is an integer or larger than fractional precision
+  switch (x->attr.type)
+    {
+    case imm_int:
+      // exact integer: floor is itself (stays exact)
       *ret = *x;
       return ret;
-    } else if (exponent < 0) {
-      // Number is between -1 and 1
-      if (sign) {
-        // Negative number: floor is -1 for numbers between -1 and 0
-        ret->value = (void *)(intptr_t)-1;
-        ret->attr.type = imm_int;
-        ret->attr.gc = FREE_OBJ;
-      } else {
-        // Positive number: floor is 0 for numbers between 0 and 1
-        ret->value = (void *)(intptr_t)0;
-        ret->attr.type = imm_int;
-        ret->attr.gc = FREE_OBJ;
-      }
-      return ret;
-    } else {
-      // Number has fractional part
-      // Shift to get integer part
-      uint32_t shift = 23 - exponent;
-      uint32_t integer_part = mantissa >> shift;
 
-      if (sign) {
-        // For negative numbers, floor is integer_part + 1 if there's a fractional part
-        // Check if there's a fractional part
-        uint32_t fractional_mask = (1 << shift) - 1;
-        if ((mantissa & fractional_mask) != 0) {
-          integer_part += 1;
-        }
-        ret->value = (void *)(intptr_t)-(int32_t)integer_part;
-      } else {
-        ret->value = (void *)(intptr_t)integer_part;
+    case real:
+      {
+        // inexact argument -> inexact result (R7RS exactness contagion)
+        real_t f;
+        f.v = (uintptr_t)x->value;
+        real_t out;
+        out.f = float_floor (f.f);
+        ret->value = (void *)(uintptr_t)out.v;
+        ret->attr.type = real;
+        ret->attr.gc = FREE_OBJ;
+        return ret;
       }
-      ret->attr.type = imm_int;
-      ret->attr.gc = FREE_OBJ;
-      return ret;
+
+    case rational_pos:
+    case rational_neg:
+      {
+        // exact rational -> exact integer
+        imm_int_t num = (imm_int_t)rat_num (x);
+        imm_int_t denom = (imm_int_t)rat_denom (x);
+        imm_int_t q = num / denom;
+        if (rat_is_negative (x) && (num % denom != 0))
+          q += 1; // truncated division rounds toward zero; adjust to -inf
+        ret->value = (void *)(intptr_t)(rat_is_negative (x) ? -q : q);
+        ret->attr.type = imm_int;
+        ret->attr.gc = FREE_OBJ;
+        return ret;
+      }
+
+    default:
+      PANIC ("floor not implemented for this type\n");
+      return NULL;
     }
-  }
-
-  // For other types, use op_dispatch if available
-  // But on bare metal, we may not have floorf
-  PANIC("floor not fully implemented for this type\n");
-  return NULL;
 }
 
 object_t _floor_div (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
@@ -209,106 +353,120 @@ object_t _ceiling (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
 
-  // For integers, ceiling is the number itself
-  if (x->attr.type == imm_int) {
-    *ret = *x;
-    return ret;
-  }
+  switch (x->attr.type)
+    {
+    case imm_int:
+      *ret = *x;
+      return ret;
 
-  // For real numbers, ceiling is -floor(-x)
-  if (x->attr.type == real) {
-    // Create a copy of x with negated sign
-    real_t f;
-    f.v = (uintptr_t)x->value;
-    f.negative = !f.negative;
+    case real:
+      {
+        real_t f;
+        f.v = (uintptr_t)x->value;
+        real_t out;
+        out.f = float_ceiling (f.f);
+        ret->value = (void *)(uintptr_t)out.v;
+        ret->attr.type = real;
+        ret->attr.gc = FREE_OBJ;
+        return ret;
+      }
 
-    Object neg_x;
-    neg_x.attr.type = real;
-    neg_x.attr.gc = FREE_OBJ;
-    neg_x.value = (void *)(uintptr_t)f.v;
+    case rational_pos:
+    case rational_neg:
+      {
+        imm_int_t num = (imm_int_t)rat_num (x);
+        imm_int_t denom = (imm_int_t)rat_denom (x);
+        imm_int_t q = num / denom;
+        if (!rat_is_negative (x) && (num % denom != 0))
+          q += 1; // truncated division rounds toward zero; adjust to +inf
+        ret->value = (void *)(intptr_t)(rat_is_negative (x) ? -q : q);
+        ret->attr.type = imm_int;
+        ret->attr.gc = FREE_OBJ;
+        return ret;
+      }
 
-    // Compute floor of -x
-    Object floor_neg;
-    _floor(vm, &floor_neg, &neg_x);
-
-    // ceiling(x) = -floor(-x)
-    if (floor_neg.attr.type == imm_int) {
-      imm_int_t val = (imm_int_t)floor_neg.value;
-      ret->value = (void *)(intptr_t)-val;
-      ret->attr.type = imm_int;
-      ret->attr.gc = FREE_OBJ;
-    } else {
-      // Should not happen if floor returns integer
-      PANIC("ceiling: floor did not return integer\n");
+    default:
+      PANIC ("ceiling not implemented for this type\n");
+      return NULL;
     }
-    return ret;
-  }
-
-  PANIC("ceiling not fully implemented for this type\n");
-  return NULL;
 }
 
 object_t _truncate (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
 
-  Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
-
-  if (_int_gt (x, &zero)) // x > 0
-    {
-      return _floor (vm, ret, x);
-    }
-  else // x <= 0
-    {
-      return _ceiling (vm, ret, x);
-    }
+  // truncate rounds toward zero: floor for non-negatives, ceiling for
+  // negatives.
+  return num_is_negative (x) ? _ceiling (vm, ret, x) : _floor (vm, ret, x);
 }
 
 object_t _round (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
 
-  // For integers, round is the number itself
-  if (x->attr.type == imm_int) {
-    *ret = *x;
-    return ret;
-  }
+  switch (x->attr.type)
+    {
+    case imm_int:
+      *ret = *x;
+      return ret;
 
-  // For real numbers, round to nearest integer
-  if (x->attr.type == real) {
-    real_t f;
-    f.v = (uintptr_t)x->value;
+    case real:
+      {
+        real_t f;
+        f.v = (uintptr_t)x->value;
+        float v = f.f;
+        float fl = float_floor (v);
+        float frac = v - fl; // in [0, 1)
 
-    // Get floor and ceiling
-    Object floor_val, ceil_val;
-    _floor(vm, &floor_val, x);
-    _ceiling(vm, &ceil_val, x);
+        float rounded;
+        if (frac < 0.5f)
+          rounded = fl;
+        else if (frac > 0.5f)
+          rounded = fl + 1.0f;
+        else
+          {
+            // exactly halfway: round to even
+            imm_int_t fi = (imm_int_t)fl;
+            rounded = ((fi & 1) == 0) ? fl : fl + 1.0f;
+          }
 
-    imm_int_t floor_int = (imm_int_t)floor_val.value;
-    imm_int_t ceil_int = (imm_int_t)ceil_val.value;
+        real_t out;
+        out.f = rounded;
+        ret->value = (void *)(uintptr_t)out.v;
+        ret->attr.type = real; // inexact in, inexact out
+        ret->attr.gc = FREE_OBJ;
+        return ret;
+      }
 
-    // Compute distance to floor and ceiling
-    // Since we can't subtract floats easily, we'll use the original value
-    // This is a simplified approach
-    // For proper rounding, we need to look at the fractional part
-    // For now, always round towards positive infinity for tie-breaking
-    // This is not correct, but better than nothing
+    case rational_pos:
+    case rational_neg:
+      {
+        // Exact rational -> exact integer, round-half-to-even, done with
+        // pure integer arithmetic so exactness is never compromised.
+        imm_int_t num = (imm_int_t)rat_num (x);
+        imm_int_t denom = (imm_int_t)rat_denom (x);
+        imm_int_t q = num / denom;
+        imm_int_t r = num % denom;
+        imm_int_t two_r = 2 * r;
 
-    // Check if the number is exactly halfway between two integers
-    // This is complex without floating point operations
-    // For now, use floor for positive numbers, ceiling for negative numbers
-    if (f.negative) {
-      ret->value = (void *)(intptr_t)ceil_int;
-    } else {
-      ret->value = (void *)(intptr_t)floor_int;
+        imm_int_t mag;
+        if (two_r < denom)
+          mag = q;
+        else if (two_r > denom)
+          mag = q + 1;
+        else
+          mag = ((q & 1) == 0) ? q : q + 1; // tie: round to even
+
+        ret->value = (void *)(intptr_t)(rat_is_negative (x) ? -mag : mag);
+        ret->attr.type = imm_int;
+        ret->attr.gc = FREE_OBJ;
+        return ret;
+      }
+
+    default:
+      PANIC ("round not implemented for this type\n");
+      return NULL;
     }
-    ret->attr.type = imm_int;
-    ret->attr.gc = FREE_OBJ;
-    return ret;
-  }
-
-  PANIC("round not fully implemented for this type\n");
-  return NULL;
 }
 
 object_t _rationalize (vm_t vm, object_t ret, immu_object_t x)
@@ -513,11 +671,13 @@ object_t _numerator (vm_t vm, object_t ret, immu_object_t x)
       break;
     case rational_pos:
     case rational_neg:
-      // Extract numerator from rational
-      // Assuming rational is stored in a certain format
-      // This is a placeholder implementation
-      PANIC("numerator for rational not implemented\n");
-      break;
+      {
+        imm_int_t n = (imm_int_t)rat_num (x);
+        ret->value = (void *)(intptr_t)(rat_is_negative (x) ? -n : n);
+        ret->attr.type = imm_int;
+        ret->attr.gc = FREE_OBJ;
+        break;
+      }
     case real:
       // For real numbers, numerator is not well-defined
       PANIC("numerator not defined for real numbers\n");
@@ -541,10 +701,13 @@ object_t _denominator (vm_t vm, object_t ret, immu_object_t x)
       break;
     case rational_pos:
     case rational_neg:
-      // Extract denominator from rational
-      // This is a placeholder implementation
-      PANIC("denominator for rational not implemented\n");
-      break;
+      {
+        /* denominator is always positive by construction */
+        ret->value = (void *)(intptr_t)(imm_int_t)rat_denom (x);
+        ret->attr.type = imm_int;
+        ret->attr.gc = FREE_OBJ;
+        break;
+      }
     case real:
       // For real numbers, denominator is not well-defined
       PANIC("denominator not defined for real numbers\n");
@@ -594,9 +757,11 @@ object_t _is_exact_integer (vm_t vm, object_t ret, immu_object_t x)
       }
     case rational_pos:
     case rational_neg:
-      // Check if denominator is 1
-      // This is a placeholder
-      PANIC("is-exact-integer for rational not implemented\n");
+      /* Well-formed rationals are kept in lowest terms by rat_make(),
+       * so denominator == 1 never survives as a rational_pos/neg object
+       * (it collapses to imm_int) -- but check anyway defensively. */
+      *ret = (rat_denom (x) == 1) ? GLOBAL_REF (true_const)
+                                  : GLOBAL_REF (false_const);
       break;
     default:
       *ret = GLOBAL_REF(false_const);
@@ -696,16 +861,30 @@ object_t _is_zero (vm_t vm, object_t ret, immu_object_t x)
   switch (x->attr.type)
     {
     case real:
+      {
+        /* check via decoded bits, not raw pointer-null: -0.0 has its
+         * sign bit set (a non-null bit pattern) but is still zero. */
+        real_t f;
+        f.v = (uintptr_t)x->value;
+        *ret = (f.exponent == 0 && f.mantissa == 0)
+                 ? GLOBAL_REF (true_const)
+                 : GLOBAL_REF (false_const);
+        break;
+      }
     case imm_int:
       {
-        *ret = x->value ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+        *ret = (x->value == NULL) ? GLOBAL_REF (true_const)
+                                   : GLOBAL_REF (false_const);
         break;
       }
     case rational_pos:
     case rational_neg:
       {
-        imm_int_t check = (0xFFFF0000 & (imm_int_t)x->value);
-        *ret = check ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+        /* A well-formed (reduced) rational should never actually be
+         * zero -- rat_make() collapses numerator==0 to an imm_int 0 --
+         * but stay defensive against a malformed encoding. */
+        *ret = (rat_num (x) == 0) ? GLOBAL_REF (true_const)
+                                   : GLOBAL_REF (false_const);
         break;
       }
     case complex_inexact:
@@ -727,10 +906,8 @@ object_t _is_positive (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
 
-  Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
-
-  *ret
-    = _int_gt (x, &zero) ? GLOBAL_REF (true_const) : GLOBAL_REF (false_const);
+  *ret = num_is_positive (x) ? GLOBAL_REF (true_const)
+                              : GLOBAL_REF (false_const);
 
   return ret;
 }
@@ -738,10 +915,9 @@ object_t _is_positive (vm_t vm, object_t ret, immu_object_t x)
 object_t _is_negative (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
-  Object zero = {.attr = {.type = imm_int, .gc = FREE_OBJ}, .value = 0};
 
-  *ret
-    = _int_gt (x, &zero) ? GLOBAL_REF (false_const) : GLOBAL_REF (true_const);
+  *ret = num_is_negative (x) ? GLOBAL_REF (true_const)
+                              : GLOBAL_REF (false_const);
 
   return ret;
 }
@@ -754,7 +930,6 @@ bool __is_odd (vm_t vm, immu_object_t x, char *op)
     {
     case real:
       {
-        Object tmp = {0};
         real_t a;
         a.v = (uintptr_t)x->value;
 
@@ -772,28 +947,35 @@ bool __is_odd (vm_t vm, immu_object_t x, char *op)
             else // a subnormal number
               PANIC ("%s: Wrong type argument - %f", op, a.f);
           }
-        else 
+        else
           {
-            // Check if it's an integer without using floorf
-            // Check if exponent >= 23 (no fractional part)
             int exponent = a.exponent - 127;
-            if (exponent >= 23) {
-              // It's an integer
-              // Check the least significant bit
-              // For integers, the mantissa's LSB corresponds to the integer's LSB
-              // Shift amount to get to the units place
-              uint32_t shift = exponent - 23;
-              if (shift >= 32) {
-                // Number is too large to have fractional part, always even?
-                // For now, assume even
-                ret = false;
-              } else {
-                uint32_t lsb = (a.mantissa >> shift) & 1;
+            // 24-bit mantissa including the implicit leading 1 bit
+            uint32_t mantissa = a.mantissa | (1u << 23);
+
+            if (exponent >= 23)
+              {
+                // value = mantissa << (exponent - 23), an exact integer.
+                // Any left-shift beyond 0 forces a trailing zero bit, so
+                // the result is even unless exponent is exactly 23.
+                if (exponent == 23)
+                  ret = mantissa & 1;
+                else
+                  ret = false; // even
+              }
+            else
+              {
+                // There IS room for a fractional part at this magnitude
+                // -- but that doesn't mean this particular value has
+                // one. Check whether the low bits (below the integer
+                // part) are all zero.
+                uint32_t shift = 23 - exponent;
+                uint32_t frac_mask = (1u << shift) - 1;
+                if ((mantissa & frac_mask) != 0)
+                  PANIC ("%s: Wrong type argument - not an integer!", op);
+                uint32_t lsb = (mantissa >> shift) & 1;
                 ret = lsb;
               }
-            } else {
-              PANIC ("%s: Wrong type argument - not an integer!", op);
-            }
           }
 
         break;
@@ -812,7 +994,11 @@ bool __is_odd (vm_t vm, immu_object_t x, char *op)
     case rational_pos:
     case rational_neg:
       {
-        PANIC ("Rational not implemented yet!\n");
+        /* odd?/even? require an exact integer; a non-degenerate
+         * rational (denominator != 1) is not an integer at all. */
+        if (rat_denom (x) != 1)
+          PANIC ("%s: Wrong type argument - not an integer!", op);
+        ret = rat_num (x) & 1;
         break;
       }
     default:
@@ -1000,18 +1186,32 @@ object_t _expt (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
     imm_int_t base = (imm_int_t)x->value;
     imm_int_t exp = (imm_int_t)y->value;
     if (exp < 0) {
-      // For negative exponents, result is not an integer
-      // Convert to float
-      float result = powf((float)base, (float)exp);
-      real_t res;
-      res.f = result;
-      ret->value = (void *)(uintptr_t)res.v;
-      ret->attr.type = real;
-      ret->attr.gc = FREE_OBJ;
-      return ret;
+      // R7RS: (expt <exact-int> <negative-exact-int>) is EXACT --
+      // it must stay a rational (1 / base^|exp|), never fall to float.
+      if (base == 0)
+        PANIC ("expt: division by zero (0 raised to a negative power)\n");
+      imm_int_t abs_exp = -exp;
+      imm_int_t denom_mag = 1;
+      bool overflowed = false;
+      for (imm_int_t i = 0; i < abs_exp; i++) {
+        /* TODO: on overflow this should promote to arbi_int (bignum);
+         * the bignum path is not implemented yet in this file. */
+        if (denom_mag > MAX_INT32 / (base < 0 ? -base : base)) {
+          overflowed = true;
+          break;
+        }
+        denom_mag *= (base < 0 ? -base : base);
+      }
+      if (overflowed)
+        PANIC ("expt: result denominator overflow -- needs bignum "
+               "rational support, not implemented yet\n");
+      bool result_neg = (base < 0) && (abs_exp & 1);
+      return rat_make (ret, 1, (uint32_t)denom_mag, result_neg);
     }
     imm_int_t result = 1;
     for (imm_int_t i = 0; i < exp; i++) {
+      /* TODO: no overflow check -- should promote to arbi_int (bignum)
+       * on overflow instead of silently wrapping. Not implemented yet. */
       result *= base;
     }
     ret->value = (void *)(intptr_t)result;
