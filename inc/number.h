@@ -1,4 +1,6 @@
-/*  Copyright (C) 2025
+#ifndef __ANIMULA_NUMBER_H__
+#define __ANIMULA_NUMBER_H__
+/*  Copyright (C) 2025-2026
  *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
@@ -55,13 +57,24 @@ object_t _sqrt (vm_t vm, object_t ret, immu_object_t x);
 object_t _exact_integer_sqrt (vm_t vm, object_t ret, immu_object_t x);
 object_t _expt (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
 
+// Arithmetic core: +, -, *, /. See the "Exact arithmetic core" section
+// in number.c for the exactness/overflow-to-inexact policy these follow.
+object_t _num_add (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
+object_t _num_sub (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
+object_t _num_mul (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
+object_t _num_div (vm_t vm, object_t ret, immu_object_t x, immu_object_t y);
+
 extern Object prim_number_p (object_t obj);
 
 #ifdef ANIMULA_ZEPHYR
 #elif defined ANIMULA_LINUX
 #endif /* ANIMULA_LINUX */
 
-// extrenal declarations
-extern bool _int_gt (immu_object_t x, immu_object_t y);
-extern bool _int_lt (immu_object_t x, immu_object_t y);
+// Comparisons: =, <, >, <=, >=
 extern bool _int_eq (immu_object_t x, immu_object_t y);
+extern bool _int_lt (immu_object_t x, immu_object_t y);
+extern bool _int_gt (immu_object_t x, immu_object_t y);
+extern bool _int_le (immu_object_t x, immu_object_t y);
+extern bool _int_ge (immu_object_t x, immu_object_t y);
+
+#endif // End of __ANIMULA_NUMBER_H__

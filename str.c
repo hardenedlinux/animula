@@ -42,6 +42,7 @@ object_t _read_str (vm_t vm, object_t ret, object_t obj)
     {
       buf[i] = getchar ();
     }
+  buf[cnt] = '\0';
 
   ret->attr.type = mut_string;
   ret->value = (void *)buf;
@@ -60,8 +61,8 @@ object_t _read_line (vm_t vm, object_t ret)
     ;
 
   buf[cnt] = '\0';
-  char *str = (char *)GC_MALLOC (cnt);
-  os_memcpy (str, buf, cnt);
+  char *str = (char *)GC_MALLOC (cnt + 1);
+  os_memcpy (str, buf, cnt + 1);
   ret->attr.type = mut_string;
   ret->value = (void *)str;
 
@@ -82,8 +83,8 @@ object_t _list_to_string (vm_t vm, object_t ret, object_t lst)
     }
 
   buf[cnt] = '\0';
-  char *str = (char *)GC_MALLOC (cnt);
-  os_memcpy (str, buf, cnt);
+  char *str = (char *)GC_MALLOC (cnt + 1);
+  os_memcpy (str, buf, cnt + 1);
   ret->attr.type = mut_string;
   ret->value = (void *)str;
 

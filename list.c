@@ -252,7 +252,7 @@ object_t _list_append (vm_t vm, object_t ret, object_t l1, object_t l2)
             SLIST_INSERT_AFTER (prev, new_node, next);
           }
         prev = new_node;
-        cnt;
+        cnt++;
       }
 
       list_node_t l2_first = SLIST_FIRST (h2);

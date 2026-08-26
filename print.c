@@ -37,6 +37,11 @@ static inline void bytevector_printer (const object_t obj)
 {
   bytevector_t bv = (bytevector_t)obj->value;
   os_printk ("#u8(");
+  if (0 == bv->size)
+    {
+      os_printk (")");
+      return;
+    }
   for (u16_t i = 0; i < (bv->size - 1); i++)
     {
       os_printk ("%u ", bv->vec[i]);
@@ -55,12 +60,12 @@ static inline void pair_printer (const object_t obj)
 
 static inline void vector_printer (const object_t obj)
 {
-  u16_t size = ((vector_t)obj->value)->size;
+  vector_t v = (vector_t)obj->value;
   os_printk ("#(");
-  for (u16_t i = 0; i < size; i++)
+  for (u16_t i = 0; i < v->size; i++)
     {
-      object_printer (obj);
-      if (i < size - 1)
+      object_printer (v->vec[i]);
+      if (i < v->size - 1)
         os_printk (" ");
     }
   os_printk (")");
@@ -84,8 +89,8 @@ static inline void rational_printer (const object_t obj)
 static inline void complex_exact_printer (const object_t obj)
 {
   hov_t value = (hov_t)obj->value;
-  real_part_t r = (real_part_t) (value >> 0xf);
-  imag_part_t i = (imag_part_t) (value & 0xf);
+  real_part_t r = (real_part_t) (value >> 16);
+  imag_part_t i = (imag_part_t) (value & 0xffff);
 
   if (i >= 0)
     {

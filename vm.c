@@ -105,6 +105,25 @@ void call_prim (vm_t vm, pn_t pn)
         printer_prim_t fn = (printer_prim_t)prim->fn;
         Object obj = POP_OBJ ();
         fn (&obj);
+        if (mut_string == obj.attr.type)
+          {
+            // KNOWN LIMITATION: mut_string is heap-allocated and
+            // passed by reference (the Object struct copy shares
+            // .value, not a deep copy of the string), so this is only
+            // sound if `obj` is the last live reference to this
+            // buffer. That holds for a freshly-constructed, unbound
+            // temporary like `(display (list->string ...))` -- every
+            // current use -- but NOT for `(define s ...) (display s)
+            // (display s)`, where the second call would use-after-free
+            // the buffer the first call just freed. Not tracked in any
+            // pool (see gc_inner_obj_book), so nothing else will ever
+            // free it either way. The real fix is compiler-side
+            // liveness/escape analysis marking genuine last-use points
+            // (a laco-side project); until that exists, this is a
+            // deliberate, documented stopgap, not a verified-safe
+            // optimization.
+            os_free ((void *)obj.value);
+          }
         PUSH_OBJ (GLOBAL_REF (none_const)); // return NONE object
         break;
       }
@@ -164,6 +183,7 @@ void call_prim (vm_t vm, pn_t pn)
                                .value = (void *)new_list};
         ListHead *new_head = LIST_OBJECT_HEAD (&new_list_obj);
         new_list->non_shared = 0;
+        u16_t new_list_cnt = 0;
 
         SAVE_ENV_SIMPLE ();
 
@@ -205,6 +225,7 @@ void call_prim (vm_t vm, pn_t pn)
             }
 
           prev = new_node;
+          new_list_cnt++;
           /* NOTE:
            * We're not going to create frame for each proc call in order
            * to make it faster. So we have to drop the dirty frame by resetting
@@ -214,6 +235,7 @@ void call_prim (vm_t vm, pn_t pn)
           vm->sp = vm->local;
         }
 
+        new_list->non_shared = new_list_cnt;
         new_list->attr.gc
           = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
         PUSH_OBJ (new_list_obj);
@@ -637,7 +659,7 @@ static object_t generate_object (vm_t vm, object_t obj)
         list_t l = NEW_INNER_OBJ (list);
         SLIST_INIT (&l->list);
         l->attr.gc = (VM_INIT_GLOBALS == vm->state) ? PERMANENT_OBJ : GEN_1_OBJ;
-        l->non_shared = 0;
+        l->non_shared = size;
         obj->attr.type = list;
         obj->value = (void *)l;
 

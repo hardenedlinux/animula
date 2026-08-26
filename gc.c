@@ -31,6 +31,41 @@ RB_GENERATE_STATIC(ActiveRoot, ActiveRootNode, entry, active_root_compare);
 #  endif
 
 static int get_gc_from_node (otype_t type, void *value);
+static void set_gc_to_node (otype_t type, void *value, int gc);
+static void object_list_node_recycle (list_node_t node);
+static void free_object_from_pool (ListHead *head, void *o);
+static void free_list_nodes (list_t l, void (*visit) (object_t obj));
+
+/* X-Macro table of every "inner" object kind that lives in its own
+ * fixed-size free pool and is registered/collected in a uniform way.
+ *
+ *   X(enum_tag, c_type, free_pool_variable)
+ *
+ * Closures are deliberately NOT in this table: closure_on_heap and
+ * closure_on_stack are two otype_t tags that share a single pool
+ * (closure_free_pool), so the few functions below that need closure
+ * handling add it by hand right after the generated cases.
+ *
+ * This is the answer to "C99 has no generics, so this is repetitive":
+ * every place that used to hand-write the same 5-way (or 6-way, with
+ * closures) switch now expands from this one list instead.
+ */
+#  define GC_INNER_TYPE_LIST(X)                                   \
+    X (pair, pair_t, pair_free_pool)                               \
+    X (vector, vector_t, vector_free_pool)                         \
+    X (list, list_t, list_free_pool)                               \
+    X (bytevector, bytevector_t, bytevector_free_pool)              \
+    X (mut_bytevector, mut_bytevector_t, mut_bytevector_free_pool)
+
+/* Same 5, plus closure (represented by closure_on_heap alone -- fine for
+ * call sites that just need "the pool" and "a" type tag for it, unlike
+ * get_gc_from_node/set_gc_to_node/gc_inner_obj_book which must list both
+ * closure_on_heap and closure_on_stack as separate case labels).
+ */
+#  define GC_ALL_POOLS_LIST(X) \
+    GC_INNER_TYPE_LIST (X)     \
+    X (closure_on_heap, closure_t, closure_free_pool)
+
 /* The GC in Animula is "object-based generational GC".
    We don't perform mark/sweep, or any reference counting.
 
@@ -42,8 +77,64 @@ static int get_gc_from_node (otype_t type, void *value);
 
  */
 
-// Simple active root implementation using a linked list
-static struct ActiveRootNode *ActiveRootHead = NULL;
+// Active root: a red-black tree keyed by pointer value, giving O(log n)
+// membership checks instead of the O(n) linear scan this used to be.
+static struct ActiveRoot active_root_tree = {NULL};
+
+// See obg_gc.h: set once by the person via gc_bind_vm(vm), right after
+// creating/initializing their VM. Deliberately NOT wired up inside
+// vm.c -- reaching a global VM state into a shared, backend-agnostic
+// file just to serve this one GC backend's internals would be the
+// wrong direction of coupling.
+vm_t g_current_vm = NULL;
+
+void gc_bind_vm (vm_t vm)
+{
+  g_current_vm = vm;
+}
+
+// Set only by gc_teardown(), for the duration of its one-time final
+// pass. free_object/free_inner_object each have their own independent
+// "PERMANENT_OBJ objects are never touched" guard -- correct for every
+// normal collection, but it silently defeats gc_teardown's whole
+// purpose: collect_inner(force=true) bypasses *its own* permanent
+// check fine and calls free_inner_object, which then immediately bails
+// on *its own*, separate check before ever tearing down internal
+// structures (e.g. a list_t's ListNode chain). sweep(true) then
+// physically os_frees the outer struct anyway via
+// release_all_free_objects's own independent force check (which never
+// calls free_inner_object at all), orphaning whatever internal
+// structure was never torn down. This flag lets gc_teardown()
+// override just those two guards, without touching collect/
+// collect_inner's own force semantics or recycle_object's guard
+// (recycle_object is never called from gc_teardown, so it's left
+// as-is).
+static bool g_gc_force_teardown = false;
+
+// Proactive GC trigger. Counts allocation attempts since the last
+// collection (of any kind); once GC_ALLOC_THRESHOLD is reached, tells
+// the caller to collect and resets. Without this, GC only ever ran
+// reactively -- when an allocation had already failed -- which means a
+// long-running target that never happens to hit that condition would
+// never run a single collection, no matter how much garbage piled up.
+//
+// Builders may tune this for their target's RAM budget in compiling.
+// -D GC_ALLOC_THRESHOLD=1024
+#ifndef GC_ALLOC_THRESHOLD
+#  define GC_ALLOC_THRESHOLD 256
+#endif
+static size_t alloc_since_last_gc = 0;
+
+bool gc_alloc_budget_exceeded (void)
+{
+  if (++alloc_since_last_gc >= GC_ALLOC_THRESHOLD)
+    {
+      alloc_since_last_gc = 0;
+      return true;
+    }
+
+  return false;
+}
 
 static ListHead pair_free_pool;
 static ListHead vector_free_pool;
@@ -177,28 +268,13 @@ static void object_list_node_clean (void)
 
 static inline void insert (ActiveRootNode *an)
 {
-  // Insert at the beginning of the list
-  // Use rbe_left as next pointer
-  an->entry.rbe_left = ActiveRootHead;
-  an->entry.rbe_right = NULL;
-  an->entry.rbe_parent = NULL;
-  if (ActiveRootHead) {
-    ActiveRootHead->entry.rbe_parent = an;
-  }
-  ActiveRootHead = an;
+  RB_INSERT (ActiveRoot, &active_root_tree, an);
 }
 
 static inline bool exist (object_t obj)
 {
-  // Linear search through the list
-  ActiveRootNode *current = ActiveRootHead;
-  while (current) {
-    if (current->value == (void *)obj) {
-      return true;
-    }
-    current = current->entry.rbe_left;
-  }
-  return false;
+  ActiveRootNode key = {.value = (void *)obj};
+  return NULL != RB_FIND (ActiveRoot, &active_root_tree, &key);
 }
 
 static void insert_value (void *value)
@@ -206,6 +282,47 @@ static void insert_value (void *value)
   ActiveRootNode *an = arn_alloc ();
   an->value = value;
   insert (an);
+}
+
+// Free (for free_object/free_inner_object) or recycle (for
+// recycle_object) the privately-owned prefix of a list_t's internal
+// ListNode chain, calling `visit` on each element's object_t before
+// removing and os_free'ing its node.
+//
+// non_shared is a literal count: exactly this many nodes from the
+// head are privately owned by this list_t and safe to free here.
+// Anything beyond that is a shared tail borrowed from another list_t's
+// own chain -- e.g. `_cdr` (list.c) points a new list_t directly at an
+// existing list's second node without allocating anything of its own
+// (non_shared=0: nothing here is private, free none of it), or
+// `_list_append` builds a fresh private prefix then links its last
+// node directly into the second list's existing chain (non_shared =
+// length of the fresh prefix). Freeing anything past non_shared here
+// would free memory another list_t still owns, causing a
+// use-after-free (or double-free) when that other list_t is later
+// torn down independently. Every constructor of a fully
+// privately-owned list (list literals, map) must set non_shared to
+// its own real node count, not 0 -- 0 here specifically means "zero
+// private nodes", not "no sharing at all".
+static void free_list_nodes (list_t l, void (*visit) (object_t obj))
+{
+  ListHead *head = &l->list;
+  u16_t to_free = l->non_shared;
+
+  if (SLIST_EMPTY (head))
+    return;
+
+  list_node_t node = SLIST_FIRST (head);
+
+  for (u16_t i = 0; i < to_free && node; i++)
+    {
+      // call visit recursively since node->obj can be a composite object
+      visit (node->obj);
+      list_node_t next_node = SLIST_NEXT (node, next);
+      SLIST_REMOVE (head, node, ListNode, next);
+      os_free (node);
+      node = next_node;
+    }
 }
 
 void free_object (object_t obj)
@@ -222,7 +339,7 @@ void free_object (object_t obj)
       PANIC ("BUG: free a null object!");
     }
 
-  if (PERMANENT_OBJ == obj->attr.gc)
+  if (PERMANENT_OBJ == obj->attr.gc && !g_gc_force_teardown)
     return;
 
   switch (obj->attr.type)
@@ -230,7 +347,8 @@ void free_object (object_t obj)
     case imm_int:
     case character:
     case real:
-    case rational:
+    case rational_pos:
+    case rational_neg:
     case boolean:
     case null_obj:
     case none:
@@ -252,48 +370,42 @@ void free_object (object_t obj)
       }
     case list:
       {
-        list_t l = (list_t)obj->value;
-        ListHead *head = &l->list;
-        u16_t non_shared = l->non_shared;
-        u16_t cnt = 0;
-
-        if (!SLIST_EMPTY (head))
+        free_list_nodes ((list_t)obj->value, free_object);
+        break;
+      }
+    case vector:
+      {
+        vector_t v = (vector_t)obj->value;
+        for (u16_t i = 0; i < v->size; i++)
           {
-            list_node_t node = SLIST_FIRST (head);
-            while (node)
-              {
-                // call free_object recursively since node->obj can be a
-                // composite object
-                if (cnt == non_shared)
-                  {
-                    // Skip the shared partition
-                    break;
-                  }
-
-                free_object (node->obj);
-                list_node_t next_node = SLIST_NEXT(node, next);
-                SLIST_REMOVE (head, node, ListNode, next);
-                os_free (node);
-                // instead of free node, put node into OLN for future use
-                node = next_node;
-                cnt++;
-              }
+            free_object (v->vec[i]);
           }
+        // Tracked in its own pool (vector_free_pool); that pool's own
+        // collect_inner + sweep cycle owns the actual os_free of both
+        // the Vector struct and its .vec array (see
+        // free_inner_object's vector case) -- just mark it dead here.
+        set_gc_to_node (obj->attr.type, obj->value, FREE_OBJ);
         break;
       }
     case continuation:
     case mut_string:
-    case closure_on_heap:
-    case closure_on_stack:
-    case bytevector:
       {
+        // Not tracked in any inner free_pool (see gc_inner_obj_book),
+        // so this Object wrapper is the sole owner of the memory.
         os_free ((void *)obj->value);
         break;
       }
+    case closure_on_heap:
+    case closure_on_stack:
+    case bytevector:
     case mut_bytevector:
       {
-        os_free (((mut_bytevector_t)(obj->value))->vec);
-        os_free (obj->value);
+        // These ARE tracked in their own pool (closure_free_pool /
+        // bytevector_free_pool / mut_bytevector_free_pool), whose own
+        // collect_inner + sweep cycle owns the actual os_free. Freeing
+        // the memory here too would double-free it -- just mark it
+        // dead and let that pool take it from here.
+        set_gc_to_node (obj->attr.type, obj->value, FREE_OBJ);
         break;
       }
     default:
@@ -317,7 +429,7 @@ void free_inner_object (otype_t type, void *value)
 
   u8_t gc = get_gc_from_node (type, value);
 
-  if (PERMANENT_OBJ == gc)
+  if (PERMANENT_OBJ == gc && !g_gc_force_teardown)
     return;
 
   switch (type)
@@ -332,31 +444,18 @@ void free_inner_object (otype_t type, void *value)
     case list:
       {
         list_t l = (list_t)value;
-        ListHead *head = &l->list;
-        u16_t non_shared = l->non_shared;
-        u16_t cnt = 0;
-
-        if (!SLIST_EMPTY (head))
-          {
-            list_node_t node = SLIST_FIRST (head);
-            while (node)
-              {
-                // call free_object recursively since node->obj can be a
-                // composite object
-                if (cnt == non_shared)
-                  {
-                    break;
-                  }
-                free_object (node->obj);
-                list_node_t next_node = SLIST_NEXT(node, next);
-                SLIST_REMOVE (head, node, ListNode, next);
-                os_free (node);
-                // instead of free node, put node into OLN for future use
-                node = next_node;
-                cnt++;
-              }
-          }
+        free_list_nodes (l, free_object);
         l->attr.gc = FREE_OBJ;
+        break;
+      }
+    case vector:
+      {
+        // Elements were already recursively torn down by free_object's
+        // vector case (called on the outer wrapper before this inner
+        // value's own turn comes up) -- here we only own .vec itself.
+        vector_t v = (vector_t)value;
+        os_free (v->vec);
+        v->attr.gc = FREE_OBJ;
         break;
       }
     case closure_on_heap:
@@ -393,7 +492,8 @@ static void recycle_object (object_t obj)
     case imm_int:
     case character:
     case real:
-    case rational:
+    case rational_pos:
+    case rational_neg:
     case boolean:
     case null_obj:
     case none:
@@ -413,27 +513,41 @@ static void recycle_object (object_t obj)
       }
     case list:
       {
-        ListHead *head = LIST_OBJECT_HEAD (obj);
-        list_node_t node;
-        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
-          recycle_object (node->obj);
-        }
+        free_list_nodes ((list_t)obj->value, recycle_object);
+        break;
+      }
+    case vector:
+      {
+        vector_t v = (vector_t)obj->value;
+        for (u16_t i = 0; i < v->size; i++)
+          {
+            recycle_object (v->vec[i]);
+          }
+        free_object_from_pool (&vector_free_pool, obj->value);
         break;
       }
     case closure_on_heap:
     case closure_on_stack:
       {
-        free_object_from_pool (&closure_free_pool, obj);
+        free_object_from_pool (&closure_free_pool, obj->value);
         break;
       }
     case bytevector:
       {
-        free_object_from_pool (&bytevector_free_pool, obj);
+        free_object_from_pool (&bytevector_free_pool, obj->value);
         break;
       }
     case mut_bytevector:
       {
-        free_object_from_pool (&mut_bytevector_free_pool, obj);
+        free_object_from_pool (&mut_bytevector_free_pool, obj->value);
+        break;
+      }
+    case mut_string:
+      {
+        // Not tracked in any pool (see gc_inner_obj_book) -- this
+        // Object is the sole owner of the buffer, same as
+        // free_object's own treatment of mut_string.
+        os_free ((void *)obj->value);
         break;
       }
     default:
@@ -444,6 +558,100 @@ static void recycle_object (object_t obj)
     }
 
   obj->attr.gc = FREE_OBJ;
+}
+
+static void active_root_insert (object_t obj);
+
+static void active_root_inner_insert (otype_t type, void *value)
+{
+  if (NULL == value)
+    {
+      // Some self-contain object may have NULL value
+      return;
+    }
+
+  if (exist (value))
+    return;
+
+  switch (type)
+    {
+    case imm_int:
+    case character:
+    case real:
+    case rational_pos:
+    case rational_neg:
+    case boolean:
+    case null_obj:
+    case none:
+    case string:
+    case symbol:
+    case primitive:
+    case procedure:
+    case mut_string:
+      {
+        // Not pool-tracked, nothing to mark alive.
+        break;
+      }
+    case pair:
+      {
+        pair_t p = (pair_t)value;
+        active_root_insert (p->car);
+        active_root_insert (p->cdr);
+        insert_value (value);
+        break;
+      }
+    case vector:
+      {
+        vector_t v = (vector_t)value;
+        for (u16_t i = 0; i < v->size; i++)
+          {
+            active_root_insert (v->vec[i]);
+          }
+        insert_value (value);
+        break;
+      }
+    case list:
+      {
+        ListHead *head = &((list_t)value)->list;
+        list_node_t node;
+        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
+          active_root_insert (node->obj);
+        }
+
+        insert_value (value);
+        break;
+      }
+    case closure_on_heap:
+    case closure_on_stack:
+      {
+        // The closure's own persistent captured-variable storage
+        // (env[], sized to frame_size -- see make_closure) must be
+        // walked here regardless of *how* this closure was reached
+        // (a global binding, nested in a pair/list, or on the active
+        // call chain) -- it's the closure's permanent state, not
+        // something tied to any one particular invocation.
+        closure_t c = (closure_t)value;
+        for (u8_t i = 0; i < c->frame_size; i++)
+          {
+            active_root_insert (&c->env[i]);
+          }
+        insert_value (value);
+        break;
+      }
+    case bytevector:
+    case mut_bytevector:
+      {
+        // Raw bytes, no further object_t sub-references to walk.
+        insert_value (value);
+        break;
+      }
+    default:
+      {
+        PANIC ("BUG: active_root_inner_insert encountered a wrong type %d!\n",
+               type);
+        break;
+      }
+    }
 }
 
 static void active_root_insert (object_t obj)
@@ -461,117 +669,13 @@ static void active_root_insert (object_t obj)
   if (exist (obj))
     return;
 
-  switch (obj->attr.type)
-    {
-    case pair:
-      {
-        pair_t p = (pair_t)obj->value;
-        active_root_insert (p->car);
-        active_root_insert (p->cdr);
-
-        insert_value (obj->value);
-        break;
-      }
-    case vector:
-      {
-        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
-        break;
-      }
-    case list:
-      {
-        ListHead *head = &((list_t)obj->value)->list;
-        list_node_t node;
-        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
-          active_root_insert (node->obj);
-        }
-
-        insert_value (obj->value);
-        break;
-      }
-    default:
-      {
-        // Non-collection:
-
-        /* procedure */
-        /* closure_on_heap */
-        /* closure_on_stack */
-        /* mut_string */
-        /* imm_int */
-        /* primitive */
-        /* string */
-        break;
-      }
-    }
-
+  // Delegate the type-specific walk (and marking the *inner* value
+  // alive, when there is one) to active_root_inner_insert, so there's
+  // a single place that knows how to walk each otype_t. Then mark the
+  // outer wrapper itself alive too, since obj_free_pool's liveness
+  // check (in collect()) looks up outer object_t pointers.
+  active_root_inner_insert (obj->attr.type, obj->value);
   insert_value ((void *)obj);
-}
-
-static void active_root_inner_insert (otype_t type, void *value)
-{
-  /* printf ("insert!\n"); */
-
-  /* if (!value) */
-  /*   printf ("active_root_inner_insert: oh null! %d\n", type); */
-
-  /* if (exist (obj)) */
-  /*   printf ("oh exist!\n"); */
-
-  if (NULL == value)
-    {
-      // Some self-contain object may have NULL value
-      return;
-    }
-
-  if (exist (value))
-    return;
-
-  switch (type)
-    {
-    case imm_int:
-    case character:
-    case real:
-    case rational:
-    case boolean:
-    case null_obj:
-    case none:
-    case string:
-    case symbol:
-    case primitive:
-    case procedure:
-      {
-        break;
-      }
-    case pair:
-      {
-        pair_t p = (pair_t)value;
-        active_root_insert (p->car);
-        active_root_insert (p->cdr);
-        insert_value (value);
-        break;
-      }
-    case vector:
-      {
-        PANIC ("GC: Hey, did we support Vector now? If so, please fix me!\n");
-        break;
-      }
-    case list:
-      {
-        ListHead *head = &((list_t)value)->list;
-        list_node_t node;
-        for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {
-          active_root_insert (node->obj);
-        }
-
-        insert_value (value);
-        break;
-      }
-    default:
-      {
-        PANIC ("BUG: active_root_inner_insert encountered a wrong type %d!\n",
-               type);
-        break;
-      }
-    }
 }
 
 static void active_root_insert_frame (const u8_t *stack, u32_t local, u8_t cnt)
@@ -619,13 +723,43 @@ static void build_active_root (const gc_info_t gci)
             }
         }
     }
+
+  // After walking every active call frame (if any -- there may be
+  // none, e.g. between top-level forms), `sp` bounds the outermost
+  // region: the top-level code's own locals. fp==0 there is the base
+  // case, not "nothing exists" -- top-level `define`s/values live
+  // directly in [0, sp) on the ordinary stack, with no call prelude to
+  // skip (nothing ever "called" the top level). The loop above only
+  // ever scans *inside* an active call chain, so this region -- where
+  // e.g. `z` in `(define z (func 123))` lives the moment control
+  // returns to the top level -- was never scanned as a root at all.
+  u8_t top_level_cnt = sp / sizeof (Object);
+  active_root_insert_frame (stack, 0, top_level_cnt);
+
+  // Runtime-created globals (top-level `define`s) are roots too --
+  // without this, anything reachable only via vm->globals (e.g. a
+  // closure bound to a global, per the comment on
+  // GLOBAL_REF(VM_GLOBALSEG_SIZE)'s definition site in vm.c) looks
+  // unreachable to every collect_inner/collect call below, and gets
+  // freed out from under the global that still points to it.
+  if (g_current_vm && g_current_vm->globals)
+    {
+      size_t globals_cnt = GLOBAL_REF (VM_GLOBALSEG_SIZE) / sizeof (Object);
+      for (size_t i = 0; i < globals_cnt; i++)
+        {
+          object_t obj = &g_current_vm->globals[i];
+          active_root_inner_insert (obj->attr.type, obj->value);
+        }
+    }
 }
 
 static void clean_active_root ()
 {
-  /* NOTE: Don't waste time to clean one by one. */
+  /* NOTE: Don't waste time to clean one by one -- the ARN slots get
+   * reused from index 0 again on the next gc() cycle, and resetting
+   * the tree root is O(1), same as the old list-head reset was. */
   _arn.index = 0;
-  ActiveRootHead = NULL;
+  RB_INIT (&active_root_tree);
 }
 
 static void collect (size_t *count, ListHead *head, bool hurt, bool force)
@@ -681,69 +815,35 @@ static void collect (size_t *count, ListHead *head, bool hurt, bool force)
 
 static int get_gc_from_node (otype_t type, void *value)
 {
-  int gc = 0;
-
   switch (type)
     {
-    case pair:
-      {
-        gc = ((pair_t)value)->attr.gc;
-        break;
-      }
-    case vector:
-      {
-        gc = ((vector_t)value)->attr.gc;
-        break;
-      }
-    case list:
-      {
-        gc = ((list_t)value)->attr.gc;
-        break;
-      }
+#  define X(tag, ctype, pool) \
+    case tag:                 \
+      return ((ctype)value)->attr.gc;
+      GC_INNER_TYPE_LIST (X)
+#  undef X
     case closure_on_heap:
     case closure_on_stack:
-      {
-        gc = ((closure_t)value)->attr.gc;
-        break;
-      }
-    case bytevector:
-      {
-        gc = ((bytevector_t)value)->attr.gc;
-        break;
-      }
-    case mut_bytevector:
-      {
-        gc = ((mut_bytevector_t)value)->attr.gc;
-        break;
-      }
+      return ((closure_t)value)->attr.gc;
     default:
-      {
-        PANIC ("Invalid node type %d\n", type);
-      }
+      PANIC ("Invalid node type %d\n", type);
     }
 
-  return gc;
+  return FREE_OBJ; // unreachable, PANIC never returns; silences -Wreturn-type
 }
 
 static void set_gc_to_node (otype_t type, void *value, int gc)
 {
   switch (type)
     {
-    case pair:
-      {
-        ((pair_t)value)->attr.gc = gc;
-        break;
+#  define X(tag, ctype, pool)          \
+    case tag:                          \
+      {                                \
+        ((ctype)value)->attr.gc = gc; \
+        break;                        \
       }
-    case vector:
-      {
-        ((vector_t)value)->attr.gc = gc;
-        break;
-      }
-    case list:
-      {
-        ((list_t)value)->attr.gc = gc;
-        break;
-      }
+      GC_INNER_TYPE_LIST (X)
+#  undef X
     case closure_on_heap:
     case closure_on_stack:
       {
@@ -844,24 +944,21 @@ static void release_all_free_objects (ListHead *head, bool force)
 static void sweep (bool force)
 
 {
-  VM_DEBUG ("sweep pair\n");
-  release_all_free_objects (&pair_free_pool, force);
-  VM_DEBUG ("sweep vector\n");
-  release_all_free_objects (&vector_free_pool, force);
-  VM_DEBUG ("sweep list\n");
-  release_all_free_objects (&list_free_pool, force);
-  VM_DEBUG ("sweep closure\n");
-  release_all_free_objects (&closure_free_pool, force);
-  VM_DEBUG ("sweep bytevector\n");
-  release_all_free_objects (&bytevector_free_pool, force);
-  VM_DEBUG ("sweep mut_bytevector\n");
-  release_all_free_objects (&mut_bytevector_free_pool, force);
+#  define X(tag, ctype, pool)             \
+    VM_DEBUG ("sweep " #pool "\n");       \
+    release_all_free_objects (&pool, force);
+  GC_ALL_POOLS_LIST (X)
+#  undef X
   VM_DEBUG ("sweep obj\n");
   release_all_free_objects (&obj_free_pool, force);
 }
 
 bool gc (const gc_info_t gci)
 {
+  // Any collection, regardless of what triggered it, counts as
+  // "caught up" for the proactive budget-based trigger.
+  alloc_since_last_gc = 0;
+
   /* TODO:
    * 1. Obj pool is empty, goto 3
    * 2. Free all unused obj:
@@ -898,13 +995,9 @@ bool gc (const gc_info_t gci)
 
   size_t count = 0;
 
-  collect_inner (&count, &pair_free_pool, pair, false, false);
-  collect_inner (&count, &vector_free_pool, vector, false, false);
-  collect_inner (&count, &list_free_pool, list, false, false);
-  collect_inner (&count, &closure_free_pool, closure_on_heap, false, false);
-  collect_inner (&count, &bytevector_free_pool, bytevector, false, false);
-  collect_inner (&count, &mut_bytevector_free_pool, mut_bytevector, false,
-                 false);
+#  define X(tag, ctype, pool) collect_inner (&count, &pool, tag, false, false);
+  GC_ALL_POOLS_LIST (X)
+#  undef X
   collect (&count, &obj_free_pool, false, false);
 
 #  ifdef ANIMULA_LINUX
@@ -925,13 +1018,9 @@ bool gc (const gc_info_t gci)
                Do we have better approach to avoid big hurt?
                Or do we really need hurt collect in embedded system?
       */
-      collect_inner (&count, &pair_free_pool, pair, true, false);
-      collect_inner (&count, &vector_free_pool, vector, true, false);
-      collect_inner (&count, &list_free_pool, list, true, false);
-      collect_inner (&count, &closure_free_pool, closure_on_heap, true, false);
-      collect_inner (&count, &bytevector_free_pool, bytevector, true, false);
-      collect_inner (&count, &mut_bytevector_free_pool, mut_bytevector, true,
-                     false);
+#  define X(tag, ctype, pool) collect_inner (&count, &pool, tag, true, false);
+      GC_ALL_POOLS_LIST (X)
+#  undef X
       collect (&count, &obj_free_pool, false, false);
     }
 
@@ -969,18 +1058,29 @@ bool gc (const gc_info_t gci)
   return true;
 }
 
+// DESIGN NOTE (flagged for the person to reconsider if it turns out to
+// matter): setting g_gc_force_teardown here makes gc_clean_cache
+// reclaim PERMANENT_OBJ objects too, same as gc_teardown. That's fine
+// if each HALT effectively ends an independent script/session (a
+// later vm_init_globals for a *new* LEF wouldn't expect anything from
+// the *previous* one to still be reachable) -- but if there's ever a
+// scenario where "permanent" bindings are meant to survive across
+// multiple sequential script loads within the same live process, this
+// would incorrectly reclaim them at the first HALT.
 void gc_clean_cache (void)
 {
   size_t cnt = 0;
-  collect_inner (&cnt, &pair_free_pool, pair, false, true);
-  collect_inner (&cnt, &vector_free_pool, vector, false, true);
-  collect_inner (&cnt, &list_free_pool, list, false, true);
-  collect_inner (&cnt, &closure_free_pool, closure_on_heap, false, true);
-  collect_inner (&cnt, &bytevector_free_pool, bytevector, false, true);
-  collect_inner (&cnt, &mut_bytevector_free_pool, mut_bytevector, false, true);
+
+  g_gc_force_teardown = true;
+
+#  define X(tag, ctype, pool) collect_inner (&cnt, &pool, tag, false, true);
+  GC_ALL_POOLS_LIST (X)
+#  undef X
 
   // free self-contained object in sweep
   sweep (true);
+
+  g_gc_force_teardown = false;
 }
 
 void gc_obj_book (void *obj)
@@ -1010,35 +1110,18 @@ void gc_inner_obj_book (otype_t t, void *obj)
 
   switch (t)
     {
-    case pair:
-      {
-        SLIST_INSERT_HEAD (&pair_free_pool, node, next);
-        break;
+#  define X(tag, ctype, pool)                  \
+    case tag:                                  \
+      {                                        \
+        SLIST_INSERT_HEAD (&pool, node, next); \
+        break;                                 \
       }
-    case vector:
-      {
-        SLIST_INSERT_HEAD (&vector_free_pool, node, next);
-        break;
-      }
-    case list:
-      {
-        SLIST_INSERT_HEAD (&list_free_pool, node, next);
-        break;
-      }
+      GC_INNER_TYPE_LIST (X)
+#  undef X
     case closure_on_heap:
     case closure_on_stack:
       {
         SLIST_INSERT_HEAD (&closure_free_pool, node, next);
-        break;
-      }
-    case bytevector:
-      {
-        SLIST_INSERT_HEAD (&bytevector_free_pool, node, next);
-        break;
-      }
-    case mut_bytevector:
-      {
-        SLIST_INSERT_HEAD (&mut_bytevector_free_pool, node, next);
         break;
       }
     default:
@@ -1069,7 +1152,8 @@ void *gc_pool_malloc (otype_t type)
     case imm_int:
     case character:
     case real:
-    case rational:
+    case rational_pos:
+    case rational_neg:
     case boolean:
     case null_obj:
     case none:
@@ -1081,35 +1165,18 @@ void *gc_pool_malloc (otype_t type)
         node = get_free_obj_node (&obj_free_pool);
         break;
       }
-    case list:
-      {
-        node = get_free_obj_node (&list_free_pool);
-        break;
+#  define X(tag, ctype, pool)                    \
+    case tag:                                    \
+      {                                          \
+        node = get_free_obj_node (&pool);        \
+        break;                                   \
       }
-    case pair:
-      {
-        node = get_free_obj_node (&pair_free_pool);
-        break;
-      }
-    case vector:
-      {
-        node = get_free_obj_node (&vector_free_pool);
-        break;
-      }
+      GC_INNER_TYPE_LIST (X)
+#  undef X
     case closure_on_heap:
     case closure_on_stack:
       {
         PANIC ("BUG: closures are not allocated from pool!\n");
-        break;
-      }
-    case bytevector:
-      {
-        node = get_free_obj_node (&bytevector_free_pool);
-        break;
-      }
-    case mut_bytevector:
-      {
-        node = get_free_obj_node (&mut_bytevector_free_pool);
         break;
       }
     default:
@@ -1134,14 +1201,47 @@ void simple_collect (ListHead *head)
   }
 }
 
+// Like simple_collect, but for list_free_pool specifically: a list_t
+// owns a secondary heap-allocated ListNode chain (its elements) that
+// isn't tracked in any pool of its own. Marking the list_t dead
+// without first freeing that chain orphans it the instant this slot
+// is reused for a different list (SLIST_INIT overwrites the only
+// pointer to the old chain). free_object never touches the .attr.gc
+// of the object passed to it directly (only what it owns), so calling
+// it here on each element is safe alongside simple_collect's own pass
+// over obj_free_pool in gc_try_to_recycle -- neither double-marks the
+// other's work.
+static void simple_collect_list (ListHead *head)
+{
+  list_node_t node;
+  for (node = SLIST_FIRST (head); node != NULL; node = SLIST_NEXT (node, next))
+    {
+      list_t l = (list_t)node->obj;
+
+      if (PERMANENT_OBJ == l->attr.gc)
+        continue;
+
+      free_list_nodes (l, free_object);
+      l->attr.gc = FREE_OBJ;
+    }
+}
+
 // collect all composite object, including vector, list, pair
 // bytevector is not included, since it does not have child objects with
 // attr.gc
 void gc_try_to_recycle (void)
 {
-  /* FIXME: The runtime created globals shouldn't be recycled */
+  /* FIXME: The runtime created globals shouldn't be recycled -- see the
+   * note on build_active_root: it only walks the current call-frame
+   * chain (fp/sp), never vm->globals, so a real gc() run at top level
+   * (fp == 0, no active frames) would currently treat every global as
+   * unreachable. Until that's fixed, this stays a blunt "anything
+   * non-permanent is garbage" pass rather than a real reachability
+   * check, which is only safe as long as nothing here is a
+   * runtime-created global the script still needs.
+   */
   simple_collect (&obj_free_pool);
-  simple_collect (&list_free_pool);
+  simple_collect_list (&list_free_pool);
   simple_collect (&vector_free_pool);
   simple_collect (&pair_free_pool);
 
@@ -1149,6 +1249,62 @@ void gc_try_to_recycle (void)
    * Closures are not fixed size object, so we have to free it.
    */
   release_all_free_objects (&closure_free_pool, true);
+}
+
+// Final teardown, meant to be called exactly once, right before the
+// program/process exits (e.g. right before vm_clean(vm)) -- NOT during
+// normal execution. Treats every object across every pool as garbage
+// -- PERMANENT_OBJ included -- regardless of whether it's still
+// technically reachable from the VM stack, and reclaims it through
+// the same collect_inner/collect/sweep pipeline a real gc() cycle
+// uses, with force=true propagated through every stage (not just
+// sweep) -- so, unlike gc_try_to_recycle's simple_collect passes,
+// internal structures (a list_t's ListNode chain, a closure's frame,
+// etc.) are correctly torn down first, rather than the outer struct
+// just being os_free'd out from under them.
+//
+// This exists because a short-lived script may never allocate enough
+// -- or ever hit a real allocation failure -- to cross any of the
+// runtime GC triggers (reactive malloc-failure, oln-pool exhaustion,
+// or the proactive gc_alloc_budget_exceeded threshold) even once
+// during its entire run. Without an explicit final reap, whatever
+// garbage such a script produced simply stays allocated until the
+// process exits, which is exactly what shows up as a "leak" under
+// LeakSanitizer even though nothing is actually wrong with the
+// program's logic.
+//
+// NOTE: same caveat as gc_try_to_recycle -- this has no notion of
+// vm->globals being special, so only call this when the program is
+// truly finished and nothing (including any runtime-created global)
+// needs to survive any longer.
+void gc_teardown (void)
+{
+  size_t count = 0;
+
+  // Override free_object/free_inner_object's own independent
+  // PERMANENT_OBJ guards for the duration of this pass -- see
+  // g_gc_force_teardown's own comment above for why this is needed.
+  g_gc_force_teardown = true;
+
+  // Ensure the active root is empty regardless of prior state, so
+  // exist() returns false for everything below -- deliberately never
+  // calling build_active_root here.
+  clean_active_root ();
+
+#  define X(tag, ctype, pool) collect_inner (&count, &pool, tag, true, true);
+  GC_ALL_POOLS_LIST (X)
+#  undef X
+  collect (&count, &obj_free_pool, false, true);
+
+  // force=true here also physically frees PERMANENT_OBJ pool entries
+  // (release_all_free_objects's force bypasses the .attr.gc check
+  // entirely) -- intentional for a final teardown: nothing needs to
+  // survive after this point, and LeakSanitizer doesn't care whether
+  // something was logically "permanent" from the program's own
+  // perspective.
+  sweep (true);
+
+  g_gc_force_teardown = false;
 }
 
 void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
@@ -1166,7 +1322,8 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
         case imm_int:
         case character:
         case real:
-        case rational:
+        case rational_pos:
+        case rational_neg:
         case boolean:
         case null_obj:
         case none:
@@ -1184,7 +1341,7 @@ void gc_recycle_current_frame (const u8_t *stack, u32_t local, u32_t sp)
           {
             // closures are never recycled, we just free them
             obj->attr.gc = FREE_OBJ;
-            free_object_from_pool (&closure_free_pool, obj);
+            free_object_from_pool (&closure_free_pool, obj->value);
             break;
           }
         case pair:
@@ -1218,12 +1375,9 @@ void gc_init (void)
   object_list_node_pre_allocate ();
 
   SLIST_INIT (&obj_free_pool);
-  SLIST_INIT (&list_free_pool);
-  SLIST_INIT (&vector_free_pool);
-  SLIST_INIT (&pair_free_pool);
-  SLIST_INIT (&closure_free_pool);
-  SLIST_INIT (&bytevector_free_pool);
-  SLIST_INIT (&mut_bytevector_free_pool);
+#  define X(tag, ctype, pool) SLIST_INIT (&pool);
+  GC_ALL_POOLS_LIST (X)
+#  undef X
 }
 
 void gc_clean (void)
@@ -1233,7 +1387,7 @@ void gc_clean (void)
 }
 
 // remove first find object in LIST head
-static void free_object_from_pool (ListHead *head, object_t o)
+static void free_object_from_pool (ListHead *head, void *o)
 {
   list_node_t node = NULL;
   for (node = SLIST_FIRST(head); node != NULL; node = SLIST_NEXT(node, next)) {

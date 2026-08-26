@@ -87,10 +87,8 @@ int zephyr_close (int fd)
 
 ssize_t zephyr_read (int fd, void *buf, size_t count)
 {
-  struct fs_file_t file = (GLOBAL_REF (file_descriptors))[fd];
-  ssize_t size = 0;
-  size = fs_read (&file, buf, count);
-  return size;
+  struct fs_file_t *file = &(GLOBAL_REF (file_descriptors))[fd];
+  return fs_read (file, buf, count);
 }
 
 int zephyr_stat (const char *path, struct fs_dirent *entry)

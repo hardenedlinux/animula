@@ -276,16 +276,18 @@ typedef union Rational
   struct
   {
 #if defined ANIMULA_BIG_ENDIAN
-    unsigned int sign : 1; // 0 for positive, 1 for negative
-    unsigned int numerator : 15;
+    unsigned int numerator : 16;
     unsigned int denominator : 16;
 #else
     unsigned int denominator : 16;
-    unsigned int numerator : 15;
-    unsigned int sign : 1; // 0 for positive, 1 for negative
+    unsigned int numerator : 16;
 #endif /* Little endian.  */
   };
-  /* The value is stored as (numerator << 16) | denominator */
+  /* The value is stored as (numerator << 16) | denominator. Sign is NOT
+   * stored here -- per object.h's encoding table ("14. +Rational |
+   * 16bit uint | 16bit uint |"), it is carried entirely by the object
+   * type tag (rational_pos vs. rational_neg), so both fields here are
+   * plain unsigned magnitudes. */
   u32_t value;
 } __packed rational_t, *rational_p;
 

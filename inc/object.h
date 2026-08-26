@@ -104,7 +104,8 @@ static inline bool is_unspecified (object_t obj)
     object_t obj = NULL;                        \
     do                                          \
       {                                         \
-        if (0 == object_list_node_available ()) \
+        if (0 == object_list_node_available ()  \
+            || gc_alloc_budget_exceeded ())      \
           {                                     \
             GC ();                              \
             continue;                           \
@@ -123,7 +124,8 @@ static inline bool is_unspecified (object_t obj)
     t##_t x = NULL;                             \
     do                                          \
       {                                         \
-        if (0 == object_list_node_available ()) \
+        if (0 == object_list_node_available ()  \
+            || gc_alloc_budget_exceeded ())      \
           {                                     \
             GC ();                              \
             continue;                           \
@@ -145,6 +147,11 @@ static inline bool is_unspecified (object_t obj)
     list_node_t ol = NULL;             \
     do                                 \
       {                                \
+        if (gc_alloc_budget_exceeded ()) \
+          {                            \
+            GC ();                     \
+            continue;                  \
+          }                            \
         ol = animula_new_list_node (); \
         if (ol)                        \
           {                            \

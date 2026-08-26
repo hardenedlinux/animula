@@ -99,15 +99,14 @@ object_t animula_new_object (otype_t type)
 {
   bool has_inner_obj = true;
   bool new_alloc = false;
-  bool new_inner = false;
   object_t object = NULL;
   void *value = NULL;
 
-#ifdef OBG_GC
+  // NOTE: type 0 here means "no specific inner type yet" -- it lands in
+  // the generic obj_free_pool bucket inside gc_pool_malloc's switch.
+  // TODO: replace the magic 0 with a named constant once the otype_t
+  // enum ordering is confirmed, so this isn't a silent assumption.
   object = (object_t)gc_pool_malloc (0);
-#else
-  object = NULL;
-#endif
 
   if (!object)
     {
@@ -189,18 +188,13 @@ object_t animula_new_object (otype_t type)
   object->attr.type = type;
   object->attr.gc = GEN_1_OBJ;
 
-#ifdef OBG_GC
   if (new_alloc)
     gc_obj_book (object);
-#endif
 
   if (has_inner_obj) // value is checked before
     {
       object->value = value;
-
-#ifdef OBG_GC
       gc_inner_obj_book (type, (void *)value);
-#endif
     }
   else
     {

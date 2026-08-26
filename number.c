@@ -21,12 +21,13 @@
 /* ---------------------------------------------------------------------
  * Rational helpers
  *
- * Per types.h, a rational is packed into a single 32bit immediate:
- *   sign:1 | numerator:15 | denominator:16   (little-endian bitfield order)
- * The sign is ALSO carried redundantly by the object type tag
- * (rational_pos == positive, rational_neg == negative); we always trust
- * the type tag as canonical, since that's what the rest of the runtime
- * (encoding table in object.h) treats as the source of truth.
+ * Per object.h's encoding table ("14. +Rational | 16bit uint | 16bit
+ * uint |"), a rational is packed into a single 32bit immediate as two
+ * plain unsigned 16bit magnitudes: numerator:16 | denominator:16. There
+ * is no sign bit in the packed value at all -- sign is carried entirely
+ * by the object type tag (rational_pos vs. rational_neg). This is the
+ * authoritative layout (see types.h's Rational union); every helper
+ * here works in unsigned magnitudes and folds sign in/out at the edges.
  * ------------------------------------------------------------------- */
 
 static inline rational_t rat_decode (immu_object_t x)
@@ -91,14 +92,13 @@ static object_t rat_make (object_t ret, int32_t num, uint32_t denom,
       return ret;
     }
 
-  if (rn > 0x7FFF || rd > 0xFFFF)
+  if (rn > 0xFFFF || rd > 0xFFFF)
     PANIC ("Rational: numerator/denominator overflow after reduction "
-           "(%u/%u) -- needs promotion to bignum rational, not "
-           "supported yet\n",
+           "(%u/%u) -- caller should have pre-checked magnitude via "
+           "try_exact_ratio() before calling rat_make()\n",
            rn, rd);
 
   rational_t r;
-  r.sign = is_neg ? 1 : 0;
   r.numerator = rn;
   r.denominator = rd;
   ret->value = (void *)(uintptr_t)r.value;
@@ -107,11 +107,309 @@ static object_t rat_make (object_t ret, int32_t num, uint32_t denom,
   return ret;
 }
 
+/* ---------------------------------------------------------------------
+ * Small constructors / decoders
+ *
+ * Every numeric primitive in this file ends by stuffing a value into
+ * `ret' along with its type tag and gc marker. Centralizing that here
+ * removes dozens of copies of the same four lines and makes the exact
+ * vs. inexact distinction explicit at every call site.
+ * ------------------------------------------------------------------- */
+
+static inline object_t mk_int (object_t ret, imm_int_t v)
+{
+  ret->value = (void *)(intptr_t)v;
+  ret->attr.type = imm_int;
+  ret->attr.gc = FREE_OBJ;
+  return ret;
+}
+
+static inline object_t mk_real (object_t ret, float v)
+{
+  real_t r;
+  r.f = v;
+  ret->value = (void *)(uintptr_t)r.v;
+  ret->attr.type = real;
+  ret->attr.gc = FREE_OBJ;
+  return ret;
+}
+
+static inline float to_float (immu_object_t x)
+{
+  real_t r;
+  r.v = (uintptr_t)x->value;
+  return r.f;
+}
+
+static inline bool float_is_nan_or_inf (immu_object_t x)
+{
+  real_t r;
+  r.v = (uintptr_t)x->value;
+  return r.exponent == 255;
+}
+
 static inline float rat_to_float (immu_object_t x)
 {
   rational_t r = rat_decode (x);
   float v = (float)r.numerator / (float)r.denominator;
   return rat_is_negative (x) ? -v : v;
+}
+
+static inline bool num_is_zero (immu_object_t x); // defined below
+
+/* Convert any number (exact or inexact) to float, for contagion when an
+ * operation mixes in a `real', or as the fallback path when an exact
+ * computation can't be represented in this encoding. */
+static float to_float_any (immu_object_t x)
+{
+  switch (x->attr.type)
+    {
+    case imm_int:
+      return (float)(imm_int_t)x->value;
+    case real:
+      return to_float (x);
+    case rational_pos:
+    case rational_neg:
+      return rat_to_float (x);
+    default:
+      PANIC ("cannot convert type %d to float\n", x->attr.type);
+      return 0.0f;
+    }
+}
+
+/* ---------------------------------------------------------------------
+ * Exact arithmetic core (+, -, *, /)
+ *
+ * Every EXACT number (imm_int or rational) is a signed fraction num/denom
+ * with denom > 0. Combining two of them (cross-multiplying for add,
+ * sub, mul, div) can overflow the 16-bit numerator/denominator fields this encoding
+ * provides -- and unlike a general-purpose Scheme, Animula has no bignum
+ * backing yet (see the `arbi_int' TODOs elsewhere in this file). Rather
+ * than crash, an operation whose EXACT result doesn't fit this encoding
+ * degrades to an inexact (`real') result instead, computed by redoing
+ * the same operation in plain float32. This is a deliberate, documented
+ * capacity limit of the current encoding, not silent data corruption:
+ * the result is simply no longer exact, same as it wouldn't be in any
+ * other Scheme once you exceed its fixnum/bignum-free fast path.
+ *
+ * NOTE: division always goes through this ratio pipeline, even for two
+ * plain imm_ints -- unlike add/sub/mul, a division that doesn't come out even
+ * inherently needs a fractional (rational) result, so there is no
+ * separate "stays in imm_int" fast path to skip to.
+ * ------------------------------------------------------------------- */
+
+typedef struct
+{
+  int64_t num;   // signed
+  int64_t denom; // always > 0
+} ratio64_t;
+
+static ratio64_t to_ratio (immu_object_t x)
+{
+  switch (x->attr.type)
+    {
+    case imm_int:
+      return (ratio64_t){.num = (int64_t)(imm_int_t)x->value, .denom = 1};
+    case rational_pos:
+      return (ratio64_t){.num = (int64_t)rat_num (x),
+                         .denom = (int64_t)rat_denom (x)};
+    case rational_neg:
+      return (ratio64_t){.num = -(int64_t)rat_num (x),
+                         .denom = (int64_t)rat_denom (x)};
+    default:
+      PANIC ("cannot convert type %d to a ratio\n", x->attr.type);
+      return (ratio64_t){0, 1};
+    }
+}
+
+/* Try to build an exact result from a pre-reduction (num, denom) pair
+ * (denom may be negative; sign is normalized here). Returns true and
+ * fills *ret if the value fits this encoding's 16bit capacity;
+ * returns false (leaving *ret untouched) if the caller should fall
+ * back to an inexact (float) result instead. */
+static bool try_exact_ratio (object_t ret, int64_t num, int64_t denom)
+{
+  if (denom < 0)
+    {
+      num = -num;
+      denom = -denom;
+    }
+  if (denom == 0)
+    PANIC ("Division by zero\n");
+
+  if (num == 0)
+    {
+      mk_int (ret, 0);
+      return true;
+    }
+
+  bool neg = num < 0;
+  int64_t mag = neg ? -num : num;
+
+  if (mag > 0xFFFF || denom > 0xFFFF)
+    return false; // pre-reduction overflow -> caller falls back to float
+
+  rat_make (ret, (int32_t)mag, (uint32_t)denom, neg);
+  return true;
+}
+
+/* MIN_INT32 (imm_int_t's minimum) has no valid positive counterpart of
+ * the same width -- |MIN_INT32| = 2147483648 doesn't fit in imm_int_t.
+ * Treat any imm_int operand sitting exactly on that boundary as unsafe
+ * for the native 32bit fast path below and route straight to float,
+ * regardless of what the specific result would have been (this is a
+ * deliberate, conservative policy choice, not just an overflow check:
+ * e.g. MIN_INT32 - MIN_INT32 mathematically is a harmless 0, but the
+ * boundary operand itself is what triggers the fallback here). */
+static inline bool at_int32_boundary (immu_object_t x, immu_object_t y)
+{
+  return (x->attr.type == imm_int && (imm_int_t)x->value == MIN_INT32)
+         || (y->attr.type == imm_int && (imm_int_t)y->value == MIN_INT32);
+}
+
+object_t _num_add (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
+{
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
+  if (x->attr.type == real || y->attr.type == real)
+    return mk_real (ret, to_float_any (x) + to_float_any (y));
+
+  if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      if (at_int32_boundary (x, y))
+        return mk_real (ret, to_float_any (x) + to_float_any (y));
+      int64_t sum = (int64_t)(imm_int_t)x->value + (int64_t)(imm_int_t)y->value;
+      if (sum >= MIN_INT32 && sum <= MAX_INT32)
+        return mk_int (ret, (imm_int_t)sum);
+      /* TODO: true 32bit overflow should promote to arbi_int (bignum);
+       * not implemented yet -- degrade to inexact instead of crashing. */
+      return mk_real (ret, to_float_any (x) + to_float_any (y));
+    }
+
+  ratio64_t rx = to_ratio (x), ry = to_ratio (y);
+  int64_t num = rx.num * ry.denom + ry.num * rx.denom;
+  int64_t denom = rx.denom * ry.denom;
+  if (try_exact_ratio (ret, num, denom))
+    return ret;
+  return mk_real (ret, to_float_any (x) + to_float_any (y));
+}
+
+object_t _num_sub (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
+{
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
+  if (x->attr.type == real || y->attr.type == real)
+    return mk_real (ret, to_float_any (x) - to_float_any (y));
+
+  if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      if (at_int32_boundary (x, y))
+        return mk_real (ret, to_float_any (x) - to_float_any (y));
+      int64_t diff = (int64_t)(imm_int_t)x->value - (int64_t)(imm_int_t)y->value;
+      if (diff >= MIN_INT32 && diff <= MAX_INT32)
+        return mk_int (ret, (imm_int_t)diff);
+      /* TODO: see _num_add. */
+      return mk_real (ret, to_float_any (x) - to_float_any (y));
+    }
+
+  ratio64_t rx = to_ratio (x), ry = to_ratio (y);
+  int64_t num = rx.num * ry.denom - ry.num * rx.denom;
+  int64_t denom = rx.denom * ry.denom;
+  if (try_exact_ratio (ret, num, denom))
+    return ret;
+  return mk_real (ret, to_float_any (x) - to_float_any (y));
+}
+
+object_t _num_mul (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
+{
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
+  if (x->attr.type == real || y->attr.type == real)
+    return mk_real (ret, to_float_any (x) * to_float_any (y));
+
+  if (x->attr.type == imm_int && y->attr.type == imm_int)
+    {
+      if (at_int32_boundary (x, y))
+        return mk_real (ret, to_float_any (x) * to_float_any (y));
+      int64_t prod = (int64_t)(imm_int_t)x->value * (int64_t)(imm_int_t)y->value;
+      if (prod >= MIN_INT32 && prod <= MAX_INT32)
+        return mk_int (ret, (imm_int_t)prod);
+      /* TODO: see _num_add. */
+      return mk_real (ret, to_float_any (x) * to_float_any (y));
+    }
+
+  ratio64_t rx = to_ratio (x), ry = to_ratio (y);
+  int64_t num = rx.num * ry.num;
+  int64_t denom = rx.denom * ry.denom;
+  if (try_exact_ratio (ret, num, denom))
+    return ret;
+  return mk_real (ret, to_float_any (x) * to_float_any (y));
+}
+
+object_t _num_div (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
+{
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
+  if (y->attr.type != real && num_is_zero (y))
+    PANIC ("Division by zero\n");
+
+  if (x->attr.type == real || y->attr.type == real)
+    return mk_real (ret, to_float_any (x) / to_float_any (y));
+
+  // Division always goes through the ratio pipeline -- see NOTE above.
+  ratio64_t rx = to_ratio (x), ry = to_ratio (y);
+  int64_t num = rx.num * ry.denom;
+  int64_t denom = rx.denom * ry.num;
+  if (try_exact_ratio (ret, num, denom))
+    return ret;
+  return mk_real (ret, to_float_any (x) / to_float_any (y));
+}
+
+/* ---------------------------------------------------------------------
+ * Comparisons (=, <, >, <=, >=)
+ * ------------------------------------------------------------------- */
+
+bool _int_eq (immu_object_t x, immu_object_t y)
+{
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
+  if (x->attr.type == real || y->attr.type == real)
+    return to_float_any (x) == to_float_any (y); // NaN, +-0.0 "just work"
+
+  ratio64_t rx = to_ratio (x), ry = to_ratio (y);
+  return rx.num * ry.denom == ry.num * rx.denom;
+}
+
+bool _int_gt (immu_object_t x, immu_object_t y)
+{
+  VALIDATE_NUMBER (x);
+  VALIDATE_NUMBER (y);
+
+  if (x->attr.type == real || y->attr.type == real)
+    return to_float_any (x) > to_float_any (y);
+
+  ratio64_t rx = to_ratio (x), ry = to_ratio (y);
+  return rx.num * ry.denom > ry.num * rx.denom;
+}
+
+bool _int_lt (immu_object_t x, immu_object_t y)
+{
+  return !_int_eq (x, y) && !_int_gt (x, y);
+}
+
+bool _int_le (immu_object_t x, immu_object_t y)
+{
+  return _int_lt (x, y) || _int_eq (x, y);
+}
+
+bool _int_ge (immu_object_t x, immu_object_t y)
+{
+  return _int_gt (x, y) || _int_eq (x, y);
 }
 
 static inline bool num_is_zero (immu_object_t x)
@@ -189,47 +487,6 @@ static inline bool num_is_positive (immu_object_t x)
 }
 
 typedef float (*real_op_t) (float);
-
-/* ---------------------------------------------------------------------
- * Small constructors / decoders
- *
- * Every numeric primitive in this file ends by stuffing a value into
- * `ret' along with its type tag and gc marker. Centralizing that here
- * removes dozens of copies of the same four lines and makes the exact
- * vs. inexact distinction explicit at every call site.
- * ------------------------------------------------------------------- */
-
-static inline object_t mk_int (object_t ret, imm_int_t v)
-{
-  ret->value = (void *)(intptr_t)v;
-  ret->attr.type = imm_int;
-  ret->attr.gc = FREE_OBJ;
-  return ret;
-}
-
-static inline object_t mk_real (object_t ret, float v)
-{
-  real_t r;
-  r.f = v;
-  ret->value = (void *)(uintptr_t)r.v;
-  ret->attr.type = real;
-  ret->attr.gc = FREE_OBJ;
-  return ret;
-}
-
-static inline float to_float (immu_object_t x)
-{
-  real_t r;
-  r.v = (uintptr_t)x->value;
-  return r.f;
-}
-
-static inline bool float_is_nan_or_inf (immu_object_t x)
-{
-  real_t r;
-  r.v = (uintptr_t)x->value;
-  return r.exponent == 255;
-}
 
 /* NOTE: currently unused within this file -- kept for whichever
  * transcendental-function primitives (sin/cos/sqrt/...) end up calling
@@ -857,34 +1114,11 @@ object_t _square (vm_t vm, object_t ret, immu_object_t x)
 {
   VALIDATE_NUMBER (x);
 
-  switch (x->attr.type)
-    {
-    case imm_int:
-      {
-        imm_int_t a = (imm_int_t)x->value;
-        /* TODO: no overflow check -- should promote to arbi_int (bignum)
-         * on overflow instead of silently wrapping. Not implemented. */
-        return mk_int (ret, a * a);
-      }
-
-    case real:
-      {
-        float f = to_float (x);
-        return mk_real (ret, f * f);
-      }
-
-    case rational_pos:
-    case rational_neg:
-      {
-        int32_t n = (int32_t)rat_num (x);
-        uint32_t d = rat_denom (x);
-        return rat_make (ret, n * n, d * d, false); // square is never negative
-      }
-
-    default:
-      PANIC ("square not implemented for this type\n");
-      return NULL;
-    }
+  // square(x) is just x*x -- reuse the general multiply core so overflow
+  // behavior, exactness, and rational reduction all stay consistent
+  // with the rest of the numeric tower instead of being reimplemented
+  // (and re-buggable) here.
+  return _num_mul (vm, ret, x, x);
 }
 
 object_t _sqrt (vm_t vm, object_t ret, immu_object_t x)
@@ -953,96 +1187,62 @@ object_t _exact_integer_sqrt (vm_t vm, object_t ret, immu_object_t x)
   return mk_int (ret, int_sqrt_floor (n));
 }
 
-/* base^exp for exp >= 0, plain repeated multiplication (no powf). */
-static float float_ipow (float base, imm_int_t exp)
-{
-  float result = 1.0f;
-  for (imm_int_t i = 0; i < exp; i++)
-    result *= base;
-  return result;
-}
-
 object_t _expt (vm_t vm, object_t ret, immu_object_t x, immu_object_t y)
 {
   VALIDATE_NUMBER (x);
   VALIDATE_NUMBER (y);
 
-  // exact base, exact integer exponent -> exact result
-  if (x->attr.type == imm_int && y->attr.type == imm_int)
-    {
-      imm_int_t base = (imm_int_t)x->value;
-      imm_int_t exp = (imm_int_t)y->value;
-
-      if (exp < 0)
-        {
-          // R7RS: (expt <exact-int> <negative-exact-int>) is EXACT --
-          // it must stay a rational (1 / base^|exp|), never fall to
-          // float.
-          if (base == 0)
-            PANIC ("expt: division by zero (0 raised to a negative "
-                   "power)\n");
-
-          imm_int_t abs_exp = -exp;
-          imm_int_t abs_base = (base < 0) ? -base : base;
-          imm_int_t denom_mag = 1;
-          for (imm_int_t i = 0; i < abs_exp; i++)
-            {
-              /* TODO: on overflow this should promote to arbi_int
-               * (bignum); not implemented yet. */
-              if (denom_mag > MAX_INT32 / abs_base)
-                PANIC ("expt: result denominator overflow -- needs "
-                       "bignum rational support, not implemented yet\n");
-              denom_mag *= abs_base;
-            }
-          bool result_neg = (base < 0) && (abs_exp & 1);
-          return rat_make (ret, 1, (uint32_t)denom_mag, result_neg);
-        }
-
-      imm_int_t result = 1;
-      for (imm_int_t i = 0; i < exp; i++)
-        /* TODO: no overflow check -- should promote to arbi_int
-         * (bignum) instead of silently wrapping. Not implemented. */
-        result *= base;
-      return mk_int (ret, result);
-    }
-
-  // Any inexact operand, or a mix -> inexact result.
-  float bx;
-  switch (x->attr.type)
-    {
-    case imm_int:
-      bx = (float)(imm_int_t)x->value;
-      break;
-    case real:
-      bx = to_float (x);
-      break;
-    case rational_pos:
-    case rational_neg:
-      bx = rat_to_float (x);
-      break;
-    default:
-      PANIC ("expt not implemented for this type\n");
-      return NULL;
-    }
-
-  float by;
+  // Only integer exponents are supported (matches prior behavior) --
+  // a non-integer exponent needs real pow(), which this bare-metal-
+  // friendly file doesn't implement.
+  imm_int_t exp;
   switch (y->attr.type)
     {
     case imm_int:
-      by = (float)(imm_int_t)y->value;
+      exp = (imm_int_t)y->value;
       break;
     case real:
-      by = to_float (y);
-      break;
+      {
+        float fy = to_float (y);
+        if (!float_is_integer (fy))
+          PANIC ("expt for non-integer exponents not implemented\n");
+        exp = (imm_int_t)fy;
+        break;
+      }
     default:
-      PANIC ("expt not implemented for this type\n");
+      PANIC ("expt: exponent must be an integer or a whole-number real\n");
       return NULL;
     }
 
-  if (!float_is_integer (by))
-    PANIC ("expt for non-integer exponents not implemented\n");
+  if (exp == 0)
+    // x^0 = 1; stays exact only if x is exact (R7RS exactness rule).
+    return (x->attr.type == real) ? mk_real (ret, 1.0f) : mk_int (ret, 1);
 
-  imm_int_t exp_int = (imm_int_t)by;
-  float p = float_ipow (bx, (exp_int < 0) ? -exp_int : exp_int);
-  return mk_real (ret, (exp_int >= 0) ? p : 1.0f / p);
+  bool neg_exp = exp < 0;
+  imm_int_t n = neg_exp ? -exp : exp;
+
+  // Reuse _num_mul for the repeated multiplication: overflow-to-
+  // inexact, exactness, and rational reduction all stay consistent
+  // with the rest of the numeric tower instead of being hand-rolled
+  // (and re-buggable) here, and it uniformly handles imm_int/rational/
+  // real bases without separate code paths.
+  // NOTE: passing &acc as both `ret' and the left operand is safe here
+  // -- every branch of _num_mul reads its operands into plain local
+  // values (float / int64_t / ratio64_t) before it ever writes *ret,
+  // so this self-aliasing never reads back an already-overwritten
+  // value.
+  Object acc;
+  mk_int (&acc, 1);
+  for (imm_int_t i = 0; i < n; i++)
+    _num_mul (vm, &acc, &acc, x);
+
+  if (!neg_exp)
+    {
+      *ret = acc;
+      return ret;
+    }
+
+  Object one;
+  mk_int (&one, 1);
+  return _num_div (vm, ret, &one, &acc); // errors on exact 0 automatically
 }

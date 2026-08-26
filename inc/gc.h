@@ -29,13 +29,20 @@
       }                           \
     while (0);
 #  define GC() GC_gcollect ()
-#  define GC_CLEAN()
+#  define GC_CLEAN()                                         do { } while (0)
 // GC_MALLOC was provided by tiny_gc.h
-#  define gc_inner_obj_book                  // tiny gc doesn't need it
-#  define gc_inner_obj_book                  // tiny gc doesn't need it
-#  define gc_recycle_current_frame(...)      // tiny gc doesn't need it
-#  define gc_clean_cache()                   // tiny gc doesn't need it
-#  define gc_try_to_recycle()                // tiny gc doesn't need it
+// NOTE: do{}while(0) (rather than expanding to nothing) so these are
+// safe to use as the body of an `if (...) gc_obj_book(...);` without
+// braces -- expanding to nothing turns that into `if (...) ;`, which
+// -Wempty-body flags and -Werror then turns into a build failure.
+#  define gc_obj_book(...)                                do { } while (0)
+#  define gc_inner_obj_book(...)                           do { } while (0)
+#  define gc_recycle_current_frame(...)                    do { } while (0)
+#  define gc_clean_cache()                                  do { } while (0)
+#  define gc_try_to_recycle()                                do { } while (0)
+#  define gc_bind_vm(vm)                                     do { } while (0)
+#  define gc_alloc_budget_exceeded()    false // tiny gc already collects incrementally
+#  define gc_teardown()                                      do { } while (0)
 #  define object_list_node_available()  1    // always true
 #  define gc_pool_malloc(te)            NULL // always NULL
 #else
