@@ -77,7 +77,41 @@ vector_t animula_new_vector (void)
 
 list_t animula_new_list (void)
 {
-  CREATE_NEW_OBJ (list_t, list, List);
+  list_t o = (list_t)gc_pool_malloc (list);
+
+  if (!o)
+    {
+      o = (list_t)GC_MALLOC (sizeof (List));
+    }
+
+  if (o)
+    {
+      /* NOTE: gc_pool_malloc()/GC_MALLOC() only allocate memory -- they
+       * never zero or initialize any field. `list.slh_first` (the SLIST
+       * head pointer) MUST start as NULL: SLIST_INSERT_HEAD/AFTER (used
+       * by `map`/`for-each`/etc. in vm.c) work by having each newly
+       * inserted node inherit whatever "next" value was already sitting
+       * at the insertion point, and it never gets NULLed out afterward.
+       * If slh_first starts as garbage instead of NULL, that garbage is
+       * silently carried along, node after node, until it ends up as the
+       * final tail node's `next` -- a chain that looks complete but never
+       * actually terminates.
+       *
+       * This was invisible under tiny gc because Boehm's GC_malloc()
+       * happens to zero the memory it returns, so slh_first came out as
+       * NULL by accident. obg's GC_MALLOC fallback is a raw os_malloc(),
+       * which does not zero -- under AddressSanitizer that uninitialized
+       * memory is filled with the 0xbe pattern, which is exactly the
+       * 0xbebebe... address list_printer/SLIST_NEXT crashed on reading.
+       * This is a plain missing-initialization bug, unrelated to GC
+       * reachability, generation tagging, or apply_proc's calling
+       * convention -- fix it once here so every caller of
+       * animula_new_list()/NEW_INNER_OBJ(list) gets a real empty list. */
+      o->list.slh_first = NULL;
+      o->non_shared = 0;
+    }
+
+  return o;
 }
 
 closure_t animula_new_closure (void)
