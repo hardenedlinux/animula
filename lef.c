@@ -1,5 +1,5 @@
-/*  Copyright (C) 2020
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -77,7 +77,7 @@ lef_t load_lef_from_uart ()
     {
       uart_drop_rest_data ();
       os_printk ("Wrong LEF file, please check it then re-upload!\n");
-      exit (-1);
+      os_abort (-1);
     }
 
   for (int i = 0; i < 3; i++)
@@ -139,7 +139,7 @@ lef_t load_lef_from_file (const char *filename)
   if (!file_exist (filename))
     {
       os_printk ("File \"%s\" doesn't exist!\n", filename);
-      exit (-1);
+      os_abort (-1);
     }
 
   int fp;
@@ -151,7 +151,7 @@ lef_t load_lef_from_file (const char *filename)
     {
       os_printk ("Wrong LEF file, please check it then re-upload!\n");
       // FIXME: if load from zephyr, cannot exit directly
-      exit (-1);
+      os_abort (-1);
     }
 
   os_read (fd, lef->ver, 3);

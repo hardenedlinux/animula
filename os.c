@@ -1,7 +1,6 @@
 /*
- *  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
- *        Rafael Lee <rafaellee.img@gmail.com>
+ *  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -75,7 +74,7 @@ int zephyr_close (int fd)
   if (0 == ret) // success
     {
       (GLOBAL_REF (file_descriptors))[fd].filep = (void *)NULL;
-      memset ((void *)file, 0, sizeof (struct fs_file_t));
+      os_memset ((void *)file, 0, sizeof (struct fs_file_t));
       // file->filep = (void*)NULL;
       return 0;
     }

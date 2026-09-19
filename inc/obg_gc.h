@@ -1,7 +1,7 @@
 #ifndef __OBG_GC_H__
 #define __OBG_GC_H__
-/*  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the

@@ -1,5 +1,5 @@
-/*  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -1446,7 +1446,7 @@ void vm_run (vm_t vm)
       /*       (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
-      /* getchar (); */
+      /* os_getchar (); */
 
       /* printf ("TOS: "); */
       /* object_printer (&TOP_OBJ ()); */
@@ -1489,7 +1489,7 @@ void apply_proc (vm_t vm, object_t proc, object_t ret)
        * (imm_int_t)obj->value); */
       /*   } */
       /* os_printk ("------------END-----------\n"); */
-      /* getchar (); */
+      /* os_getchar (); */
     }
 
   // FIXME: optimize it to reduce redundant copying

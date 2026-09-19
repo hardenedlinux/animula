@@ -1,5 +1,5 @@
-/*  Copyright (C) 2026
- *        "Mu Lei" known as "NalaGinrut" <roy@hardenedlinux.org>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -20,6 +20,7 @@
 #  include <fcntl.h>
 #  include <zephyr/device.h>
 #  include <zephyr/devicetree.h>
+#  include <zephyr/drivers/flash.h>
 #  include <zephyr/fs/fs.h>
 #  include <zephyr/kernel.h>
 
@@ -132,24 +133,54 @@ int os_flash_read(char *buf, size_t offset, size_t size)
   return ret;
 }
 
+int os_open(const char *path, int flags)
+{
+  /* Only read-only open is exercised today. */
+  if (OS_O_RDONLY != flags)
+    return -1;
+
+#if defined ANIMULA_LINUX
+  return open(path, O_RDONLY);
+#elif defined ANIMULA_ZEPHYR
+  return zephyr_open(path, FS_O_READ);
+#else
+  return -1;
+#endif
+}
+
+int os_close(int fd)
+{
+#if defined ANIMULA_LINUX
+  return close(fd);
+#elif defined ANIMULA_ZEPHYR
+  return zephyr_close(fd);
+#else
+  return -1;
+#endif
+}
+
+int os_file_exist(const char *path)
+{
+#if defined ANIMULA_LINUX
+  struct stat st = {0};
+  return (stat(path, &st) == 0);
+#elif defined ANIMULA_ZEPHYR
+  struct fs_dirent entry = {0};
+  return (zephyr_stat(path, &entry) == 0);
+#else
+  return 0;
+#endif
+}
+
 int os_open_input_file(const char *filename)
 {
-  int fd = -1;
+  int fd = os_open(filename, OS_O_RDONLY);
 
-#if defined(ANIMULA_LINUX)
-  if ((fd = linux_open(filename, O_RDONLY)) < 0)
-#elif defined(ANIMULA_ZEPHYR)
-  if ((fd = zephyr_open(filename, FS_O_READ)) < 0)
-#else
-  os_printk("The current platform %s doesn't support open()!\n",
-            get_platform_info ());
-#endif
-
-    if (fd < 0)
-      {
-        os_printk("Open file \"%s\" failed!\n", filename);
-        exit(-1);
-      }
+  if (fd < 0)
+    {
+      os_printk("Open file \"%s\" failed!\n", filename);
+      os_abort(-1);
+    }
 
   return fd;
 }
@@ -159,18 +190,15 @@ int os_read(int fd, void *buf, size_t count)
   int ret = -1;
 
 #if defined ANIMULA_LINUX
-  ret = linux_read(fd, buf, count);
+  ret = read(fd, buf, count);
 #elif defined ANIMULA_ZEPHYR
   ret = zephyr_read(fd, buf, count);
-#else
-  os_printk("The current platform %s doesn't support read()!\n",
-            get_platform_info ());
 #endif
 
   if (ret < 0)
     {
       os_printk("Read file \"%d\" failed!\n", fd);
-      exit(-1);
+      os_abort(-1);
     }
 
   return ret;

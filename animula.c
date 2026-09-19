@@ -1,5 +1,5 @@
-/*  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -16,9 +16,8 @@
  */
 
 #include "animula.h"
-#include "vos/drivers/gpio.h"
 #ifdef ANIMULA_ZEPHYR
-// #include "file_operation.h"
+#  include "vos/oal/zephyr/gpio.h"
 #endif /* ANIMULA_ZEPHYR */
 
 vm_t animula_init (void)
@@ -59,7 +58,7 @@ vm_t animula_start (lef_loader_t lef_loader)
 
   lef_t lef = LEF_LOAD (lef_loader);
 
-  if (!strncmp (lef->sig, "LEF", 3))
+  if (!os_strncmp (lef->sig, "LEF", 3))
     {
       vm_load_lef (vm, lef);
       vm_run (vm);

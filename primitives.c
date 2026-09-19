@@ -1,5 +1,5 @@
-/*  Copyright (C) 2020-2026
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -18,7 +18,7 @@
 #include "primitives.h"
 #include "type_cast.h"
 #ifdef ANIMULA_ZEPHYR
-#  include <vos/drivers/gpio.h>
+#  include <vos/oal/zephyr/gpio.h>
 #endif /* ANIMULA_ZEPHYR */
 #include "lib.h"
 #include "number.h"
@@ -150,7 +150,7 @@ static object_t _os_get_board_id (vm_t vm, object_t ret)
     {
       os_memcpy (g_board_uid, (char *)UID_BASE, sizeof (g_board_uid));
     }
-  os_snprintk (uid, BOARD_ID_LEN, "%08X%08X%08X", g_board_uid[0],
+  os_snprintf (uid, BOARD_ID_LEN, "%08X%08X%08X", g_board_uid[0],
                g_board_uid[1], g_board_uid[2]);
 
   return ret;
@@ -863,7 +863,7 @@ struct super_device
 int i2c_read (int dev, u8_t *rx_buf, int len_list, int addr)
 {
   static u8_t data[] = {0x1C, 0x9A, 0x15, 0x34, 0xED, 0xAD, 0x00};
-  memcpy (rx_buf, data, len_list);
+  os_memcpy (rx_buf, data, len_list);
   return 0;
 }
 #  endif /* SIMULATE*/

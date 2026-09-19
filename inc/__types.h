@@ -1,20 +1,19 @@
 #ifndef __ANIMULA___TYPES_H
 #define __ANIMULA___TYPES_H
-/*  Copyright (C) 2020
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or  (at your option) any later version.
-
+ *
  *  Animula is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
-
+ *
  *  You should have received a copy of the GNU Lesser General Public
- *  License along with this program.
- *  If not, see <http://www.gnu.org/licenses/>.
+ *  License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef __ASSEMBLER__
@@ -28,8 +27,12 @@
 #    define NULL ((void *)0)
 #  endif
 
-// Represents true-or-false values
+/* Represents true-or-false values.
+ * Zephyr supplies bool through <zephyr/types.h>, so it is not redefined
+ * here (the two platforms disagree on its representation, by design). */
+#  ifndef ANIMULA_ZEPHYR
 typedef __bool bool;
+#  endif
 
 // CPU word long
 typedef __longword longword;
@@ -69,17 +72,12 @@ typedef __cptr_t cptr_t;
 
 #  ifndef ANIMULA_LINUX
 typedef __stdptr_t stdptr_t;
-typedef __intptr_t intptr_t;
-typedef __uintptr_t uintptr_t;
 typedef __physaddr_t physaddr_t;
 // size_t is used for memory object sizes.
 typedef __size_t size_t;
 // ssize_t is a signed version of ssize_t, used in case there might be an
 // error return.
 typedef __ssize_t ssize_t;
-
-// off_t is used for file offsets and lengths.
-typedef __off_t off_t;
 #  endif
 
 // FIXME: how to deal with 64bit_ARCH for other things, such as "page"?
@@ -91,9 +89,13 @@ typedef __ppn_t ppn_t;
 // mutex type
 typedef __mutex_t _mutex_t;
 
-#  define MIN(_a, _b) __MIN (_a, _b)
+/* MIN/MAX and container_of are supplied by Zephyr's <zephyr/sys/util.h>,
+ * so they are only defined here for the non-Zephyr platforms that lack
+ * them. */
+#  ifndef ANIMULA_ZEPHYR
+#    define MIN(_a, _b) __MIN (_a, _b)
 
-#  define MAX(_a, _b) __MAX (_a, _b)
+#    define MAX(_a, _b) __MAX (_a, _b)
 
 /* These two useful macros must be familar to you
  * (IF NOT, GO BACK TO BASIC HACKING!)
@@ -102,8 +104,9 @@ typedef __mutex_t _mutex_t;
  * macros.
  * So here is a ANSI C version.
  */
-#  define container_of(elem_addr, struct_type, member) \
-    ((struct_type *)((stdptr_t) (elem_addr)-offsetof (struct_type, member)))
+#    define container_of(elem_addr, struct_type, member) \
+      ((struct_type *)((stdptr_t) (elem_addr)-offsetof (struct_type, member)))
+#  endif
 
 //#  define offsetof(type, member) (off_t) (&((type *)0)->member)
 

@@ -1,5 +1,5 @@
-/*  Copyright (C) 2020
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -70,15 +70,15 @@ static int serial_load (int argc, char **argv, vm_t vm)
       SLOAD_HELP ();
       return 0;
     }
-  else if (!strncmp (argv[1], "save", 5))
+  else if (!os_strncmp (argv[1], "save", 5))
     {
       save = true;
     }
-  else if (!strncmp (argv[1], "once", 5))
+  else if (!os_strncmp (argv[1], "once", 5))
     {
       save = false;
     }
-  else if (!strncmp (argv[1], "run", 4))
+  else if (!os_strncmp (argv[1], "run", 4))
     {
       // save = true;
       run = true;
@@ -178,7 +178,7 @@ static int run_cmd (char *buf, vm_t vm)
   while (true)
     {
       // gobble whitespace
-      while (*buf && strchr (KSC_WHITESPACE, *buf))
+      while (*buf && os_strchr (KSC_WHITESPACE, *buf))
         *buf++ = 0;
 
       if (0 == *buf)
@@ -193,7 +193,7 @@ static int run_cmd (char *buf, vm_t vm)
 
       argv[argc++] = buf;
 
-      while (*buf && !strchr (KSC_WHITESPACE, *buf))
+      while (*buf && !os_strchr (KSC_WHITESPACE, *buf))
         buf++;
     }
 
@@ -207,7 +207,7 @@ static int run_cmd (char *buf, vm_t vm)
     {
       if (NULL == kernel_shell_cmd[i].run)
         break;
-      else if (0 == strncmp (argv[0], kernel_shell_cmd[i].name, KSC_NAME_LEN))
+      else if (0 == os_strncmp (argv[0], kernel_shell_cmd[i].name, KSC_NAME_LEN))
         return kernel_shell_cmd[i].run (argc, argv, vm);
     }
   os_printk ("Unknown command '%s'\n", argv[0]);

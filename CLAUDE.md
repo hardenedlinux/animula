@@ -27,12 +27,15 @@ the entry `main()`:
 - **animula-zephyr** — the real target (ZephyrRTOS on Cortex-M, e.g. the
   "Alonzo" board).
 
-**Platform selection is one compile-time macro**, checked in `inc/os.h`
+**Platform selection is one compile-time macro**, checked in `inc/vos.h`
 (`#if defined ANIMULA_ZEPHYR … #elif defined ANIMULA_LINUX … #else #error
 "Please specify a platform!"`). The host project passes `-DANIMULA_LINUX`
-or `-DANIMULA_ZEPHYR`; the core never chooses. The same macro gates the VOS
-driver headers (`inc/vos/drivers/*.h`) and the OAL (`inc/os.h` maps
-`os_malloc`/`os_printk`/`os_memcpy`/etc. onto the platform's libc/RTOS).
+or `-DANIMULA_ZEPHYR`; the core never chooses. `vos.h` dispatches to one
+per-platform OAL header (`inc/vos/oal/linux/vos.h` or
+`inc/vos/oal/zephyr/vos.h`) which maps the `os_*` names
+(`os_malloc`/`os_printk`/`os_memcpy`/etc.) onto that platform's libc/RTOS.
+`inc/os.h` is the OS-abstraction entry the Core actually includes: it pulls
+in `vos.h` and adds VM build config (endianness, `GLOBAL_*`, etc.).
 
 **The VM does not compile Scheme.** The [laco
 compiler](https://github.com/hardenedlinux/laco) turns `.scm` into `.lef`
@@ -71,12 +74,45 @@ support a minimal configuration down to ~10KB RAM for basic algorithms.
 object encoding. When code and `object.h` disagree, fix the code to match
 `object.h`, never the reverse. This is a hard rule from the project owner.
 
-**Architecture layering (VOS abstraction)**: Animula core  prim layer
-(business semantics only)  VOS (a stable, ISA-equivalent contract)  OAL
-(per-RTOS implementation, e.g. FreeRTOS). **Primitives must never call RTOS
-APIs directly**  everything RTOS-specific goes through the OAL beneath the
-VOS contract. The VOS contract is meant to grow from real delivery history,
-not be designed top-down in advance.
+**Architecture layering (OS/VOS abstraction)**: Animula core → prim layer
+(business semantics only) → OS abstraction (`os_*` names) → VOS (platform
+selector) → OAL (per-RTOS implementation, e.g. FreeRTOS/Zephyr). Concrete
+files:
+- `inc/vos.h` — the single platform selector (`#if ANIMULA_LINUX → include
+  "vos/oal/linux/vos.h" / #elif ANIMULA_ZEPHYR → "vos/oal/zephyr/vos.h" /
+  #else #error`). No arch/board/linker selection, no weak symbols.
+- `inc/vos/oal/{linux,zephyr}/vos.h` — the OAL headers mapping the `os_*`
+  names onto POSIX/libc (Linux) or Zephyr/newlib (Zephyr). Zephyr-only
+  board content (e.g. `gpio.h`) lives under `inc/vos/oal/zephyr/`.
+- `inc/os.h` — the OS-abstraction entry the Core includes: it includes
+  `vos.h` and adds VM build config (endianness, `ANIMULA_BITS_*`,
+  `ADDRESS_64`, `GLOBAL_*`, `MEMORY_TRACKER_*`, `PRE_ARN`/`PRE_OLN`).
+
+**The `os_*` API is the OS abstraction, not `vos_*`.** Every capability the
+old `os.h` provided belongs to the OS abstraction and must keep going
+through `os_*`, even when on Linux it is just a thin alias onto libc/POSIX
+(`os_malloc` → the VM heap manager, `os_printk` → `printf`, `os_memcpy` →
+`memcpy`, …). Never bypass `os_*` for "portable C", and do not rename
+`os_*` to `vos_*`. Current surface:
+- memory: `os_malloc`/`os_calloc`/`os_free` (real functions in `memory.c`,
+  backed by the raw allocator `__malloc`/`__calloc`/`__free` → libc).
+- console: `os_printk`, `os_getchar`, `os_getline`; formatting:
+  `os_snprintf`.
+- string/memory/math: `os_memcpy`, `os_memset`, `os_strlen`, `os_strnlen`,
+  `os_strncmp`, `os_strchr`, `os_strncpy`, `os_abs`, `os_fabs`, `os_usleep`.
+- file: `os_open`/`os_read`/`os_close`/`os_file_exist` (implemented in
+  `storage.c`, dispatching Linux vs Zephyr backend), plus the LEF-loading
+  helpers `os_open_input_file`/`os_read_u32`/`os_read_u16`.
+- time: `os_timestamp` (monotonic); platform: `get_platform_info()`;
+  termination: `os_abort`.
+- type layer: `inc/__types.h` is the single type header for both platforms
+  (guarded by `ANIMULA_ZEPHYR`/`ANIMULA_LINUX`); the former
+  `inc/vos/zephyr_types.h` is merged into it and deleted. VM type
+  semantics/sizes/signedness/ABI are unchanged.
+
+**Primitives must never call RTOS APIs directly** — everything RTOS-specific
+goes through the OAL beneath the `os_*` contract. The contract is meant to
+grow from real delivery history, not be designed top-down in advance.
 
 ---
 

@@ -1,7 +1,7 @@
 #ifndef __ANIMULA_LEF_H__
 #define __ANIMULA_LEF_H__
-/*  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -24,11 +24,6 @@
 #include "storage.h"
 #include "symbol.h"
 #include "types.h"
-#include "vos.h"
-#ifdef ANIMULA_ZEPHYR
-#  include <zephyr/fs/fs.h>
-#  include <zephyr/kernel.h>
-#endif
 
 typedef struct LEF
 {
@@ -87,21 +82,9 @@ static inline u32_t lef_entry (u16_t offset, lef_t lef)
   return *((u32_t *)entry);
 }
 
-#if defined(ANIMULA_LINUX) || defined(ANIMULA_ZEPHYR)
-#  include <sys/stat.h>
-#  include <sys/types.h>
-#  include <unistd.h>
-#endif
-
 static inline bool file_exist (const char *filename)
 {
-#if defined ANIMULA_LINUX
-  struct stat st = {0};
-  return (linux_stat (filename, &st) == 0);
-#elif defined ANIMULA_ZEPHYR
-  struct fs_dirent entry = {0};
-  return (zephyr_stat (filename, &entry) == 0);
-#endif
+  return os_file_exist (filename);
 }
 
 void store_lef (lef_t lef, size_t offset);

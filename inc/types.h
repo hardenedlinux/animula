@@ -1,7 +1,7 @@
 #ifndef __ANIMULA_TYPES_H
 #define __ANIMULA_TYPES_H
-/*  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -30,7 +30,7 @@
 #    error "You must define CONFIG_HEAP_MEM_POOL_SIZE for Zephyr!"
 #  endif
 #  include <stddef.h>
-#  include <vos/zephyr_types.h>
+#  include "__types.h"
 #  include <zephyr/types.h>
 typedef u16_t reg_t;
 

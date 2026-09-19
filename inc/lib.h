@@ -1,7 +1,7 @@
 #ifndef __ANIMULA_LIB_H__
 #define __ANIMULA_LIB_H__
-/*  Copyright (C) 2020-2021
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -26,8 +26,8 @@
 static inline imm_int_t gcd (imm_int_t u, imm_int_t v)
 {
 
-  imm_int_t uu = abs (u);
-  imm_int_t vv = abs (v);
+  imm_int_t uu = os_abs (u);
+  imm_int_t vv = os_abs (v);
 
   while ((uu %= vv) && (vv %= uu))
     ;

@@ -1,5 +1,5 @@
-/*  Copyright (C) 2020-2025
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *        Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -40,7 +40,7 @@ object_t _read_str (vm_t vm, object_t ret, object_t obj)
 
   for (int i = 0; i < cnt; i++)
     {
-      buf[i] = getchar ();
+      buf[i] = os_getchar ();
     }
   buf[cnt] = '\0';
 
@@ -131,7 +131,7 @@ object_t _make_string (vm_t vm, object_t ret, object_t length, object_t char0)
   char *p = (char *)GC_MALLOC (len + 1);
   if (p)
     {
-      memset (p, c, len);
+      os_memset (p, c, len);
       p[len] = '\0';
     }
   ret->value = (void *)p;
@@ -206,7 +206,7 @@ object_t _string_eq (vm_t vm, object_t ret, object_t str0, object_t str1)
       *ret = GLOBAL_REF (true_const);
     }
 
-  if (0 == strncmp ((char *)str0->value, (char *)str1->value, MAX_STR_LEN))
+  if (0 == os_strncmp ((char *)str0->value, (char *)str1->value, MAX_STR_LEN))
     {
       // ret->value = (void*)true;
       *ret = GLOBAL_REF (true_const);
@@ -246,7 +246,7 @@ object_t _substring (vm_t vm, object_t ret, object_t str0, object_t start,
   // FIXME: Memory leaks here, there's no good way to free memory at this stage.
   char *p = (char *)GC_MALLOC (new_len + 1);
   p[new_len] = '\0';
-  strncpy (p, (char *)str0->value, new_len);
+  os_strncpy (p, (char *)str0->value, new_len);
 
   ret->attr.type = mut_string;
   ret->value = (void *)p;
@@ -267,8 +267,8 @@ object_t _string_append (vm_t vm, object_t ret, object_t str0, object_t str1)
   char *p = (char *)GC_MALLOC (len0 + len1 + 1);
   if (p)
     {
-      strncpy (p, (char *)str0->value, len0);
-      strncpy (p + len0, (char *)str1->value, len1);
+      os_strncpy (p, (char *)str0->value, len0);
+      os_strncpy (p + len0, (char *)str1->value, len1);
     }
   else
     {
@@ -329,7 +329,7 @@ object_t _string_copy_side_effect (vm_t vm, object_t ret, object_t str0,
   // FIXME: Memory leaks here, there's no good way to free memory at this stage.
   char *p = (char *)GC_MALLOC (new_len + 1);
   p[new_len] = '\0';
-  strncpy (a + (char *)str0->value, s + (char *)str1->value, e - s);
+  os_strncpy (a + (char *)str0->value, s + (char *)str1->value, e - s);
 
   ret->attr.type = none;
   ret->value = (void *)0;

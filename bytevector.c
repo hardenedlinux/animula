@@ -1,7 +1,6 @@
 
-/*  Copyright (C) 2020-2021
- *         Rafael Lee <rafaellee.img@gmail.com>
- *        "Mu Lei" known as "NalaGinrut" <NalaGinrut@gmail.com>
+/*  Copyright (C) 2026 HardenedLinux Community
+ *         Nala Ginrut <roy@hardenedlinux.org>
  *  Animula is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as
  *  published by the Free Software Foundation, either version 3 of the
@@ -34,7 +33,7 @@ object_t _make_bytevector (vm_t vm, object_t ret, object_t count,
   u8_t *buf = (u8_t *)GC_MALLOC (cnt);
   bv->vec = buf;
   imm_int_t v = (imm_int_t) (datum->value);
-  // FIXME: use memset instead
+  // FIXME: use os_memset instead
   for (int i = 0; i < cnt; i++)
     {
       *(buf + i) = v;
