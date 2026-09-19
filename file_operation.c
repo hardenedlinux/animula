@@ -19,10 +19,7 @@
 #include "os.h"
 #ifdef ANIMULA_ZEPHYR
 #  include "vos/drivers/file_operation.h"
-#  include <disk/disk_access.h>
-#  include <kernel.h>
-#  include <sys/printk.h>
-#  include <zephyr.h>
+#  include <zephyr/storage/disk_access.h>
 
 #  define MAX_PATH_LEN 128
 #  define DISK_PDRV    "SD"

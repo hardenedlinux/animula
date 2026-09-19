@@ -19,10 +19,6 @@
 
 #include "primitives.h"
 #include "type_cast.h"
-#ifdef ANIMULA_ZEPHYR
-#  include <drivers/gpio.h>
-#  include <vos/drivers/gpio.h>
-#endif /* ANIMULA_ZEPHYR */
 #include "lib.h"
 
 object_t _floor (vm_t vm, object_t ret, immu_object_t x);

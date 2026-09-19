@@ -24,8 +24,8 @@
 #if defined ANIMULA_LINUX
 //
 #elif defined ANIMULA_ZEPHYR
-#  include <fs/fs.h>           // fs_open
-#  include <fs/fs_interface.h> // fs_file_t
+#  include <zephyr/fs/fs.h>           // fs_open
+#  include <zephyr/fs/fs_interface.h> // fs_file_t
 GLOBAL_DEF (struct fs_file_t,
             file_descriptors[CONFIG_MAXIMUM_NUMBER_OPEN_FILE_DESCRIPTOR])
   = {0};

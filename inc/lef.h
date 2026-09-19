@@ -26,8 +26,8 @@
 #include "types.h"
 #include "vos.h"
 #ifdef ANIMULA_ZEPHYR
-#  include <fs/fs.h>
-#  include <kernel.h>
+#  include <zephyr/fs/fs.h>
+#  include <zephyr/kernel.h>
 #endif
 
 typedef struct LEF

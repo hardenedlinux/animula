@@ -22,12 +22,11 @@
 #endif
 
 #if defined ANIMULA_ZEPHYR
-#  include <sys/printk.h>
-#  include <zephyr.h>
+#  include <zephyr/sys/printk.h>
+#  include <zephyr/kernel.h>
 #  define os_printk           printk
 #  define os_snprintk         snprintk
 #  define get_platform_info() CONFIG_BOARD
-#  include <kernel.h>
 #  define __malloc malloc
 #  define __calloc calloc
 #  define __free   free
@@ -50,13 +49,12 @@ static inline size_t os_strnlen (const char *s, size_t n)
 }
 #  define os_strncmp strncmp
 #  define os_usleep  k_usleep
-#  include <console/console.h>
+#  include <zephyr/console/console.h>
 #  define os_getchar console_getchar
 #  define os_getline console_getline
-#  include <device.h>
-#  include <drivers/flash.h>
-#  include <fs/fs.h>
-#  include <kernel.h>
+#  include <zephyr/device.h>
+#  include <zephyr/drivers/flash.h>
+#  include <zephyr/fs/fs.h>
 #  include <stdio.h>
 #  include <stdlib.h>
 #  include <sys/cdefs.h>

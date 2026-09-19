@@ -22,7 +22,7 @@
 
 #if defined ANIMULA_ZEPHYR
 #  include <ff.h> // FATFS
-#  include <fs/fs.h>
+#  include <zephyr/fs/fs.h>
 
 typedef struct flash_sector
 {

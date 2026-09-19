@@ -18,8 +18,8 @@
 
 #ifdef ANIMULA_ZEPHYR
 #  include <version.h>
-// match zephyr v2.7.0
-#  if KERNELVERSION != 0x2070000
-#    error version does not match
+// match Zephyr v4.4.2
+#if KERNELVERSION != 0x4040200
+#error version does not match
 #  endif
 #endif /* ANIMULA_ZEPHYR */
